@@ -1,0 +1,23 @@
+{
+  "name": "black-hole",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "howler": "^2.2.4",
+    "pixi.js": "^8.17.1"
+  },
+  "devDependencies": {
+    "@pixi/devtools": "^2.0.1",
+    "cross-env": "^7.0.3",
+    "vite": "^8.0.3",
+    "vite-plugin-singlefile": "^2.3.2"
+  }
+}
