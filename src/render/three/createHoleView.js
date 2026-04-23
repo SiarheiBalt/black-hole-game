@@ -17,6 +17,9 @@ import {
   PCFSoftShadowMap,
   SRGBColorSpace,
   TextureLoader,
+  Shape,
+  ShapeGeometry,
+  Clock,
 } from 'three';
 import { containerToDesignNormalized } from '../../core/viewport.js';
 import {
@@ -263,6 +266,69 @@ export async function createHoleView(container, options = {}) {
 
   holeVisual.scale.set(ELLIPSE_X, 1, ELLIPSE_Z);
 
+  /** Индикатор направления: один равнобедренный треугольник (+Y — остриё → после поворота на XZ указывает ход). */
+  function buildDirectionArrowShape() {
+    const shape = new Shape();
+    const tipY = 0.46;
+    const baseY = -0.34;
+    const halfW = 0.27;
+    const r = 0.074;
+
+    shape.moveTo(0, tipY);
+    shape.lineTo(halfW - r * 0.42, baseY + r * 1.12);
+    shape.quadraticCurveTo(
+      halfW + r * 0.12,
+      baseY + r * 0.42,
+      halfW - r * 0.68,
+      baseY - r * 0.02,
+    );
+    shape.lineTo(-halfW + r * 0.68, baseY - r * 0.02);
+    shape.quadraticCurveTo(
+      -halfW - r * 0.12,
+      baseY + r * 0.42,
+      -halfW + r * 0.42,
+      baseY + r * 1.12,
+    );
+    shape.closePath();
+    return shape;
+  }
+
+  const moveArrow = new Group();
+  const arrowFillGeom = new ShapeGeometry(buildDirectionArrowShape(), 36);
+  const arrowOutlineMat = new MeshBasicMaterial({
+    color: 0x94c4d8,
+    side: DoubleSide,
+    depthWrite: false,
+    transparent: true,
+    opacity: 0.24,
+    polygonOffset: true,
+    polygonOffsetFactor: -0.6,
+    polygonOffsetUnits: -0.6,
+  });
+  const arrowFillMat = new MeshBasicMaterial({
+    color: 0xf2fbfe,
+    side: DoubleSide,
+    depthWrite: false,
+    transparent: true,
+    opacity: 0.5,
+  });
+  const arrowOutlineMesh = new Mesh(arrowFillGeom, arrowOutlineMat);
+  const arrowFillMesh = new Mesh(arrowFillGeom, arrowFillMat);
+  arrowOutlineMesh.rotation.x = -Math.PI / 2;
+  arrowFillMesh.rotation.x = -Math.PI / 2;
+  arrowOutlineMesh.renderOrder = 9;
+  arrowFillMesh.renderOrder = 10;
+  moveArrow.add(arrowOutlineMesh);
+  moveArrow.add(arrowFillMesh);
+  moveArrow.visible = false;
+  holePivot.add(moveArrow);
+
+  const arrowAnimClock = new Clock();
+  let arrowReveal = 0;
+  const arrowStore = { x: 0, y: 0, z: 0, ry: 0 };
+  let moveArrowSmUx = 0;
+  let moveArrowSmUz = 0;
+
   /** @type {ReturnType<typeof import('../../core/viewport.js').computeLayout> | null} */
   let layoutCache = null;
   const ballWobbleBase = 0.38;
@@ -319,12 +385,91 @@ export async function createHoleView(container, options = {}) {
   }
 
   /**
+   * Треугольник направления: при зажатой кнопке и движении; гашение начинается при отпускании.
+   * Орбита — эллипс R_OUTLINE × (ELLIPSE_X|Z) × rWorld.
+   * @param {NonNullable<typeof layoutCache>} layout
+   * @param {{ mapNx: number, mapNy: number, holeRadius01: number, holeVnX?: number, holeVnY?: number, pointerDragging?: boolean }} g
+   */
+  function updateMoveArrow(layout, g) {
+    const dt = Math.min(arrowAnimClock.getDelta(), 0.08);
+    const base = Math.min(layout.designWidth, layout.designHeight);
+    const rWorld = g.holeRadius01 * base;
+    const yLift = Math.max(0.006 * base, 0.004);
+    const { worldW, worldH } = layoutWorldSize(layout);
+
+    const vx = g.holeVnX ?? 0;
+    const vy = g.holeVnY ?? 0;
+    const vnPxSec = Math.hypot(vx * worldW, vy * worldH);
+    const minSpeedPx = Math.max(2.2, 0.005 * base);
+    const vnNorm = Math.hypot(vx, vy);
+    const dragging = g.pointerDragging === true;
+    const wantsShow =
+      dragging && vnPxSec >= minSpeedPx && vnNorm >= 1e-12;
+
+    if (wantsShow) {
+      let ux = vx / vnNorm;
+      let uz = vy / vnNorm;
+      const tau = 0.22;
+      moveArrowSmUx += (ux - moveArrowSmUx) * tau;
+      moveArrowSmUz += (uz - moveArrowSmUz) * tau;
+      const sm = Math.hypot(moveArrowSmUx, moveArrowSmUz);
+      if (sm > 1e-6) {
+        moveArrowSmUx /= sm;
+        moveArrowSmUz /= sm;
+      }
+
+      const semiX = R_OUTLINE * ELLIPSE_X * rWorld;
+      const semiZ = R_OUTLINE * ELLIPSE_Z * rWorld;
+      const orbitMargin = 1.1;
+      const orbitGapPx = 0.022 * base;
+      const sx = moveArrowSmUx;
+      const sz = moveArrowSmUz;
+      const denom = Math.sqrt(
+        (sx * sx) / (semiX * semiX) + (sz * sz) / (semiZ * semiZ),
+      );
+      const tEdge = denom > 1e-9 ? 1 / denom : 0;
+      const tOrbit = tEdge * orbitMargin + orbitGapPx;
+      arrowStore.x = sx * tOrbit;
+      arrowStore.y = yLift;
+      arrowStore.z = sz * tOrbit;
+      arrowStore.ry = Math.atan2(sx, sz) + Math.PI;
+    }
+
+    const target = wantsShow ? 1 : 0;
+    const k = target > arrowReveal ? 12 : 8;
+    arrowReveal += (target - arrowReveal) * Math.min(1, dt * k);
+    if (arrowReveal < 1e-4) arrowReveal = 0;
+    if (arrowReveal > 1 - 1e-4) arrowReveal = 1;
+
+    if (arrowReveal <= 0 && !wantsShow) {
+      moveArrow.visible = false;
+      moveArrowSmUx = 0;
+      moveArrowSmUz = 0;
+      return;
+    }
+
+    moveArrow.visible = true;
+    moveArrow.position.set(arrowStore.x, arrowStore.y, arrowStore.z);
+    moveArrow.rotation.y = arrowStore.ry;
+
+    const te = arrowReveal * arrowReveal * (3 - 2 * arrowReveal);
+    const scalePop = 0.86 + 0.14 * te;
+    const arrowSizeFrac = 0.56;
+    const s = rWorld * scalePop * arrowSizeFrac;
+    arrowFillMesh.scale.set(s, s, s);
+    arrowOutlineMesh.scale.set(s * 1.06, s * 1.06, s * 1.06);
+
+    arrowFillMat.opacity = 0.5 * te;
+    arrowOutlineMat.opacity = 0.24 * te;
+  }
+
+  /**
    * @param {import('../../core/collectibleState.js').CollectibleRunState} b
    * @param {Group} objGroup
    * @param {number} i
    * @param {import('../../core/collectibleState.js').CollectibleItem} item
    * @param {NonNullable<typeof layoutCache>} layout
-   * @param {{ mapNx: number, mapNy: number, holeRadius01: number, holeVnX?: number, holeVnY?: number }} g
+   * @param {{ mapNx: number, mapNy: number, holeRadius01: number, holeVnX?: number, holeVnY?: number, pointerDragging?: boolean }} g
    */
   function applyOneCollectible(b, objGroup, i, item, layout, g) {
     if (b.phase === 'done') {
@@ -426,7 +571,7 @@ export async function createHoleView(container, options = {}) {
   /**
    * @param {import('../../core/collectibleState.js').CollectibleRunState[]} runStates
    * @param {NonNullable<typeof layoutCache>} layout
-   * @param {{ mapNx: number, mapNy: number, holeRadius01: number, holeVnX?: number, holeVnY?: number }} g
+   * @param {{ mapNx: number, mapNy: number, holeRadius01: number, holeVnX?: number, holeVnY?: number, pointerDragging?: boolean }} g
    */
   function applyCollectiblesVisual(runStates, layout, g) {
     if (runStates.length !== collectiblePivots.length) return;
@@ -434,6 +579,7 @@ export async function createHoleView(container, options = {}) {
     for (let i = 0; i < collectiblePivots.length; i++) {
       applyOneCollectible(runStates[i], collectiblePivots[i], i, items[i], layout, g);
     }
+    updateMoveArrow(layout, g);
   }
 
   function updateCamera(layout) {
@@ -479,7 +625,7 @@ export async function createHoleView(container, options = {}) {
     /**
      * @param {import('../../core/collectibleState.js').CollectibleRunState[]} runStates
      * @param {NonNullable<typeof layoutCache>} layout
-     * @param {{ mapNx: number, mapNy: number, holeRadius01: number, holeVnX?: number, holeVnY?: number }} g
+     * @param {{ mapNx: number, mapNy: number, holeRadius01: number, holeVnX?: number, holeVnY?: number, pointerDragging?: boolean }} g
      */
     updateCollectibles(runStates, layout, g) {
       applyCollectiblesVisual(runStates, layout, g);
@@ -508,6 +654,9 @@ export async function createHoleView(container, options = {}) {
       rimMat.dispose();
       innerRimMat.dispose();
       outlineMat.dispose();
+      arrowFillGeom.dispose();
+      arrowOutlineMat.dispose();
+      arrowFillMat.dispose();
       renderer.domElement.remove();
     },
   };

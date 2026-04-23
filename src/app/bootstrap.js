@@ -116,6 +116,7 @@ async function main() {
       holeRadius01: state.holeRadius01,
       holeVnX: state.holeVnX,
       holeVnY: state.holeVnY,
+      pointerDragging: state.dragging,
     });
     holeView.render();
     holeJoystick.sync(state, layout);
