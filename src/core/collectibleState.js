@@ -4,14 +4,39 @@ import {
   HOLE_ELLIPSE_Z,
   HOLE_BALL_EAT_INNER,
   COLLECTIBLE_RADIUS_01,
+  COLLECTIBLE_MONEY_RADIUS_01,
   COLLECTIBLE_FALL_SPEED,
   COLLECTIBLE_CIRCLE_R01,
+  COLLECTIBLE_MONEY_CIRCLE_R01,
+  COLLECTIBLE_SPHERE_COUNT,
+  COLLECTIBLE_MONEY_COUNT,
   COLLECTIBLE_COUNT,
 } from './constants.js';
 
 /**
- * @typedef {'sphere' | 'box'} CollectibleKind — пока в рендере только `sphere`, дальше — новые ветки
+ * @typedef {'sphere' | 'box' | 'planar'} CollectibleKind
+ * — `planar`: плоский спрайт на XZ (сейчас ассет [`money.png`](../assets/money.png) в рендере), отдельная анимация падения (слабый наклон).
+ * `box` зарезервирован.
  */
+
+/**
+ * Плоские коллектаблы: та же логика коллизий, но в Three.js — `PlaneGeometry` и «planar» fall.
+ * @param {CollectibleKind} kind
+ * @returns {boolean}
+ */
+export function isPlanarCollectibleKind(kind) {
+  return kind === 'planar';
+}
+
+/**
+ * Тип предмета для слота по индексу (должен совпадать с раскладкой в `getCollectibleItems`).
+ * Сначала все сферы (внутреннее кольцо), затем `planar` (внешнее кольцо, деньги).
+ * @param {number} index
+ * @returns {CollectibleKind}
+ */
+export function getCollectibleSlotKind(index) {
+  return index < COLLECTIBLE_SPHERE_COUNT ? 'sphere' : 'planar';
+}
 
 /**
  * Статичное описание предмета на уровне (логич. карта, тип, id для сейвов/аналитики).
@@ -67,18 +92,33 @@ export function getCollectibleItems(layout) {
   const m = WORLD_MAP_VIEW_MULTIPLIER;
   const worldW = layout.designWidth * m;
   const worldH = layout.designHeight * m;
-  const rWorld = COLLECTIBLE_CIRCLE_R01 * Math.min(layout.designWidth, layout.designHeight);
+  const minSide = Math.min(layout.designWidth, layout.designHeight);
+  const rSphere = COLLECTIBLE_CIRCLE_R01 * minSide;
+  const rMoney = COLLECTIBLE_MONEY_CIRCLE_R01 * minSide;
   const out = /** @type {CollectibleItem[]} */ ([]);
-  for (let i = 0; i < COLLECTIBLE_COUNT; i++) {
-    const a = (i / COLLECTIBLE_COUNT) * Math.PI * 2;
-    const dx = rWorld * Math.cos(a);
-    const dz = rWorld * Math.sin(a);
+  for (let i = 0; i < COLLECTIBLE_SPHERE_COUNT; i++) {
+    const a = (i / COLLECTIBLE_SPHERE_COUNT) * Math.PI * 2;
+    const dx = rSphere * Math.cos(a);
+    const dz = rSphere * Math.sin(a);
     out.push({
       id: `c-${i}`,
       kind: 'sphere',
       mapNx: 0.5 + dx / worldW,
       mapNy: 0.5 + dz / worldH,
       radius01: COLLECTIBLE_RADIUS_01,
+    });
+  }
+  for (let j = 0; j < COLLECTIBLE_MONEY_COUNT; j++) {
+    const i = COLLECTIBLE_SPHERE_COUNT + j;
+    const a = ((j + 0.5) / COLLECTIBLE_MONEY_COUNT) * Math.PI * 2;
+    const dx = rMoney * Math.cos(a);
+    const dz = rMoney * Math.sin(a);
+    out.push({
+      id: `c-${i}`,
+      kind: 'planar',
+      mapNx: 0.5 + dx / worldW,
+      mapNy: 0.5 + dz / worldH,
+      radius01: COLLECTIBLE_MONEY_RADIUS_01,
     });
   }
   return out;

@@ -48,7 +48,10 @@ async function main() {
   const playfield = createPlayfield(app);
   playfield.resize(layout);
 
-  const holeView = createHoleView(container);
+  const holeView = await createHoleView(container, {
+    collectibleMoneyShadows: false,
+    planarCollectibleFall: true,
+  });
   holeView.resize(layout);
 
   const state = createGameState();

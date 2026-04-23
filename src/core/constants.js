@@ -20,16 +20,38 @@ export const HOLE_ELLIPSE_Z = 0.92;
 /** Коэффициент внутри радиуса дыры (около границы тёмного ядра) — для проверки «шар внутри дыры». */
 export const HOLE_BALL_EAT_INNER = 0.78;
 
-/** Число собираемых объектов (по кругу, центр 0.5, 0.5). */
-export const COLLECTIBLE_COUNT = 30;
+/** Сферы: внутреннее кольцо вокруг центра карты. */
+export const COLLECTIBLE_SPHERE_COUNT = 30;
+/** Деньги: внешнее кольцо (дальше от центра, «за» шарами). */
+export const COLLECTIBLE_MONEY_COUNT = 40;
+/** Всего слотов = сферы + деньги. */
+export const COLLECTIBLE_COUNT =
+  COLLECTIBLE_SPHERE_COUNT + COLLECTIBLE_MONEY_COUNT;
 /**
- * Радиус круга раскладки: доля min(ширина, высота) — зазор между объектами.
+ * Радиус внутреннего круга (сферы): доля min(ширина, высота).
  */
 export const COLLECTIBLE_CIRCLE_R01 = 0.38;
-/** Базовый радиус объекта: доля min(ширина, высота). */
+/**
+ * Радиус внешнего круга (`planar` / деньги), доля min стороны; больше {@link COLLECTIBLE_CIRCLE_R01}.
+ * Согласован с {@link WORLD_MAP_VIEW_MULTIPLIER}, чтобы `mapN` оставались в полосе `getMapPositionBounds01`.
+ */
+export const COLLECTIBLE_MONEY_CIRCLE_R01 = 0.54;
+/** Базовый радиус объекта (сферы): доля min(ширина, высота). */
 export const COLLECTIBLE_RADIUS_01 = 0.023;
-/** Скорость анимации поглощения (0–1 за сек). */
-export const COLLECTIBLE_FALL_SPEED = 1.25;
+/** Размер объектов `planar` на карте (доля min стороны), крупнее сфер; демо — кольцо денег. */
+export const COLLECTIBLE_MONEY_RADIUS_01 = 0.09;
+/** Скорость анимации поглощения: рост `t` 0→1 в фазе `falling` (~1/значение ≈ длительность в сек). */
+export const COLLECTIBLE_FALL_SPEED = 2.05;
+/**
+ * Падение: `p = 1 - (1 - t) ** COLLECTIBLE_FALL_POW`, затем позиция и
+ * `sc = lerp(1, COLLECTIBLE_FALL_MIN_REL_SC, p)` — как у исходных сфер до `planar`.
+ */
+export const COLLECTIBLE_FALL_POW = 2.2;
+export const COLLECTIBLE_FALL_MIN_REL_SC = 0.04;
+/** Порядок отрисовки на полу (дыра рисуется с `renderOrder` до 9). */
+export const COLLECTIBLE_RENDER_ORDER_IDLE = 2;
+/** Во время падения выше диска дыры, иначе предмет не виден и «сжатие» не читается. */
+export const COLLECTIBLE_RENDER_ORDER_FALLING = 14;
 
 /** Procedural decor: count and style. */
 export const DECOR_COUNT = 90;
@@ -39,7 +61,7 @@ export const DECOR_SEED = 42;
  * World size = viewport size × this (each axis). Logical hole moves on this map; the Pixi
  * playfield scrolls so the hole stays visually centered (Three.js layer).
  */
-export const WORLD_MAP_VIEW_MULTIPLIER = 2;
+export const WORLD_MAP_VIEW_MULTIPLIER = 2.2;
 
 /**
  * For a world that is m× the viewport, the hole (camera center) can only use the inner

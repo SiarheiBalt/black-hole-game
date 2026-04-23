@@ -16,6 +16,7 @@ import {
   DirectionalLight,
   PCFSoftShadowMap,
   SRGBColorSpace,
+  TextureLoader,
 } from 'three';
 import { containerToDesignNormalized } from '../../core/viewport.js';
 import {
@@ -28,13 +29,30 @@ import {
   WORLD_MAP_VIEW_MULTIPLIER,
   COLLECTIBLE_RADIUS_01,
   COLLECTIBLE_COUNT,
+  COLLECTIBLE_FALL_POW,
+  COLLECTIBLE_FALL_MIN_REL_SC,
+  COLLECTIBLE_RENDER_ORDER_IDLE,
+  COLLECTIBLE_RENDER_ORDER_FALLING,
 } from '../../core/constants.js';
-import { getCollectibleItems } from '../../core/collectibleState.js';
+import {
+  getCollectibleItems,
+  getCollectibleSlotKind,
+  isPlanarCollectibleKind,
+} from '../../core/collectibleState.js';
+
+/**
+ * @typedef {Object} CreateHoleViewOptions
+ * @property {boolean} [collectibleMoneyShadows=false] — cast/receive shadow map для мешей `planar` (PNG); обычно выкл.
+ * @property {boolean} [planarCollectibleFall=true] — для `planar`: падение + масштаб + слабый плавный наклон (без шарового кручения).
+ */
 
 /**
  * @param {HTMLElement} container
+ * @param {CreateHoleViewOptions} [options]
  */
-export function createHoleView(container) {
+export async function createHoleView(container, options = {}) {
+  const { collectibleMoneyShadows = false, planarCollectibleFall = true } =
+    options;
   const renderer = new WebGLRenderer({
     alpha: true,
     antialias: true,
@@ -91,6 +109,26 @@ export function createHoleView(container) {
     emissiveIntensity: 0.08,
   });
 
+  const moneyUrl = new URL('../../assets/money.png', import.meta.url).href;
+  const moneyTex = await new Promise((resolve, reject) => {
+    new TextureLoader().load(moneyUrl, resolve, undefined, reject);
+  });
+  moneyTex.colorSpace = SRGBColorSpace;
+  const img = /** @type {HTMLImageElement | undefined} */ (moneyTex.image);
+  const texAspect =
+    img?.naturalWidth && img?.naturalHeight
+      ? img.naturalWidth / img.naturalHeight
+      : 1;
+
+  const moneyGeom = new PlaneGeometry(1, 1);
+  const moneyMat = new MeshBasicMaterial({
+    map: moneyTex,
+    transparent: true,
+    depthWrite: false,
+    depthTest: false,
+    side: DoubleSide,
+  });
+
   /**
    * @param {import('../../core/collectibleState.js').CollectibleItem['kind']} kind
    */
@@ -99,6 +137,16 @@ export function createHoleView(container) {
       const m = new Mesh(sphereGeom, sphereMat);
       m.castShadow = true;
       m.receiveShadow = true;
+      m.renderOrder = 2;
+      return m;
+    }
+    if (kind === 'planar') {
+      const m = new Mesh(moneyGeom, moneyMat);
+      m.rotation.x = -Math.PI / 2;
+      m.scale.set(texAspect, 1, 1);
+      m.frustumCulled = false;
+      m.castShadow = collectibleMoneyShadows;
+      m.receiveShadow = collectibleMoneyShadows;
       m.renderOrder = 2;
       return m;
     }
@@ -112,7 +160,7 @@ export function createHoleView(container) {
   /** @type {Group[]} */
   const collectiblePivots = [];
   for (let i = 0; i < COLLECTIBLE_COUNT; i++) {
-    const mesh = makeObjectMesh('sphere');
+    const mesh = makeObjectMesh(getCollectibleSlotKind(i));
     const bg = new Group();
     bg.add(mesh);
     mapLayer.add(bg);
@@ -213,9 +261,29 @@ export function createHoleView(container) {
     return r01 * Math.min(layout.designWidth, layout.designHeight);
   }
 
+  /**
+   * Высота центра объекта в покое: сфера стоит на полу, «деньги» — плоскость почти у Y=0.
+   * @param {import('../../core/collectibleState.js').CollectibleItem} item
+   * @param {number} rObj
+   */
+  function idleCenterY(item, rObj) {
+    return isPlanarCollectibleKind(item.kind) ? 0.08 * rObj : rObj;
+  }
+
   function updateGroundScale(layout) {
     const s = Math.max(layout.designWidth, layout.designHeight) * 3;
     ground.scale.set(s, s, 1);
+  }
+
+  /**
+   * @param {Group} objGroup
+   * @param {number} order
+   */
+  function setCollectibleMeshRenderOrder(objGroup, order) {
+    objGroup.renderOrder = order;
+    objGroup.traverse((o) => {
+      if ('isMesh' in o && o.isMesh) o.renderOrder = order;
+    });
   }
 
   /**
@@ -240,20 +308,28 @@ export function createHoleView(container) {
     const sHole = g.holeRadius01 * base;
 
     objGroup.visible = true;
-    if (b.phase === 'idle' || b.phase === 'falling') {
-      objGroup.scale.setScalar(rObj);
-    }
 
     const mapNx0 = item.mapNx;
     const mapNy0 = item.mapNy;
+
+    /** @type {Mesh | undefined} */
+    const objMesh = /** @type {Mesh | undefined} */ (objGroup.children[0]);
 
     if (b.phase === 'idle') {
       if (objGroup.parent !== mapLayer) {
         mapLayer.add(objGroup);
       }
+      setCollectibleMeshRenderOrder(objGroup, COLLECTIBLE_RENDER_ORDER_IDLE);
+      if (objMesh && isPlanarCollectibleKind(item.kind)) {
+        objMesh.scale.set(texAspect, 1, 1);
+      } else if (objMesh) {
+        objMesh.scale.set(1, 1, 1);
+      }
+      objGroup.scale.setScalar(rObj);
       const ox = (mapNx0 - g.mapNx) * worldW;
       const oz = (mapNy0 - g.mapNy) * worldH;
-      objGroup.position.set(ox, rObj, oz);
+      const y0 = idleCenterY(item, rObj);
+      objGroup.position.set(ox, y0, oz);
       objGroup.rotation.set(0, 0, 0);
     } else if (b.phase === 'falling') {
       if (objGroup.parent !== holePivot) {
@@ -261,12 +337,14 @@ export function createHoleView(container) {
         fallStartX[i] = objGroup.position.x;
         fallStartZ[i] = objGroup.position.z;
       }
+      setCollectibleMeshRenderOrder(objGroup, COLLECTIBLE_RENDER_ORDER_FALLING);
       const t = Math.min(1, b.t);
-      const p = 1 - (1 - t) ** 2.2;
-      const y0 = rObj;
+      const p = 1 - (1 - t) ** COLLECTIBLE_FALL_POW;
+      const y0 = idleCenterY(item, rObj);
       const y1 = -Math.max(0.28 * sHole, 0.12 * rObj) - 0.55 * sHole;
       const y = y0 * (1 - p) + y1 * p;
-      const sc = 1 * (1 - p) + 0.04 * p;
+      const sc =
+        (1 - p) + COLLECTIBLE_FALL_MIN_REL_SC * p;
       const pull = 1 - p;
       const vnX = g.holeVnX ?? 0;
       const vnY = g.holeVnY ?? 0;
@@ -286,15 +364,32 @@ export function createHoleView(container) {
       const fsx = fallStartX[i];
       const fsz = fallStartZ[i];
       objGroup.position.set(fsx * pull + sideX, y, fsz * pull + sideZ);
+      if (objMesh) {
+        if (isPlanarCollectibleKind(item.kind)) {
+          objMesh.scale.set(texAspect, 1, 1);
+        } else {
+          objMesh.scale.set(1, 1, 1);
+        }
+      }
       objGroup.scale.setScalar(rObj * sc);
-      const wobble = (1 - t) * (1 - t);
-      const tiltF = 2.6 * wFunnel * wobble;
-      const rx =
-        Math.sin(t * Math.PI * 2.1) * ballWobbleBase * wobble - vnY * tiltF;
-      const ry = t * 3.1 + t * t * 2.4;
-      const rz =
-        Math.sin(t * Math.PI * 2.5 + 0.3) * ballWobbleBase * wobble + vnX * tiltF;
-      objGroup.rotation.set(rx, ry, rz);
+      if (isPlanarCollectibleKind(item.kind)) {
+        if (planarCollectibleFall) {
+          const spin = Math.sin(t * Math.PI) * 0.72;
+          objGroup.rotation.set(0, spin, 0);
+        } else {
+          objGroup.rotation.set(0, 0, 0);
+        }
+      } else {
+        const wobble = (1 - t) * (1 - t);
+        const tiltF = 2.6 * wFunnel * wobble;
+        const rx =
+          Math.sin(t * Math.PI * 2.1) * ballWobbleBase * wobble - vnY * tiltF;
+        const ry = t * 3.1 + t * t * 2.4;
+        const rz =
+          Math.sin(t * Math.PI * 2.5 + 0.3) * ballWobbleBase * wobble +
+          vnX * tiltF;
+        objGroup.rotation.set(rx, ry, rz);
+      }
     }
   }
 
@@ -369,6 +464,9 @@ export function createHoleView(container) {
       groundMat.dispose();
       sphereGeom.dispose();
       sphereMat.dispose();
+      moneyGeom.dispose();
+      moneyMat.dispose();
+      moneyTex.dispose();
       renderer.dispose();
       coreGeom.dispose();
       rimGeom.dispose();
