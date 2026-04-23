@@ -8,6 +8,14 @@ import {
   DoubleSide,
   RingGeometry,
   CircleGeometry,
+  SphereGeometry,
+  MeshStandardMaterial,
+  PlaneGeometry,
+  ShadowMaterial,
+  AmbientLight,
+  DirectionalLight,
+  PCFSoftShadowMap,
+  SRGBColorSpace,
 } from 'three';
 import { containerToDesignNormalized } from '../../core/viewport.js';
 import {
@@ -15,7 +23,13 @@ import {
   HOLE_CORE_COLOR,
   HOLE_INNER_RIM,
   HOLE_OUTLINE_COLOR,
+  HOLE_ELLIPSE_X,
+  HOLE_ELLIPSE_Z,
+  WORLD_MAP_VIEW_MULTIPLIER,
+  BALL_RADIUS_01,
+  BALL_COUNT,
 } from '../../core/constants.js';
+import { getBallMapPositions } from '../../core/ballState.js';
 
 /**
  * @param {HTMLElement} container
@@ -26,6 +40,9 @@ export function createHoleView(container) {
     antialias: true,
     powerPreference: 'high-performance',
   });
+  renderer.outputColorSpace = SRGBColorSpace;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = PCFSoftShadowMap;
   renderer.setClearColor(0x000000, 0);
   renderer.domElement.classList.add('three-layer');
   container.appendChild(renderer.domElement);
@@ -36,18 +53,66 @@ export function createHoleView(container) {
   camera.up.set(0, 0, -1);
   camera.lookAt(0, 0, 0);
 
+  const hemi = 0.42;
+  const ambient = new AmbientLight(0xffffff, hemi);
+  scene.add(ambient);
+  const sun = new DirectionalLight(0xfff5e6, 0.85);
+  sun.position.set(3.2, 10.5, 2.1);
+  sun.castShadow = true;
+  /** Больше разрешения — пикселизация тени не сильна при широком frustum. */
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.near = 0.05;
+  sun.shadow.camera.far = 200;
+  sun.shadow.radius = 3;
+  /** Меньше мерцания/пропаданий бликов на грани направленного света. */
+  sun.shadow.normalBias = 0.04;
+  sun.shadow.bias = -0.00015;
+  sun.target.position.set(0, 0, 0);
+  scene.add(sun.target);
+  scene.add(sun);
+
+  const mapLayer = new Group();
+  scene.add(mapLayer);
+
+  const groundGeom = new PlaneGeometry(1, 1);
+  const groundMat = new ShadowMaterial({ opacity: 0.35, color: 0x0a0a0a });
+  const ground = new Mesh(groundGeom, groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = 0;
+  ground.receiveShadow = true;
+  ground.renderOrder = 0;
+  mapLayer.add(ground);
+
+  const ballSeg = 24;
+  const ballGeom = new SphereGeometry(1, ballSeg, ballSeg);
+  const ballMat = new MeshStandardMaterial({
+    color: 0x4cc4ff,
+    metalness: 0.2,
+    roughness: 0.38,
+    emissive: 0x0a1a2a,
+    emissiveIntensity: 0.08,
+  });
+  /** @type {Group[]} */
+  const ballPivots = [];
+  for (let i = 0; i < BALL_COUNT; i++) {
+    const bMesh = new Mesh(ballGeom, ballMat);
+    bMesh.castShadow = true;
+    bMesh.receiveShadow = true;
+    bMesh.renderOrder = 2;
+    const bg = new Group();
+    bg.add(bMesh);
+    mapLayer.add(bg);
+    ballPivots.push(bg);
+  }
+
   const holePivot = new Group();
   const holeVisual = new Group();
-  /** Ellipse: slightly flattened like reference. */
-  const ELLIPSE_X = 1.06;
-  const ELLIPSE_Z = 0.92;
+  const ELLIPSE_X = HOLE_ELLIPSE_X;
+  const ELLIPSE_Z = HOLE_ELLIPSE_Z;
 
   const radialSeg = 64;
-  /** Local space: colored rim ends here; dark outline can extend past this. */
   const R_OUT = 1;
-  /** Outer stroke [R_OUT, R_OUTLINE] — thin ring on the field. */
   const R_OUTLINE = 1.02;
-  /** Lower = slightly wider colored rim (1 − R_COLOR_IN). */
   const R_COLOR_IN = 0.79;
   const R_CORE = R_COLOR_IN;
   const innerRimGeom = new RingGeometry(0.75, R_COLOR_IN, radialSeg);
@@ -62,7 +127,6 @@ export function createHoleView(container) {
   const core = new Mesh(coreGeom, coreMat);
   core.rotation.x = -Math.PI / 2;
   core.position.y = 0.002;
-  core.renderOrder = 1;
 
   const rimMat = new MeshBasicMaterial({
     color: HOLE_RING_COLOR,
@@ -72,7 +136,6 @@ export function createHoleView(container) {
   const rim = new Mesh(rimGeom, rimMat);
   rim.rotation.x = -Math.PI / 2;
   rim.position.y = 0.004;
-  rim.renderOrder = 2;
 
   const innerRimMat = new MeshBasicMaterial({
     color: HOLE_INNER_RIM,
@@ -82,7 +145,6 @@ export function createHoleView(container) {
   const innerRim = new Mesh(innerRimGeom, innerRimMat);
   innerRim.rotation.x = -Math.PI / 2;
   innerRim.position.y = 0.003;
-  innerRim.renderOrder = 1;
 
   const outlineMat = new MeshBasicMaterial({
     color: HOLE_OUTLINE_COLOR,
@@ -92,7 +154,6 @@ export function createHoleView(container) {
   const outline = new Mesh(outlineGeom, outlineMat);
   outline.rotation.x = -Math.PI / 2;
   outline.position.y = 0.005;
-  outline.renderOrder = 3;
 
   holeVisual.add(core);
   holeVisual.add(innerRim);
@@ -101,10 +162,144 @@ export function createHoleView(container) {
   holePivot.add(holeVisual);
   scene.add(holePivot);
 
+  core.renderOrder = 7;
+  innerRim.renderOrder = 6;
+  rim.renderOrder = 8;
+  outline.renderOrder = 9;
+
   holeVisual.scale.set(ELLIPSE_X, 1, ELLIPSE_Z);
 
   /** @type {ReturnType<typeof import('../../core/viewport.js').computeLayout> | null} */
   let layoutCache = null;
+  const ballWobbleBase = 0.38;
+  const fallStartX = new Float32Array(BALL_COUNT);
+  const fallStartZ = new Float32Array(BALL_COUNT);
+
+  function syncSunShadowToLayout(layout) {
+    const w = layout.worldHalfW;
+    const h = layout.worldHalfH;
+    // Прямоугольник вида в XZ: половинные размеры w×h. Для наклонного света и квадратного
+    // frustum в shadow map нужен запас — не max(w,h) (рвутся углы), а гипотенуза + margin.
+    const halfDiagonal = Math.hypot(w, h);
+    const span = halfDiagonal * 2.1;
+    const cam = sun.shadow.camera;
+    cam.left = -span;
+    cam.right = span;
+    cam.top = span;
+    cam.bottom = -span;
+    cam.near = 0.05;
+    cam.far = 200;
+    cam.updateProjectionMatrix();
+  }
+
+  function ballWorldR(layout) {
+    return BALL_RADIUS_01 * Math.min(layout.designWidth, layout.designHeight);
+  }
+
+  function updateGroundScale(layout) {
+    const s = Math.max(layout.designWidth, layout.designHeight) * 3;
+    ground.scale.set(s, s, 1);
+  }
+
+  /**
+   * @param {import('../../core/ballState.js').BallState} b
+   * @param {Group} ballGroup
+   * @param {number} i
+   * @param {number} mapNx0
+   * @param {number} mapNy0
+   * @param {NonNullable<typeof layoutCache>} layout
+   * @param {{ mapNx: number, mapNy: number, holeRadius01: number, holeVnX?: number, holeVnY?: number }} g
+   */
+  function applyOneBall(
+    b,
+    ballGroup,
+    i,
+    mapNx0,
+    mapNy0,
+    layout,
+    g,
+  ) {
+    if (b.phase === 'done') {
+      ballGroup.visible = false;
+      return;
+    }
+
+    const m = WORLD_MAP_VIEW_MULTIPLIER;
+    const worldW = layout.designWidth * m;
+    const worldH = layout.designHeight * m;
+    const base = Math.min(layout.designWidth, layout.designHeight);
+    const rBall = ballWorldR(layout);
+    const sHole = g.holeRadius01 * base;
+
+    ballGroup.visible = true;
+    if (b.phase === 'idle' || b.phase === 'falling') {
+      ballGroup.scale.setScalar(rBall);
+    }
+
+    if (b.phase === 'idle') {
+      if (ballGroup.parent !== mapLayer) {
+        mapLayer.add(ballGroup);
+      }
+      const ox = (mapNx0 - g.mapNx) * worldW;
+      const oz = (mapNy0 - g.mapNy) * worldH;
+      ballGroup.position.set(ox, rBall, oz);
+      ballGroup.rotation.set(0, 0, 0);
+    } else if (b.phase === 'falling') {
+      if (ballGroup.parent !== holePivot) {
+        holePivot.attach(ballGroup);
+        fallStartX[i] = ballGroup.position.x;
+        fallStartZ[i] = ballGroup.position.z;
+      }
+      const t = Math.min(1, b.t);
+      const p = 1 - (1 - t) ** 2.2;
+      const y0 = rBall;
+      const y1 = -Math.max(0.28 * sHole, 0.12 * rBall) - 0.55 * sHole;
+      const y = y0 * (1 - p) + y1 * p;
+      const sc = 1 * (1 - p) + 0.04 * p;
+      const pull = 1 - p;
+      const vnX = g.holeVnX ?? 0;
+      const vnY = g.holeVnY ?? 0;
+      const wFunnel = 4 * p * (1 - p);
+      const worldSlideX = -vnX * worldW;
+      const worldSlideZ = -vnY * worldH;
+      const sideGain = 0.14;
+      let sideX = worldSlideX * sideGain * wFunnel;
+      let sideZ = worldSlideZ * sideGain * wFunnel;
+      const cap = 1.05 * sHole;
+      const sideLen = Math.hypot(sideX, sideZ);
+      if (sideLen > cap && sideLen > 1e-6) {
+        const kc = cap / sideLen;
+        sideX *= kc;
+        sideZ *= kc;
+      }
+      const fsx = fallStartX[i];
+      const fsz = fallStartZ[i];
+      ballGroup.position.set(fsx * pull + sideX, y, fsz * pull + sideZ);
+      ballGroup.scale.setScalar(rBall * sc);
+      const wobble = (1 - t) * (1 - t);
+      const tiltF = 2.6 * wFunnel * wobble;
+      const rx =
+        Math.sin(t * Math.PI * 2.1) * ballWobbleBase * wobble - vnY * tiltF;
+      const ry = t * 3.1 + t * t * 2.4;
+      const rz =
+        Math.sin(t * Math.PI * 2.5 + 0.3) * ballWobbleBase * wobble + vnX * tiltF;
+      ballGroup.rotation.set(rx, ry, rz);
+    }
+  }
+
+  /**
+   * @param {import('../../core/ballState.js').BallState[]} ballStates
+   * @param {NonNullable<typeof layoutCache>} layout
+   * @param {{ mapNx: number, mapNy: number, holeRadius01: number, holeVnX?: number, holeVnY?: number }} g
+   */
+  function applyBallsVisual(ballStates, layout, g) {
+    if (ballStates.length !== ballPivots.length) return;
+    const pos = getBallMapPositions(layout);
+    for (let i = 0; i < ballPivots.length; i++) {
+      const { mapNx, mapNy } = pos[i];
+      applyOneBall(ballStates[i], ballPivots[i], i, mapNx, mapNy, layout, g);
+    }
+  }
 
   function updateCamera(layout) {
     const hw = layout.worldHalfW;
@@ -117,15 +312,16 @@ export function createHoleView(container) {
     const pr = Math.min(window.devicePixelRatio || 1, 2);
     renderer.setPixelRatio(pr);
     renderer.setSize(layout.cssW, layout.cssH, false);
+    syncSunShadowToLayout(layout);
   }
 
   return {
     resize(layout) {
       layoutCache = layout;
       updateCamera(layout);
+      updateGroundScale(layout);
     },
 
-    /** Hole fixed at the center of the view; the Pixi playfield scrolls in map space. */
     setScreenCentered() {
       holePivot.position.set(0, 0, 0);
     },
@@ -142,7 +338,6 @@ export function createHoleView(container) {
       holePivot.position.set(worldX, 0, worldZ);
     },
 
-    /** @param {number} r01 — fraction of min(design width, height) */
     setRadius01(r01) {
       if (!layoutCache) return;
       const base = Math.min(layoutCache.designWidth, layoutCache.designHeight);
@@ -151,11 +346,24 @@ export function createHoleView(container) {
       holeVisual.scale.set(ELLIPSE_X * s, 1, ELLIPSE_Z * s);
     },
 
+    /**
+     * @param {import('../../core/ballState.js').BallState[]} ballStates
+     * @param {NonNullable<typeof layoutCache>} layout
+     * @param {{ mapNx: number, mapNy: number, holeRadius01: number, holeVnX?: number, holeVnY?: number }} g
+     */
+    updateBalls(ballStates, layout, g) {
+      applyBallsVisual(ballStates, layout, g);
+    },
+
     render() {
       renderer.render(scene, camera);
     },
 
     dispose() {
+      groundGeom.dispose();
+      groundMat.dispose();
+      ballGeom.dispose();
+      ballMat.dispose();
       renderer.dispose();
       coreGeom.dispose();
       rimGeom.dispose();

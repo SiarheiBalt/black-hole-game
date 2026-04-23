@@ -12,6 +12,26 @@ export const HOLE_INNER_RIM = 0x1a2a4a;
 /** Subtle outer stroke (outside the cyan rim), thin and slightly lighter for contrast on the field. */
 export const HOLE_OUTLINE_COLOR = 0x4a5c54;
 
+/**
+ * Проекция дыры на XZ: слегка эллиптична, как в {@link ../render/three/createHoleView.js}.
+ */
+export const HOLE_ELLIPSE_X = 1.06;
+export const HOLE_ELLIPSE_Z = 0.92;
+/** Коэффициент внутри радиуса дыры (около границы тёмного ядра) — для проверки «шар внутри дыры». */
+export const HOLE_BALL_EAT_INNER = 0.78;
+
+/** Число шаров, выставляются по кругу (центр 0.5, 0.5). */
+export const BALL_COUNT = 30;
+/**
+ * Радиус круга в мире: доля min(ширина, высота) дизайна — шары не слипались.
+ */
+export const BALL_CIRCLE_R01 = 0.38;
+/** Радиус шара: доля min(ширина, высота) дизайна. */
+export const BALL_RADIUS_01 = 0.023;
+
+/** Скорость анимации поглощения шара (0–1 за сек). */
+export const BALL_FALL_SPEED = 1.25;
+
 /** Procedural decor: count and style. */
 export const DECOR_COUNT = 90;
 export const DECOR_SEED = 42;
