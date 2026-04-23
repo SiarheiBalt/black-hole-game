@@ -93,7 +93,7 @@ async function main() {
 
   app.ticker.add(() => {
     const dt = app.ticker.deltaMS / 1000;
-    stepHolePhysics(state, dt);
+    stepHolePhysics(state, dt, layout);
     const items = getCollectibleItems(layout);
     for (let i = 0; i < COLLECTIBLE_COUNT; i++) {
       if (

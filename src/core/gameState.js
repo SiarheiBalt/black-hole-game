@@ -8,7 +8,7 @@
  * Подробнее: {@link ../../docs/hole-control.md}
  */
 
-import { getMapPositionBounds01 } from './constants.js';
+import { getMapPositionBounds01, WORLD_MAP_VIEW_MULTIPLIER } from './constants.js';
 
 /**
  * @typedef {Object} GameState
@@ -25,14 +25,16 @@ import { getMapPositionBounds01 } from './constants.js';
  */
 
 /**
- * Max |d(hole)/dt| in normalized container coords / second (at full stick deflection).
+ * At full stick: max |d(playfieldRoot)/dt| in layout px/s equals
+ * `HOLE_MAX_SPEED * min(worldW, worldH)` with `worldW/H = designWidth/Height * WORLD_MAP_VIEW_MULTIPLIER`.
+ * `holeVnX/Y` are chosen so X/Y pan match that cap (isotropic on screen).
  */
-export const HOLE_MAX_SPEED = 0.2;
+export const HOLE_MAX_SPEED = 0.15;
 /**
  * Cursor offset from click (norm) at which speed reaches HOLE_MAX_SPEED.
  * Closer = slower, farther (up to this) = faster.
  */
-export const HOLE_STICK_RANGE = 0.22;
+export const HOLE_STICK_RANGE = 0.13;
 /** Below this offset from click, treat as no deflection (hole stops). */
 export const HOLE_STICK_DEAD_ZONE = 0.008;
 /** After release, velocity decay (~per second). */
@@ -95,28 +97,42 @@ function clampMapToBounds(x, b) {
 
 /**
  * While dragging: velocity from (cursor − click): longer offset → higher speed (capped).
+ * Stick direction and dead zone use pixel-isotropic space; map speeds match screen pan in px/s.
  * Mouse can stand still at an offset — hole keeps moving at that speed.
  * @param {GameState} state
  * @param {number} dt
+ * @param {ReturnType<import('./viewport.js').computeLayout>} layout
  */
-export function stepHolePhysics(state, dt) {
+export function stepHolePhysics(state, dt, layout) {
   const h = Math.min(dt, 1 / 30);
+  const vw = layout.designWidth;
+  const vh = layout.designHeight;
+  const m = WORLD_MAP_VIEW_MULTIPLIER;
+  const worldW = Math.max(vw * m, 1e-6);
+  const worldH = Math.max(vh * m, 1e-6);
+  const minWorldSpan = Math.max(Math.min(worldW, worldH), 1e-6);
+  const pixelMax = HOLE_MAX_SPEED * minWorldSpan;
+  const minCss = Math.max(Math.min(vw, vh), 1e-6);
+  const deadPx = HOLE_STICK_DEAD_ZONE * minCss;
+  const rangePx = HOLE_STICK_RANGE * minCss;
 
   if (state.dragging) {
     const sx = state.pointerTargetNx - state.controlCenterNx;
     const sy = state.pointerTargetNy - state.controlCenterNy;
-    const dist = Math.hypot(sx, sy);
+    const dxPx = sx * vw;
+    const dyPx = sy * vh;
+    const distPx = Math.hypot(dxPx, dyPx);
 
-    if (dist < HOLE_STICK_DEAD_ZONE) {
+    if (distPx < deadPx) {
       state.holeVnX = 0;
       state.holeVnY = 0;
     } else {
-      const ux = sx / dist;
-      const uy = sy / dist;
-      const tilt = Math.min(1, dist / HOLE_STICK_RANGE);
-      const speed = HOLE_MAX_SPEED * tilt;
-      state.holeVnX = ux * speed;
-      state.holeVnY = uy * speed;
+      const ux = dxPx / distPx;
+      const uy = dyPx / distPx;
+      const tilt = Math.min(1, distPx / rangePx);
+      const pixPerSec = pixelMax * tilt;
+      state.holeVnX = (ux * pixPerSec) / worldW;
+      state.holeVnY = (uy * pixPerSec) / worldH;
     }
 
     state.mapNx += state.holeVnX * h;

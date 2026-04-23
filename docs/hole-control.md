@@ -14,19 +14,22 @@
 \vec{s} = (pointer - controlCenter)
 \]
 
-- **Направление** движения дыры совпадает с направлением \(\vec{s}\).
-- **Модуль скорости** зависит только от **длины** отклонения `dist = |\vec{s}|`, а не от того, движется ли мышь в данный кадр: если курсор **стоит** на том же смещении от клика, дыра **продолжает** двигаться с той же скоростью.
+- **Направление** движения дыры совпадает с направлением отклонения **в пикселях** \((s_x \cdot v_w,\, s_y \cdot v_h)\), где \(v_w, v_h\) — `layout.designWidth/Height` (изотропный круг «стика» на экране).
+- **Модуль скорости** зависит только от **длины** этого пиксельного отклонения, а не от того, движется ли мышь в данный кадр: если курсор **стоит** на том же смещении от клика, дыра **продолжает** двигаться с той же скоростью.
 
 Дыра **не** притягивается к экранной позиции курсора как к цели на поле; используется только вектор «клик → курсор».
 
 ## Формула скорости
 
-1. Если `dist < HOLE_STICK_DEAD_ZONE` — считаем стик в нейтрали, скорость дыры **0**.
-2. Иначе:
-   - единичный вектор направления: `(ux, uy) = s / dist`;
-   - «наклон» стика: `tilt = min(1, dist / HOLE_STICK_RANGE)` (линейно от 0 до 1);
-   - скорость: `speed = HOLE_MAX_SPEED * tilt`;
-   - скорость дыры: `holeVnX = ux * speed`, `holeVnY = uy * speed`.
+Пусть `worldW = designWidth * m`, `worldH = designHeight * m`, `m = WORLD_MAP_VIEW_MULTIPLIER`, `minSpan = min(worldW, worldH)`, `minCss = min(designWidth, designHeight)`.
+
+1. Пиксельное смещение стика: `(dx, dy) = (s_x * designWidth, s_y * designHeight)`, `distPx = hypot(dx, dy)`.
+2. Если `distPx < HOLE_STICK_DEAD_ZONE * minCss` — нейтраль, скорость **0**.
+3. Иначе:
+   - направление на экране: `(ux, uy) = (dx, dy) / distPx`;
+   - `tilt = min(1, distPx / (HOLE_STICK_RANGE * minCss))`;
+   - `pixPerSec = HOLE_MAX_SPEED * minSpan * tilt` — одинаковая скорость сдвига поля в px/s по осям при полном наклоне;
+   - скорость на карте: `holeVnX = ux * pixPerSec / worldW`, `holeVnY = uy * pixPerSec / worldH` (согласовано с `setScroll` в `createPlayfield.js`).
 
 Интеграция позиции на **карте**: `map += holeVn * dt` (с ограничением `dt` в коде).
 
@@ -34,9 +37,9 @@
 
 | Константа | Смысл |
 |-----------|--------|
-| `HOLE_MAX_SPEED` | Максимальный модуль скорости дыры (норм. координат / с) при полном отклонении. |
-| `HOLE_STICK_RANGE` | Отклонение курсора от клика (в тех же норм. единицах), при котором достигается полная скорость. |
-| `HOLE_STICK_DEAD_ZONE` | Радиус «мёртвой зоны» у точки клика: меньше — как нулевой ввод. |
+| `HOLE_MAX_SPEED` | Множитель: при полном наклоне сдвиг поля в px/s по экрану не больше `HOLE_MAX_SPEED * min(worldW, worldH)`. |
+| `HOLE_STICK_RANGE` | Множитель к `min(designWidth, designHeight)`: пиксельное смещение до насыщения скорости. |
+| `HOLE_STICK_DEAD_ZONE` | Множитель к `min(designWidth, designHeight)`: радиус мёртвой зоны в px. |
 | `HOLE_RELEASE_FRICTION` | После отпускания ЛКМ — экспоненциальное затухание скорости (~за секунду). |
 | `WORLD_MAP_VIEW_MULTIPLIER` | Размер карты: на сколько раз больше вьюпорта по каждой оси ([`constants.js`](../src/core/constants.js)). Границы `mapN` согласованы с ним, чтобы вью оставался в зоне поля. |
 | `getMapPositionBounds01()` | Диапазон \([1/(2m), 1-1/(2m)]\) для `mapNx/Y`. |
@@ -54,7 +57,7 @@
 
 1. **`beginPointerDrag(state, nx, ny)`** — `pointerdown`: записать центр, сбросить скорость.
 2. **`setPointerTarget(state, nx, ny)`** — `pointermove` при захвате: обновить курсор.
-3. **`stepHolePhysics(state, dt)`** — каждый кадр: пересчитать скорость и позицию.
+3. **`stepHolePhysics(state, dt, layout)`** — каждый кадр: пересчитать скорость и позицию (нужен актуальный layout для изотропии в px).
 4. **`endPointerDrag(state)`** — `pointerup`: выключить режим стика; скорость гасится по `HOLE_RELEASE_FRICTION`.
 
 ## Границы поля
