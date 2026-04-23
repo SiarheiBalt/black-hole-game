@@ -42,8 +42,8 @@ import {
 
 /**
  * @typedef {Object} CreateHoleViewOptions
- * @property {boolean} [collectibleMoneyShadows=false] — cast/receive shadow map для мешей `planar` (PNG); обычно выкл.
- * @property {boolean} [planarCollectibleFall=true] — для `planar`: падение + масштаб + слабый плавный наклон (без шарового кручения).
+ * @property {boolean} [collectibleMoneyShadows=false] — cast/receive shadow map для плоских PNG (`planar`, `trump`, `poop`); обычно выкл.
+ * @property {boolean} [planarCollectibleFall=true] — для плоских kind (`planar`, `trump`, `poop`): падение + масштаб + спин по Y.
  */
 
 /**
@@ -110,14 +110,36 @@ export async function createHoleView(container, options = {}) {
   });
 
   const moneyUrl = new URL('../../assets/money.png', import.meta.url).href;
-  const moneyTex = await new Promise((resolve, reject) => {
-    new TextureLoader().load(moneyUrl, resolve, undefined, reject);
-  });
+  const trumpUrl = new URL('../../assets/trump.png', import.meta.url).href;
+  const poopUrl = new URL('../../assets/poop.png', import.meta.url).href;
+  const [moneyTex, trumpTex, poopTex] = await Promise.all([
+    new Promise((resolve, reject) => {
+      new TextureLoader().load(moneyUrl, resolve, undefined, reject);
+    }),
+    new Promise((resolve, reject) => {
+      new TextureLoader().load(trumpUrl, resolve, undefined, reject);
+    }),
+    new Promise((resolve, reject) => {
+      new TextureLoader().load(poopUrl, resolve, undefined, reject);
+    }),
+  ]);
   moneyTex.colorSpace = SRGBColorSpace;
-  const img = /** @type {HTMLImageElement | undefined} */ (moneyTex.image);
+  trumpTex.colorSpace = SRGBColorSpace;
+  poopTex.colorSpace = SRGBColorSpace;
+  const moneyImg = /** @type {HTMLImageElement | undefined} */ (moneyTex.image);
   const texAspect =
-    img?.naturalWidth && img?.naturalHeight
-      ? img.naturalWidth / img.naturalHeight
+    moneyImg?.naturalWidth && moneyImg?.naturalHeight
+      ? moneyImg.naturalWidth / moneyImg.naturalHeight
+      : 1;
+  const trumpImg = /** @type {HTMLImageElement | undefined} */ (trumpTex.image);
+  const trumpAspect =
+    trumpImg?.naturalWidth && trumpImg?.naturalHeight
+      ? trumpImg.naturalWidth / trumpImg.naturalHeight
+      : 1;
+  const poopImg = /** @type {HTMLImageElement | undefined} */ (poopTex.image);
+  const poopAspect =
+    poopImg?.naturalWidth && poopImg?.naturalHeight
+      ? poopImg.naturalWidth / poopImg.naturalHeight
       : 1;
 
   const moneyGeom = new PlaneGeometry(1, 1);
@@ -128,6 +150,29 @@ export async function createHoleView(container, options = {}) {
     depthTest: false,
     side: DoubleSide,
   });
+  const trumpMat = new MeshBasicMaterial({
+    map: trumpTex,
+    transparent: true,
+    depthWrite: false,
+    depthTest: false,
+    side: DoubleSide,
+  });
+  const poopMat = new MeshBasicMaterial({
+    map: poopTex,
+    transparent: true,
+    depthWrite: false,
+    depthTest: false,
+    side: DoubleSide,
+  });
+
+  /**
+   * @param {import('../../core/collectibleState.js').CollectibleItem} item
+   */
+  function planarSpriteAspect(item) {
+    if (item.kind === 'trump') return trumpAspect;
+    if (item.kind === 'poop') return poopAspect;
+    return texAspect;
+  }
 
   /**
    * @param {import('../../core/collectibleState.js').CollectibleItem['kind']} kind
@@ -144,6 +189,26 @@ export async function createHoleView(container, options = {}) {
       const m = new Mesh(moneyGeom, moneyMat);
       m.rotation.x = -Math.PI / 2;
       m.scale.set(texAspect, 1, 1);
+      m.frustumCulled = false;
+      m.castShadow = collectibleMoneyShadows;
+      m.receiveShadow = collectibleMoneyShadows;
+      m.renderOrder = 2;
+      return m;
+    }
+    if (kind === 'trump') {
+      const m = new Mesh(moneyGeom, trumpMat);
+      m.rotation.x = -Math.PI / 2;
+      m.scale.set(trumpAspect, 1, 1);
+      m.frustumCulled = false;
+      m.castShadow = collectibleMoneyShadows;
+      m.receiveShadow = collectibleMoneyShadows;
+      m.renderOrder = 2;
+      return m;
+    }
+    if (kind === 'poop') {
+      const m = new Mesh(moneyGeom, poopMat);
+      m.rotation.x = -Math.PI / 2;
+      m.scale.set(poopAspect, 1, 1);
       m.frustumCulled = false;
       m.castShadow = collectibleMoneyShadows;
       m.receiveShadow = collectibleMoneyShadows;
@@ -321,7 +386,7 @@ export async function createHoleView(container, options = {}) {
       }
       setCollectibleMeshRenderOrder(objGroup, COLLECTIBLE_RENDER_ORDER_IDLE);
       if (objMesh && isPlanarCollectibleKind(item.kind)) {
-        objMesh.scale.set(texAspect, 1, 1);
+        objMesh.scale.set(planarSpriteAspect(item), 1, 1);
       } else if (objMesh) {
         objMesh.scale.set(1, 1, 1);
       }
@@ -366,7 +431,7 @@ export async function createHoleView(container, options = {}) {
       objGroup.position.set(fsx * pull + sideX, y, fsz * pull + sideZ);
       if (objMesh) {
         if (isPlanarCollectibleKind(item.kind)) {
-          objMesh.scale.set(texAspect, 1, 1);
+          objMesh.scale.set(planarSpriteAspect(item), 1, 1);
         } else {
           objMesh.scale.set(1, 1, 1);
         }
@@ -467,6 +532,10 @@ export async function createHoleView(container, options = {}) {
       moneyGeom.dispose();
       moneyMat.dispose();
       moneyTex.dispose();
+      trumpMat.dispose();
+      trumpTex.dispose();
+      poopMat.dispose();
+      poopTex.dispose();
       renderer.dispose();
       coreGeom.dispose();
       rimGeom.dispose();

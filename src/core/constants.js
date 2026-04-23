@@ -24,22 +24,41 @@ export const HOLE_BALL_EAT_INNER = 0.78;
 export const COLLECTIBLE_SPHERE_COUNT = 30;
 /** Деньги: внешнее кольцо (дальше от центра, «за» шарами). */
 export const COLLECTIBLE_MONEY_COUNT = 40;
-/** Всего слотов = сферы + деньги. */
+/** Портреты `trump.png`: четыре угла внутри кольца сфер. */
+export const COLLECTIBLE_TRUMP_COUNT = 4;
+/** `poop.png`: два слота **снаружи** кольца денег, по горизонтали (0° и 180°). */
+export const COLLECTIBLE_POOP_COUNT = 2;
+/** Всего слотов = сферы + деньги + trump + poop. */
 export const COLLECTIBLE_COUNT =
-  COLLECTIBLE_SPHERE_COUNT + COLLECTIBLE_MONEY_COUNT;
+  COLLECTIBLE_SPHERE_COUNT +
+  COLLECTIBLE_MONEY_COUNT +
+  COLLECTIBLE_TRUMP_COUNT +
+  COLLECTIBLE_POOP_COUNT;
 /**
  * Радиус внутреннего круга (сферы): доля min(ширина, высота).
  */
 export const COLLECTIBLE_CIRCLE_R01 = 0.38;
 /**
+ * Радиус круга для `trump`: внутри кольца сфер, доля min стороны; меньше {@link COLLECTIBLE_CIRCLE_R01}.
+ */
+export const COLLECTIBLE_TRUMP_CIRCLE_R01 = 0.26;
+/**
  * Радиус внешнего круга (`planar` / деньги), доля min стороны; больше {@link COLLECTIBLE_CIRCLE_R01}.
  * Согласован с {@link WORLD_MAP_VIEW_MULTIPLIER}, чтобы `mapN` оставались в полосе `getMapPositionBounds01`.
  */
 export const COLLECTIBLE_MONEY_CIRCLE_R01 = 0.54;
+/**
+ * Радиус круга для `poop`: снаружи денег; верхний предел ~`(m−1)/2` при `m =` {@link WORLD_MAP_VIEW_MULTIPLIER}.
+ */
+export const COLLECTIBLE_POOP_CIRCLE_R01 = 0.68;
 /** Базовый радиус объекта (сферы): доля min(ширина, высота). */
 export const COLLECTIBLE_RADIUS_01 = 0.023;
 /** Размер объектов `planar` на карте (доля min стороны), крупнее сфер; демо — кольцо денег. */
 export const COLLECTIBLE_MONEY_RADIUS_01 = 0.09;
+/** Размер спрайтов `trump` (доля min стороны). */
+export const COLLECTIBLE_TRUMP_RADIUS_01 = 0.085;
+/** Размер спрайтов `poop` (доля min стороны). */
+export const COLLECTIBLE_POOP_RADIUS_01 = 0.085;
 /** Скорость анимации поглощения: рост `t` 0→1 в фазе `falling` (~1/значение ≈ длительность в сек). */
 export const COLLECTIBLE_FALL_SPEED = 2.05;
 /**
@@ -61,7 +80,7 @@ export const DECOR_SEED = 42;
  * World size = viewport size × this (each axis). Logical hole moves on this map; the Pixi
  * playfield scrolls so the hole stays visually centered (Three.js layer).
  */
-export const WORLD_MAP_VIEW_MULTIPLIER = 2.2;
+export const WORLD_MAP_VIEW_MULTIPLIER = 2.4;
 
 /**
  * For a world that is m× the viewport, the hole (camera center) can only use the inner

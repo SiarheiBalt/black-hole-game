@@ -5,17 +5,23 @@ import {
   HOLE_BALL_EAT_INNER,
   COLLECTIBLE_RADIUS_01,
   COLLECTIBLE_MONEY_RADIUS_01,
+  COLLECTIBLE_TRUMP_RADIUS_01,
+  COLLECTIBLE_POOP_RADIUS_01,
   COLLECTIBLE_FALL_SPEED,
   COLLECTIBLE_CIRCLE_R01,
   COLLECTIBLE_MONEY_CIRCLE_R01,
+  COLLECTIBLE_TRUMP_CIRCLE_R01,
+  COLLECTIBLE_POOP_CIRCLE_R01,
   COLLECTIBLE_SPHERE_COUNT,
   COLLECTIBLE_MONEY_COUNT,
+  COLLECTIBLE_TRUMP_COUNT,
+  COLLECTIBLE_POOP_COUNT,
   COLLECTIBLE_COUNT,
 } from './constants.js';
 
 /**
- * @typedef {'sphere' | 'box' | 'planar'} CollectibleKind
- * — `planar`: плоский спрайт на XZ (сейчас ассет [`money.png`](../assets/money.png) в рендере), отдельная анимация падения (слабый наклон).
+ * @typedef {'sphere' | 'box' | 'planar' | 'trump' | 'poop'} CollectibleKind
+ * — `planar`: [`money.png`](../assets/money.png); `trump` / `poop`: свои PNG; плоский рендер и падение как у `planar`.
  * `box` зарезервирован.
  */
 
@@ -25,17 +31,26 @@ import {
  * @returns {boolean}
  */
 export function isPlanarCollectibleKind(kind) {
-  return kind === 'planar';
+  return kind === 'planar' || kind === 'trump' || kind === 'poop';
 }
 
 /**
  * Тип предмета для слота по индексу (должен совпадать с раскладкой в `getCollectibleItems`).
- * Сначала все сферы (внутреннее кольцо), затем `planar` (внешнее кольцо, деньги).
+ * Сферы → `planar` (деньги) → `trump` → `poop` (вне кольца денег).
  * @param {number} index
  * @returns {CollectibleKind}
  */
 export function getCollectibleSlotKind(index) {
-  return index < COLLECTIBLE_SPHERE_COUNT ? 'sphere' : 'planar';
+  if (index < COLLECTIBLE_SPHERE_COUNT) return 'sphere';
+  if (index < COLLECTIBLE_SPHERE_COUNT + COLLECTIBLE_MONEY_COUNT) return 'planar';
+  if (
+    index <
+    COLLECTIBLE_SPHERE_COUNT +
+      COLLECTIBLE_MONEY_COUNT +
+      COLLECTIBLE_TRUMP_COUNT
+  )
+    return 'trump';
+  return 'poop';
 }
 
 /**
@@ -95,6 +110,8 @@ export function getCollectibleItems(layout) {
   const minSide = Math.min(layout.designWidth, layout.designHeight);
   const rSphere = COLLECTIBLE_CIRCLE_R01 * minSide;
   const rMoney = COLLECTIBLE_MONEY_CIRCLE_R01 * minSide;
+  const rTrump = COLLECTIBLE_TRUMP_CIRCLE_R01 * minSide;
+  const rPoop = COLLECTIBLE_POOP_CIRCLE_R01 * minSide;
   const out = /** @type {CollectibleItem[]} */ ([]);
   for (let i = 0; i < COLLECTIBLE_SPHERE_COUNT; i++) {
     const a = (i / COLLECTIBLE_SPHERE_COUNT) * Math.PI * 2;
@@ -119,6 +136,36 @@ export function getCollectibleItems(layout) {
       mapNx: 0.5 + dx / worldW,
       mapNy: 0.5 + dz / worldH,
       radius01: COLLECTIBLE_MONEY_RADIUS_01,
+    });
+  }
+  for (let k = 0; k < COLLECTIBLE_TRUMP_COUNT; k++) {
+    const i = COLLECTIBLE_SPHERE_COUNT + COLLECTIBLE_MONEY_COUNT + k;
+    const a = Math.PI / 4 + k * (Math.PI / 2);
+    const dx = rTrump * Math.cos(a);
+    const dz = rTrump * Math.sin(a);
+    out.push({
+      id: `c-${i}`,
+      kind: 'trump',
+      mapNx: 0.5 + dx / worldW,
+      mapNy: 0.5 + dz / worldH,
+      radius01: COLLECTIBLE_TRUMP_RADIUS_01,
+    });
+  }
+  for (let q = 0; q < COLLECTIBLE_POOP_COUNT; q++) {
+    const i =
+      COLLECTIBLE_SPHERE_COUNT +
+      COLLECTIBLE_MONEY_COUNT +
+      COLLECTIBLE_TRUMP_COUNT +
+      q;
+    const a = q * Math.PI;
+    const dx = rPoop * Math.cos(a);
+    const dz = rPoop * Math.sin(a);
+    out.push({
+      id: `c-${i}`,
+      kind: 'poop',
+      mapNx: 0.5 + dx / worldW,
+      mapNy: 0.5 + dz / worldH,
+      radius01: COLLECTIBLE_POOP_RADIUS_01,
     });
   }
   return out;

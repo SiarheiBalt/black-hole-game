@@ -6,15 +6,17 @@
 
 | id (логический тип) | Файл | `kind` в коде | Описание |
 |---------------------|------|---------------|----------|
-| Деньги / валюта | [`src/assets/money.png`](../src/assets/money.png) | `planar` | В данных — тип **`planar`** (плоский спрайт, своя анимация падения). В демо на этот тип вешается текстура `money.png`: `PlaneGeometry` на XZ, масштаб по соотношению сторон. |
+| Деньги / валюта | [`src/assets/money.png`](../src/assets/money.png) | `planar` | Плоский спрайт на XZ, текстура `money.png`, масштаб по соотношению сторон; та же анимация падения, что у `trump`. |
+| Портрет (демо) | [`src/assets/trump.png`](../src/assets/trump.png) | `trump` | Четыре экземпляра по «углам» внутри кольца сфер: углы квадрата на окружности (`π/4 + k·π/2`), радиус [`COLLECTIBLE_TRUMP_CIRCLE_R01`](../src/core/constants.js). Рендер как у `planar`, отдельная текстура в [`createHoleView`](../src/render/three/createHoleView.js). |
+| «Какашка» (демо) | [`src/assets/poop.png`](../src/assets/poop.png) | `poop` | Два экземпляра **снаружи** кольца денег ([`COLLECTIBLE_POOP_CIRCLE_R01`](../src/core/constants.js) > [`COLLECTIBLE_MONEY_CIRCLE_R01`](../src/core/constants.js)), по **горизонтали**: углы `0` и `π`. Рендер как у `trump`. |
 
-Демо-раскладка: два кольца в [`getCollectibleItems`](../src/core/collectibleState.js) — внутри [`COLLECTIBLE_SPHERE_COUNT`](../src/core/constants.js) сфер с радиусом [`COLLECTIBLE_CIRCLE_R01`](../src/core/constants.js), снаружи [`COLLECTIBLE_MONEY_COUNT`](../src/core/constants.js) объектов **`planar`** (кольцо денег) на большем радиусе [`COLLECTIBLE_MONEY_CIRCLE_R01`](../src/core/constants.js). Индекс `i < COLLECTIBLE_SPHERE_COUNT` → `'sphere'`, иначе `'planar'` ([`getCollectibleSlotKind`](../src/core/collectibleState.js)). Проверка «плоский тип»: [`isPlanarCollectibleKind`](../src/core/collectibleState.js).
+Демо-раскладка в [`getCollectibleItems`](../src/core/collectibleState.js): сферы; кольцо денег; внутри кольца сфер — только [`COLLECTIBLE_TRUMP_COUNT`](../src/core/constants.js) **`trump`**; [`COLLECTIBLE_POOP_COUNT`](../src/core/constants.js) **`poop`** на отдельном **внешнем** радиусе [`COLLECTIBLE_POOP_CIRCLE_R01`](../src/core/constants.js). [`getCollectibleSlotKind`](../src/core/collectibleState.js): сферы → `planar` → `trump` → `poop`. Плоские: [`isPlanarCollectibleKind`](../src/core/collectibleState.js) (`planar`, `trump`, `poop`).
 
 ## Два уровня данных
 
 1. **`CollectibleItem`** — описание **экземпляра** на уровне: не меняется в рантайме.
    - `id` — строка, удобна для сейвов, аналитики, сопоставления с UI.
-   - `kind` — тип визуала/коллайдера: `'sphere'`, `'planar'` (плоский спрайт; в демо — [`money.png`](../src/assets/money.png)); зарезервировано `'box'`.
+   - `kind` — тип визуала/коллайдера: `'sphere'`, `'planar'` ([`money.png`](../src/assets/money.png)), `'trump'`, `'poop'`; зарезервировано `'box'`.
    - `mapNx`, `mapNy` — позиция на **логической карте** в \([0,1]^2\), в том же пространстве, что `gameState.mapNx` / `mapNy`.
    - `radius01` (опционально) — «радиус» объекта как доля `min(ширина, высота)` дизайн-макета; если не задан, берётся [`COLLECTIBLE_RADIUS_01`](../src/core/constants.js).
 
@@ -38,12 +40,14 @@ getCollectibleZoneSummary(runs)
 
 ## Раскладка на уровне
 
-Функция **`getCollectibleItems(layout)`** строит список предметов **каждый кадр** (и при смене размера вьюпорта): **два концентрических круга**, центр \((0.5, 0.5)\) на карте.
+Функция **`getCollectibleItems(layout)`** строит список предметов **каждый кадр** (и при смене размера вьюпорта); центр \((0.5, 0.5)\) на карте.
 
 - **Сферы** (`i = 0 … COLLECTIBLE_SPHERE_COUNT − 1`): `a = 2π · i / COLLECTIBLE_SPHERE_COUNT`, `rWorld = COLLECTIBLE_CIRCLE_R01 · minSide`.
 - **`planar`** (`j = 0 … COLLECTIBLE_MONEY_COUNT − 1`, слот `i = COLLECTIBLE_SPHERE_COUNT + j`): угол со сдвигом полушага `a = 2π · (j + 0.5) / COLLECTIBLE_MONEY_COUNT`; `rWorld = COLLECTIBLE_MONEY_CIRCLE_R01 · minSide`.
+- **`trump`** (`k = 0 … 3`, слот после денег): `a = π/4 + k · π/2` (углы «квадрата» на окружности); `rWorld = COLLECTIBLE_TRUMP_CIRCLE_R01 · minSide`.
+- **`poop`** (`q = 0 … 1`, после trump): `a = q · π`; `rWorld = COLLECTIBLE_POOP_CIRCLE_R01 · minSide` (кольцо **шире**, чем у денег).
 
-Далее `mapNx = 0.5 + dx / worldW`, `mapNy = 0.5 + dz / worldH`, где `worldW/H` = `designWidth/Height ×` [`WORLD_MAP_VIEW_MULTIPLIER`](../src/core/constants.js). Радиус внешнего кольца [`COLLECTIBLE_MONEY_CIRCLE_R01`](../src/core/constants.js) согласован с `m = WORLD_MAP_VIEW_MULTIPLIER`, чтобы слоты оставались в полосе [`getMapPositionBounds01()`](../src/core/constants.js) (см. также [`hole-control.md`](hole-control.md)).
+Далее `mapNx = 0.5 + dx / worldW`, `mapNy = 0.5 + dz / worldH`, где `worldW/H` = `designWidth/Height ×` [`WORLD_MAP_VIEW_MULTIPLIER`](../src/core/constants.js). Радиусы [`COLLECTIBLE_MONEY_CIRCLE_R01`](../src/core/constants.js) и [`COLLECTIBLE_POOP_CIRCLE_R01`](../src/core/constants.js) согласованы с `m`, чтобы слоты оставались в полосе [`getMapPositionBounds01()`](../src/core/constants.js) (см. также [`hole-control.md`](hole-control.md)).
 
 Идентификаторы сейчас вида `c-0` … `c-(N-1)`.
 
@@ -66,9 +70,9 @@ getCollectibleZoneSummary(runs)
 
 ## Рендер
 
-В [`createHoleView.js`](../src/render/three/createHoleView.js) у каждого индекса — группа `Group` с мешем. Для `kind === 'sphere'` — общая `SphereGeometry` и `MeshStandardMaterial`. Для `kind === 'planar'` — общая `PlaneGeometry` с `MeshBasicMaterial` (сейчас карта `money.png`, прозрачность, `SRGBColorSpace`), плоскость на XZ; высота центра в покое ниже (`idleCenterY`). При падении для `planar` (`planarCollectibleFall`): та же траектория и `sc` по `p`, что у сфер; масштаб на **группе** (`rObj·sc`), у меша снова `(texAspect, 1, 1)`. Поворот только вокруг **мировой Y** (спин в плоскости пола, амплитуда в коде `createHoleView`, порядка 0.7 rad) — наклон по X/Z при почти верхней камере давал бы «ребро» и мгновенное исчезновение. У материала денег `depthTest: false`, у меша `frustumCulled: false`. Порядок отрисовки: `COLLECTIBLE_RENDER_ORDER_*` на группе и мешах. Опция `collectibleMoneyShadows` (по умолчанию `false`) — тени у мешей `planar`. `planarCollectibleFall: false` отключает спин: для `planar` вращение `(0,0,0)` (не то же кручение, что у сфер).
+В [`createHoleView.js`](../src/render/three/createHoleView.js) у каждого индекса — группа `Group` с мешем. Для `kind === 'sphere'` — общая `SphereGeometry` и `MeshStandardMaterial`. Для плоских PNG (`planar`, `trump`, `poop`) — общая `PlaneGeometry` с отдельными `MeshBasicMaterial` и текстурами (`money.png`, `trump.png`, `poop.png`), плоскость на XZ; высота центра в покое ниже (`idleCenterY`). При падении (`planarCollectibleFall`): та же траектория и `sc` по `p`, что у сфер; масштаб на **группе** (`rObj·sc`), у меша снова `(aspect, 1, 1)` — своё соотношение сторон на kind. Поворот только вокруг **мировой Y** (спин). У материалов `depthTest: false`, у мешей `frustumCulled: false`. Опция `collectibleMoneyShadows` — тени у плоских мешей. `planarCollectibleFall: false` отключает спин для плоских kind.
 
-**Расширение:** новый плоский ассет — по-прежнему `kind: 'planar'` и ветка в `makeObjectMesh`; при другой текстуре — расширить загрузку/маппинг в `createHoleView` (или завести подтип позже).
+**Расширение:** ещё один плоский ассет — либо новый `kind` + ветка и текстура в `createHoleView`, либо обобщение загрузки по таблице `kind → url`.
 
 ## Константы ([`constants.js`](../src/core/constants.js))
 
@@ -76,9 +80,15 @@ getCollectibleZoneSummary(runs)
 |-----|--------|
 | `COLLECTIBLE_SPHERE_COUNT` | Число сфер (внутреннее кольцо) |
 | `COLLECTIBLE_MONEY_COUNT` | Число объектов `planar` на внешнем кольце (демо — деньги) |
-| `COLLECTIBLE_COUNT` | Всего слотов (`SPHERE` + `MONEY`) |
+| `COLLECTIBLE_TRUMP_COUNT` | Число объектов `trump` (демо — четыре угла внутри кольца сфер) |
+| `COLLECTIBLE_POOP_COUNT` | Число объектов `poop` (демо — два по горизонтали, снаружи денег) |
+| `COLLECTIBLE_COUNT` | Всего слотов (`SPHERE` + `MONEY` + `TRUMP` + `POOP`) |
 | `COLLECTIBLE_CIRCLE_R01` | Радиус внутреннего круга (сферы) |
-| `COLLECTIBLE_MONEY_CIRCLE_R01` | Радиус внешнего круга (`planar` / деньги); подбирать вместе с `WORLD_MAP_VIEW_MULTIPLIER` |
+| `COLLECTIBLE_TRUMP_CIRCLE_R01` | Радиус круга для `trump` (меньше кольца сфер) |
+| `COLLECTIBLE_MONEY_CIRCLE_R01` | Радиус круга `planar` / деньги |
+| `COLLECTIBLE_POOP_CIRCLE_R01` | Радиус круга `poop` (больше кольца денег) |
+| `COLLECTIBLE_TRUMP_RADIUS_01` | Размер спрайтов `trump` на карте |
+| `COLLECTIBLE_POOP_RADIUS_01` | Размер спрайтов `poop` на карте |
 | `WORLD_MAP_VIEW_MULTIPLIER` | Множитель размера мира по осям (`worldW/H`); влияет на раскладку и полосу `mapN` ([`hole-control.md`](hole-control.md)) |
 | `COLLECTIBLE_RADIUS_01` | Базовый размер сферы, если `item.radius01` нет |
 | `COLLECTIBLE_MONEY_RADIUS_01` | Размер `planar` на внешнем кольце (в раскладке задаётся явно) |
