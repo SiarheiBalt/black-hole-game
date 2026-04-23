@@ -20,17 +20,16 @@ export const HOLE_ELLIPSE_Z = 0.92;
 /** Коэффициент внутри радиуса дыры (около границы тёмного ядра) — для проверки «шар внутри дыры». */
 export const HOLE_BALL_EAT_INNER = 0.78;
 
-/** Число шаров, выставляются по кругу (центр 0.5, 0.5). */
-export const BALL_COUNT = 30;
+/** Число собираемых объектов (по кругу, центр 0.5, 0.5). */
+export const COLLECTIBLE_COUNT = 30;
 /**
- * Радиус круга в мире: доля min(ширина, высота) дизайна — шары не слипались.
+ * Радиус круга раскладки: доля min(ширина, высота) — зазор между объектами.
  */
-export const BALL_CIRCLE_R01 = 0.38;
-/** Радиус шара: доля min(ширина, высота) дизайна. */
-export const BALL_RADIUS_01 = 0.023;
-
-/** Скорость анимации поглощения шара (0–1 за сек). */
-export const BALL_FALL_SPEED = 1.25;
+export const COLLECTIBLE_CIRCLE_R01 = 0.38;
+/** Базовый радиус объекта: доля min(ширина, высота). */
+export const COLLECTIBLE_RADIUS_01 = 0.023;
+/** Скорость анимации поглощения (0–1 за сек). */
+export const COLLECTIBLE_FALL_SPEED = 1.25;
 
 /** Procedural decor: count and style. */
 export const DECOR_COUNT = 90;

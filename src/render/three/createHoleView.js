@@ -26,10 +26,10 @@ import {
   HOLE_ELLIPSE_X,
   HOLE_ELLIPSE_Z,
   WORLD_MAP_VIEW_MULTIPLIER,
-  BALL_RADIUS_01,
-  BALL_COUNT,
+  COLLECTIBLE_RADIUS_01,
+  COLLECTIBLE_COUNT,
 } from '../../core/constants.js';
-import { getBallMapPositions } from '../../core/ballState.js';
+import { getCollectibleItems } from '../../core/collectibleState.js';
 
 /**
  * @param {HTMLElement} container
@@ -59,12 +59,10 @@ export function createHoleView(container) {
   const sun = new DirectionalLight(0xfff5e6, 0.85);
   sun.position.set(3.2, 10.5, 2.1);
   sun.castShadow = true;
-  /** Больше разрешения — пикселизация тени не сильна при широком frustum. */
   sun.shadow.mapSize.set(2048, 2048);
   sun.shadow.camera.near = 0.05;
   sun.shadow.camera.far = 200;
   sun.shadow.radius = 3;
-  /** Меньше мерцания/пропаданий бликов на грани направленного света. */
   sun.shadow.normalBias = 0.04;
   sun.shadow.bias = -0.00015;
   sun.target.position.set(0, 0, 0);
@@ -83,26 +81,42 @@ export function createHoleView(container) {
   ground.renderOrder = 0;
   mapLayer.add(ground);
 
-  const ballSeg = 24;
-  const ballGeom = new SphereGeometry(1, ballSeg, ballSeg);
-  const ballMat = new MeshStandardMaterial({
+  const sphereSeg = 24;
+  const sphereGeom = new SphereGeometry(1, sphereSeg, sphereSeg);
+  const sphereMat = new MeshStandardMaterial({
     color: 0x4cc4ff,
     metalness: 0.2,
     roughness: 0.38,
     emissive: 0x0a1a2a,
     emissiveIntensity: 0.08,
   });
+
+  /**
+   * @param {import('../../core/collectibleState.js').CollectibleItem['kind']} kind
+   */
+  function makeObjectMesh(kind) {
+    if (kind === 'sphere') {
+      const m = new Mesh(sphereGeom, sphereMat);
+      m.castShadow = true;
+      m.receiveShadow = true;
+      m.renderOrder = 2;
+      return m;
+    }
+    const m = new Mesh(sphereGeom, sphereMat);
+    m.castShadow = true;
+    m.receiveShadow = true;
+    m.renderOrder = 2;
+    return m;
+  }
+
   /** @type {Group[]} */
-  const ballPivots = [];
-  for (let i = 0; i < BALL_COUNT; i++) {
-    const bMesh = new Mesh(ballGeom, ballMat);
-    bMesh.castShadow = true;
-    bMesh.receiveShadow = true;
-    bMesh.renderOrder = 2;
+  const collectiblePivots = [];
+  for (let i = 0; i < COLLECTIBLE_COUNT; i++) {
+    const mesh = makeObjectMesh('sphere');
     const bg = new Group();
-    bg.add(bMesh);
+    bg.add(mesh);
     mapLayer.add(bg);
-    ballPivots.push(bg);
+    collectiblePivots.push(bg);
   }
 
   const holePivot = new Group();
@@ -172,14 +186,12 @@ export function createHoleView(container) {
   /** @type {ReturnType<typeof import('../../core/viewport.js').computeLayout> | null} */
   let layoutCache = null;
   const ballWobbleBase = 0.38;
-  const fallStartX = new Float32Array(BALL_COUNT);
-  const fallStartZ = new Float32Array(BALL_COUNT);
+  const fallStartX = new Float32Array(COLLECTIBLE_COUNT);
+  const fallStartZ = new Float32Array(COLLECTIBLE_COUNT);
 
   function syncSunShadowToLayout(layout) {
     const w = layout.worldHalfW;
     const h = layout.worldHalfH;
-    // Прямоугольник вида в XZ: половинные размеры w×h. Для наклонного света и квадратного
-    // frustum в shadow map нужен запас — не max(w,h) (рвутся углы), а гипотенуза + margin.
     const halfDiagonal = Math.hypot(w, h);
     const span = halfDiagonal * 2.1;
     const cam = sun.shadow.camera;
@@ -192,8 +204,13 @@ export function createHoleView(container) {
     cam.updateProjectionMatrix();
   }
 
-  function ballWorldR(layout) {
-    return BALL_RADIUS_01 * Math.min(layout.designWidth, layout.designHeight);
+  /**
+   * @param {NonNullable<typeof layoutCache>} layout
+   * @param {import('../../core/collectibleState.js').CollectibleItem} item
+   */
+  function objectWorldR(layout, item) {
+    const r01 = item.radius01 ?? COLLECTIBLE_RADIUS_01;
+    return r01 * Math.min(layout.designWidth, layout.designHeight);
   }
 
   function updateGroundScale(layout) {
@@ -202,25 +219,16 @@ export function createHoleView(container) {
   }
 
   /**
-   * @param {import('../../core/ballState.js').BallState} b
-   * @param {Group} ballGroup
+   * @param {import('../../core/collectibleState.js').CollectibleRunState} b
+   * @param {Group} objGroup
    * @param {number} i
-   * @param {number} mapNx0
-   * @param {number} mapNy0
+   * @param {import('../../core/collectibleState.js').CollectibleItem} item
    * @param {NonNullable<typeof layoutCache>} layout
    * @param {{ mapNx: number, mapNy: number, holeRadius01: number, holeVnX?: number, holeVnY?: number }} g
    */
-  function applyOneBall(
-    b,
-    ballGroup,
-    i,
-    mapNx0,
-    mapNy0,
-    layout,
-    g,
-  ) {
+  function applyOneCollectible(b, objGroup, i, item, layout, g) {
     if (b.phase === 'done') {
-      ballGroup.visible = false;
+      objGroup.visible = false;
       return;
     }
 
@@ -228,32 +236,35 @@ export function createHoleView(container) {
     const worldW = layout.designWidth * m;
     const worldH = layout.designHeight * m;
     const base = Math.min(layout.designWidth, layout.designHeight);
-    const rBall = ballWorldR(layout);
+    const rObj = objectWorldR(layout, item);
     const sHole = g.holeRadius01 * base;
 
-    ballGroup.visible = true;
+    objGroup.visible = true;
     if (b.phase === 'idle' || b.phase === 'falling') {
-      ballGroup.scale.setScalar(rBall);
+      objGroup.scale.setScalar(rObj);
     }
 
+    const mapNx0 = item.mapNx;
+    const mapNy0 = item.mapNy;
+
     if (b.phase === 'idle') {
-      if (ballGroup.parent !== mapLayer) {
-        mapLayer.add(ballGroup);
+      if (objGroup.parent !== mapLayer) {
+        mapLayer.add(objGroup);
       }
       const ox = (mapNx0 - g.mapNx) * worldW;
       const oz = (mapNy0 - g.mapNy) * worldH;
-      ballGroup.position.set(ox, rBall, oz);
-      ballGroup.rotation.set(0, 0, 0);
+      objGroup.position.set(ox, rObj, oz);
+      objGroup.rotation.set(0, 0, 0);
     } else if (b.phase === 'falling') {
-      if (ballGroup.parent !== holePivot) {
-        holePivot.attach(ballGroup);
-        fallStartX[i] = ballGroup.position.x;
-        fallStartZ[i] = ballGroup.position.z;
+      if (objGroup.parent !== holePivot) {
+        holePivot.attach(objGroup);
+        fallStartX[i] = objGroup.position.x;
+        fallStartZ[i] = objGroup.position.z;
       }
       const t = Math.min(1, b.t);
       const p = 1 - (1 - t) ** 2.2;
-      const y0 = rBall;
-      const y1 = -Math.max(0.28 * sHole, 0.12 * rBall) - 0.55 * sHole;
+      const y0 = rObj;
+      const y1 = -Math.max(0.28 * sHole, 0.12 * rObj) - 0.55 * sHole;
       const y = y0 * (1 - p) + y1 * p;
       const sc = 1 * (1 - p) + 0.04 * p;
       const pull = 1 - p;
@@ -274,8 +285,8 @@ export function createHoleView(container) {
       }
       const fsx = fallStartX[i];
       const fsz = fallStartZ[i];
-      ballGroup.position.set(fsx * pull + sideX, y, fsz * pull + sideZ);
-      ballGroup.scale.setScalar(rBall * sc);
+      objGroup.position.set(fsx * pull + sideX, y, fsz * pull + sideZ);
+      objGroup.scale.setScalar(rObj * sc);
       const wobble = (1 - t) * (1 - t);
       const tiltF = 2.6 * wFunnel * wobble;
       const rx =
@@ -283,21 +294,20 @@ export function createHoleView(container) {
       const ry = t * 3.1 + t * t * 2.4;
       const rz =
         Math.sin(t * Math.PI * 2.5 + 0.3) * ballWobbleBase * wobble + vnX * tiltF;
-      ballGroup.rotation.set(rx, ry, rz);
+      objGroup.rotation.set(rx, ry, rz);
     }
   }
 
   /**
-   * @param {import('../../core/ballState.js').BallState[]} ballStates
+   * @param {import('../../core/collectibleState.js').CollectibleRunState[]} runStates
    * @param {NonNullable<typeof layoutCache>} layout
    * @param {{ mapNx: number, mapNy: number, holeRadius01: number, holeVnX?: number, holeVnY?: number }} g
    */
-  function applyBallsVisual(ballStates, layout, g) {
-    if (ballStates.length !== ballPivots.length) return;
-    const pos = getBallMapPositions(layout);
-    for (let i = 0; i < ballPivots.length; i++) {
-      const { mapNx, mapNy } = pos[i];
-      applyOneBall(ballStates[i], ballPivots[i], i, mapNx, mapNy, layout, g);
+  function applyCollectiblesVisual(runStates, layout, g) {
+    if (runStates.length !== collectiblePivots.length) return;
+    const items = getCollectibleItems(layout);
+    for (let i = 0; i < collectiblePivots.length; i++) {
+      applyOneCollectible(runStates[i], collectiblePivots[i], i, items[i], layout, g);
     }
   }
 
@@ -326,11 +336,6 @@ export function createHoleView(container) {
       holePivot.position.set(0, 0, 0);
     },
 
-    /**
-     * @param {number} nx
-     * @param {number} ny
-     * @param {NonNullable<typeof layoutCache>} layout
-     */
     setPointerNorm(nx, ny, layout) {
       const { dx, dy } = containerToDesignNormalized(layout, nx, ny);
       const worldX = (dx - 0.5) * layout.designWidth;
@@ -347,12 +352,12 @@ export function createHoleView(container) {
     },
 
     /**
-     * @param {import('../../core/ballState.js').BallState[]} ballStates
+     * @param {import('../../core/collectibleState.js').CollectibleRunState[]} runStates
      * @param {NonNullable<typeof layoutCache>} layout
      * @param {{ mapNx: number, mapNy: number, holeRadius01: number, holeVnX?: number, holeVnY?: number }} g
      */
-    updateBalls(ballStates, layout, g) {
-      applyBallsVisual(ballStates, layout, g);
+    updateCollectibles(runStates, layout, g) {
+      applyCollectiblesVisual(runStates, layout, g);
     },
 
     render() {
@@ -362,8 +367,8 @@ export function createHoleView(container) {
     dispose() {
       groundGeom.dispose();
       groundMat.dispose();
-      ballGeom.dispose();
-      ballMat.dispose();
+      sphereGeom.dispose();
+      sphereMat.dispose();
       renderer.dispose();
       coreGeom.dispose();
       rimGeom.dispose();

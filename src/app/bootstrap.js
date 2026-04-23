@@ -8,12 +8,12 @@ import {
   endPointerDrag,
 } from '../core/gameState.js';
 import {
-  createBallsState,
-  getBallMapPositions,
-  shouldBallBeConsumed,
-  stepBallFall,
-  BALL_COUNT,
-} from '../core/ballState.js';
+  createCollectibleRunStates,
+  getCollectibleItems,
+  shouldCollectibleBeConsumed,
+  stepCollectibleFall,
+  COLLECTIBLE_COUNT,
+} from '../core/collectibleState.js';
 import { attachPointerDrag } from '../input/pointerDrag.js';
 import { createPlayfield } from '../render/pixi/createPlayfield.js';
 import { createHoleView } from '../render/three/createHoleView.js';
@@ -52,7 +52,7 @@ async function main() {
   holeView.resize(layout);
 
   const state = createGameState();
-  const ballStates = createBallsState();
+  const collectibleRuns = createCollectibleRunStates();
   const c = centerPointerNorm();
   state.mapNx = c.nx;
   state.mapNy = c.ny;
@@ -91,21 +91,20 @@ async function main() {
   app.ticker.add(() => {
     const dt = app.ticker.deltaMS / 1000;
     stepHolePhysics(state, dt);
-    const ballMapPos = getBallMapPositions(layout);
-    for (let i = 0; i < BALL_COUNT; i++) {
-      const { mapNx: bnx, mapNy: bny } = ballMapPos[i];
+    const items = getCollectibleItems(layout);
+    for (let i = 0; i < COLLECTIBLE_COUNT; i++) {
       if (
-        ballStates[i].phase === 'idle' &&
-        shouldBallBeConsumed(state, layout, ballStates[i], bnx, bny)
+        collectibleRuns[i].phase === 'idle' &&
+        shouldCollectibleBeConsumed(state, layout, collectibleRuns[i], items[i])
       ) {
-        ballStates[i].phase = 'falling';
-        ballStates[i].t = 0;
+        collectibleRuns[i].phase = 'falling';
+        collectibleRuns[i].t = 0;
       }
-      stepBallFall(ballStates[i], dt, () => {});
+      stepCollectibleFall(collectibleRuns[i], dt, () => {});
     }
     playfield.setScroll(state.mapNx, state.mapNy, layout);
     holeView.setScreenCentered();
-    holeView.updateBalls(ballStates, layout, {
+    holeView.updateCollectibles(collectibleRuns, layout, {
       mapNx: state.mapNx,
       mapNy: state.mapNy,
       holeRadius01: state.holeRadius01,
