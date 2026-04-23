@@ -5,6 +5,7 @@ import {
   DECOR_COUNT,
   DECOR_SEED,
   WORLD_MAP_VIEW_MULTIPLIER,
+  getMapPositionBounds01,
 } from '../../core/constants.js';
 
 /** Mulberry32 */
@@ -86,8 +87,11 @@ export function createPlayfield(app) {
       const { designWidth: vw, designHeight: vh } = layout;
       const worldW = vw * m;
       const worldH = vh * m;
-      const px = mapNx * worldW;
-      const py = mapNy * worldH;
+      const { min, max } = getMapPositionBounds01();
+      const nx = Math.max(min, Math.min(max, mapNx));
+      const ny = Math.max(min, Math.min(max, mapNy));
+      const px = nx * worldW;
+      const py = ny * worldH;
       worldRoot.position.set(vw / 2 - px, vh / 2 - py);
     },
     getLayout() {

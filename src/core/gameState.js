@@ -6,9 +6,13 @@
  * Пока курсор не двигается, но смещение от клика сохраняется — дыра продолжает двигаться с той же скоростью.
  *
  * Подробнее: {@link ../../docs/hole-control.md}
- *
+ */
+
+import { getMapPositionBounds01 } from './constants.js';
+
+/**
  * @typedef {Object} GameState
- * @property {number} mapNx — позиция дыры на карте, норм. [0,1] (см. WORLD_MAP_VIEW_MULTIPLIER)
+ * @property {number} mapNx — позиция на карте, норм. [min,max] из getMapPositionBounds01()
  * @property {number} mapNy
  * @property {number} holeVnX — скорость дыры (норм./с); после отпускания гасится трением
  * @property {number} holeVnY
@@ -85,8 +89,8 @@ export function setPointerTarget(state, nx, ny) {
   state.pointerTargetNy = ny;
 }
 
-function clamp01(x) {
-  return Math.max(0, Math.min(1, x));
+function clampMapToBounds(x, b) {
+  return Math.max(b.min, Math.min(b.max, x));
 }
 
 /**
@@ -125,9 +129,10 @@ export function stepHolePhysics(state, dt) {
     state.mapNy += state.holeVnY * h;
   }
 
-  state.mapNx = clamp01(state.mapNx);
-  state.mapNy = clamp01(state.mapNy);
+  const b = getMapPositionBounds01();
+  state.mapNx = clampMapToBounds(state.mapNx, b);
+  state.mapNy = clampMapToBounds(state.mapNy, b);
 
-  if (state.mapNx <= 0 || state.mapNx >= 1) state.holeVnX = 0;
-  if (state.mapNy <= 0 || state.mapNy >= 1) state.holeVnY = 0;
+  if (state.mapNx <= b.min || state.mapNx >= b.max) state.holeVnX = 0;
+  if (state.mapNy <= b.min || state.mapNy >= b.max) state.holeVnY = 0;
 }

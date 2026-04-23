@@ -14,6 +14,7 @@ import {
   HOLE_RING_COLOR,
   HOLE_CORE_COLOR,
   HOLE_INNER_RIM,
+  HOLE_OUTLINE_COLOR,
 } from '../../core/constants.js';
 
 /**
@@ -42,7 +43,17 @@ export function createHoleView(container) {
   const ELLIPSE_Z = 0.92;
 
   const radialSeg = 64;
-  const coreGeom = new CircleGeometry(0.68, radialSeg);
+  /** Local space: colored rim ends here; dark outline can extend past this. */
+  const R_OUT = 1;
+  /** Outer stroke [R_OUT, R_OUTLINE] — thin ring on the field. */
+  const R_OUTLINE = 1.02;
+  /** Lower = slightly wider colored rim (1 − R_COLOR_IN). */
+  const R_COLOR_IN = 0.79;
+  const R_CORE = R_COLOR_IN;
+  const innerRimGeom = new RingGeometry(0.75, R_COLOR_IN, radialSeg);
+  const rimGeom = new RingGeometry(R_COLOR_IN, R_OUT, radialSeg);
+  const outlineGeom = new RingGeometry(R_OUT, R_OUTLINE, radialSeg);
+  const coreGeom = new CircleGeometry(R_CORE, radialSeg);
   const coreMat = new MeshBasicMaterial({
     color: HOLE_CORE_COLOR,
     side: DoubleSide,
@@ -53,7 +64,6 @@ export function createHoleView(container) {
   core.position.y = 0.002;
   core.renderOrder = 1;
 
-  const rimGeom = new RingGeometry(0.68, 1, radialSeg);
   const rimMat = new MeshBasicMaterial({
     color: HOLE_RING_COLOR,
     side: DoubleSide,
@@ -64,7 +74,6 @@ export function createHoleView(container) {
   rim.position.y = 0.004;
   rim.renderOrder = 2;
 
-  const innerRimGeom = new RingGeometry(0.62, 0.68, radialSeg);
   const innerRimMat = new MeshBasicMaterial({
     color: HOLE_INNER_RIM,
     side: DoubleSide,
@@ -75,9 +84,20 @@ export function createHoleView(container) {
   innerRim.position.y = 0.003;
   innerRim.renderOrder = 1;
 
+  const outlineMat = new MeshBasicMaterial({
+    color: HOLE_OUTLINE_COLOR,
+    side: DoubleSide,
+    depthWrite: false,
+  });
+  const outline = new Mesh(outlineGeom, outlineMat);
+  outline.rotation.x = -Math.PI / 2;
+  outline.position.y = 0.005;
+  outline.renderOrder = 3;
+
   holeVisual.add(core);
   holeVisual.add(innerRim);
   holeVisual.add(rim);
+  holeVisual.add(outline);
   holePivot.add(holeVisual);
   scene.add(holePivot);
 
@@ -140,9 +160,11 @@ export function createHoleView(container) {
       coreGeom.dispose();
       rimGeom.dispose();
       innerRimGeom.dispose();
+      outlineGeom.dispose();
       coreMat.dispose();
       rimMat.dispose();
       innerRimMat.dispose();
+      outlineMat.dispose();
       renderer.domElement.remove();
     },
   };
