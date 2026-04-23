@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "three-js": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "threejs-devtools-mcp"
+      ]
+    }
+  }
+}

@@ -12,7 +12,8 @@
   "license": "ISC",
   "dependencies": {
     "howler": "^2.2.4",
-    "pixi.js": "^8.17.1"
+    "pixi.js": "^8.17.1",
+    "three": "^0.172.0"
   },
   "devDependencies": {
     "@pixi/devtools": "^2.0.1",
