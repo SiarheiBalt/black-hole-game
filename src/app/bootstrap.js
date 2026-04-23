@@ -17,6 +17,7 @@ import {
 import { attachPointerDrag } from '../input/pointerDrag.js';
 import { createPlayfield } from '../render/pixi/createPlayfield.js';
 import { createHoleView } from '../render/three/createHoleView.js';
+import { createHoleJoystick } from '../ui/holeJoystick.js';
 
 function centerPointerNorm() {
   return { nx: 0.5, ny: 0.5 };
@@ -68,6 +69,8 @@ async function main() {
   holeView.setScreenCentered();
   holeView.setRadius01(state.holeRadius01);
 
+  const holeJoystick = createHoleJoystick(container);
+
   const detachPointer = attachPointerDrag(
     container,
     (nx, ny) => {
@@ -115,12 +118,14 @@ async function main() {
       holeVnY: state.holeVnY,
     });
     holeView.render();
+    holeJoystick.sync(state, layout);
   });
 
   window.addEventListener('pagehide', () => {
     detachPointer();
     ro.disconnect();
     playfield.destroy();
+    holeJoystick.destroy();
     holeView.dispose();
     app.destroy(true, { children: true, texture: true });
   });

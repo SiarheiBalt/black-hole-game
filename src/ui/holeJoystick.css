@@ -1,0 +1,80 @@
+/* Виртуальный джойстик: база в точке нажатия, ручка — направление (pointer-events: none). */
+
+.hole-joystick {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.hole-joystick[hidden] {
+  display: none;
+}
+
+.hole-joystick__anchor {
+  position: absolute;
+  width: var(--j-size, 120px);
+  height: var(--j-size, 120px);
+  margin-left: calc(var(--j-size, 120px) / -2);
+  margin-top: calc(var(--j-size, 120px) / -2);
+  left: var(--j-cx, 50%);
+  top: var(--j-cy, 50%);
+}
+
+.hole-joystick__base {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-sizing: border-box;
+  background: radial-gradient(
+    circle at 42% 38%,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(40, 44, 52, 0.42) 55%,
+    rgba(20, 22, 28, 0.5) 100%
+  );
+  border: 3px solid rgba(12, 14, 18, 0.72);
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.22);
+}
+
+.hole-joystick__knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--j-knob, 44px);
+  height: var(--j-knob, 44px);
+  margin-left: calc(var(--j-knob, 44px) / -2);
+  margin-top: calc(var(--j-knob, 44px) / -2);
+  border-radius: 50%;
+  box-sizing: border-box;
+  transform: translate(var(--j-kx, 0px), var(--j-ky, 0px));
+  background: linear-gradient(
+    165deg,
+    #f2f4f8 0%,
+    #d8dce6 38%,
+    #9aa3b2 100%
+  );
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    inset 3px 4px 8px rgba(255, 255, 255, 0.55),
+    inset -2px -3px 6px rgba(0, 0, 0, 0.18),
+    0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+.hole-joystick__knob::after {
+  content: '';
+  position: absolute;
+  width: 28%;
+  height: 22%;
+  left: 22%;
+  top: 18%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 40% 35%,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0) 72%
+  );
+  pointer-events: none;
+}
