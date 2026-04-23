@@ -26,7 +26,6 @@ import {
   HOLE_OUTLINE_COLOR,
   HOLE_ELLIPSE_X,
   HOLE_ELLIPSE_Z,
-  WORLD_MAP_VIEW_MULTIPLIER,
   COLLECTIBLE_RADIUS_01,
   COLLECTIBLE_COUNT,
   COLLECTIBLE_FALL_POW,
@@ -35,9 +34,11 @@ import {
   COLLECTIBLE_RENDER_ORDER_FALLING,
 } from '../../core/constants.js';
 import {
+  COLLECTIBLE_PLANAR_SPRITE_FILES,
   getCollectibleItems,
   getCollectibleSlotKind,
   isPlanarCollectibleKind,
+  layoutWorldSize,
 } from '../../core/collectibleState.js';
 
 /**
@@ -109,117 +110,83 @@ export async function createHoleView(container, options = {}) {
     emissiveIntensity: 0.08,
   });
 
-  const moneyUrl = new URL('../../assets/money.png', import.meta.url).href;
-  const trumpUrl = new URL('../../assets/trump.png', import.meta.url).href;
-  const poopUrl = new URL('../../assets/poop.png', import.meta.url).href;
-  const [moneyTex, trumpTex, poopTex] = await Promise.all([
-    new Promise((resolve, reject) => {
-      new TextureLoader().load(moneyUrl, resolve, undefined, reject);
-    }),
-    new Promise((resolve, reject) => {
-      new TextureLoader().load(trumpUrl, resolve, undefined, reject);
-    }),
-    new Promise((resolve, reject) => {
-      new TextureLoader().load(poopUrl, resolve, undefined, reject);
-    }),
-  ]);
-  moneyTex.colorSpace = SRGBColorSpace;
-  trumpTex.colorSpace = SRGBColorSpace;
-  poopTex.colorSpace = SRGBColorSpace;
-  const moneyImg = /** @type {HTMLImageElement | undefined} */ (moneyTex.image);
-  const texAspect =
-    moneyImg?.naturalWidth && moneyImg?.naturalHeight
-      ? moneyImg.naturalWidth / moneyImg.naturalHeight
-      : 1;
-  const trumpImg = /** @type {HTMLImageElement | undefined} */ (trumpTex.image);
-  const trumpAspect =
-    trumpImg?.naturalWidth && trumpImg?.naturalHeight
-      ? trumpImg.naturalWidth / trumpImg.naturalHeight
-      : 1;
-  const poopImg = /** @type {HTMLImageElement | undefined} */ (poopTex.image);
-  const poopAspect =
-    poopImg?.naturalWidth && poopImg?.naturalHeight
-      ? poopImg.naturalWidth / poopImg.naturalHeight
-      : 1;
+  /** @type {Map<import('../../core/collectibleState.js').CollectibleKind, { aspect: number, mat: MeshBasicMaterial, tex: import('three').Texture }>} */
+  const planarSpriteByKind = new Map();
 
-  const moneyGeom = new PlaneGeometry(1, 1);
-  const moneyMat = new MeshBasicMaterial({
-    map: moneyTex,
-    transparent: true,
-    depthWrite: false,
-    depthTest: false,
-    side: DoubleSide,
-  });
-  const trumpMat = new MeshBasicMaterial({
-    map: trumpTex,
-    transparent: true,
-    depthWrite: false,
-    depthTest: false,
-    side: DoubleSide,
-  });
-  const poopMat = new MeshBasicMaterial({
-    map: poopTex,
-    transparent: true,
-    depthWrite: false,
-    depthTest: false,
-    side: DoubleSide,
-  });
+  await Promise.all(
+    Object.entries(COLLECTIBLE_PLANAR_SPRITE_FILES).map(([kind, file]) => {
+      const url = new URL(`../../assets/${file}`, import.meta.url).href;
+      return new Promise((resolve, reject) => {
+        new TextureLoader().load(
+          url,
+          (tex) => {
+            tex.colorSpace = SRGBColorSpace;
+            const img = /** @type {HTMLImageElement | undefined} */ (tex.image);
+            const aspect =
+              img?.naturalWidth && img?.naturalHeight
+                ? img.naturalWidth / img.naturalHeight
+                : 1;
+            const mat = new MeshBasicMaterial({
+              map: tex,
+              transparent: true,
+              depthWrite: false,
+              depthTest: false,
+              side: DoubleSide,
+            });
+            planarSpriteByKind.set(
+              /** @type {import('../../core/collectibleState.js').CollectibleKind} */ (
+                kind
+              ),
+              { aspect, mat, tex },
+            );
+            resolve(undefined);
+          },
+          undefined,
+          reject,
+        );
+      });
+    }),
+  );
+
+  const planarSpriteGeom = new PlaneGeometry(1, 1);
+
+  /**
+   * @param {{ aspect: number, mat: MeshBasicMaterial }} sprite
+   */
+  function makePlanarSpriteMesh(sprite) {
+    const m = new Mesh(planarSpriteGeom, sprite.mat);
+    m.rotation.x = -Math.PI / 2;
+    m.scale.set(sprite.aspect, 1, 1);
+    m.frustumCulled = false;
+    m.castShadow = collectibleMoneyShadows;
+    m.receiveShadow = collectibleMoneyShadows;
+    m.renderOrder = 2;
+    return m;
+  }
+
+  function makeSphereCollectibleMesh() {
+    const m = new Mesh(sphereGeom, sphereMat);
+    m.castShadow = true;
+    m.receiveShadow = true;
+    m.renderOrder = 2;
+    return m;
+  }
 
   /**
    * @param {import('../../core/collectibleState.js').CollectibleItem} item
    */
   function planarSpriteAspect(item) {
-    if (item.kind === 'trump') return trumpAspect;
-    if (item.kind === 'poop') return poopAspect;
-    return texAspect;
+    return planarSpriteByKind.get(item.kind)?.aspect ?? 1;
   }
 
   /**
    * @param {import('../../core/collectibleState.js').CollectibleItem['kind']} kind
    */
   function makeObjectMesh(kind) {
-    if (kind === 'sphere') {
-      const m = new Mesh(sphereGeom, sphereMat);
-      m.castShadow = true;
-      m.receiveShadow = true;
-      m.renderOrder = 2;
-      return m;
-    }
-    if (kind === 'planar') {
-      const m = new Mesh(moneyGeom, moneyMat);
-      m.rotation.x = -Math.PI / 2;
-      m.scale.set(texAspect, 1, 1);
-      m.frustumCulled = false;
-      m.castShadow = collectibleMoneyShadows;
-      m.receiveShadow = collectibleMoneyShadows;
-      m.renderOrder = 2;
-      return m;
-    }
-    if (kind === 'trump') {
-      const m = new Mesh(moneyGeom, trumpMat);
-      m.rotation.x = -Math.PI / 2;
-      m.scale.set(trumpAspect, 1, 1);
-      m.frustumCulled = false;
-      m.castShadow = collectibleMoneyShadows;
-      m.receiveShadow = collectibleMoneyShadows;
-      m.renderOrder = 2;
-      return m;
-    }
-    if (kind === 'poop') {
-      const m = new Mesh(moneyGeom, poopMat);
-      m.rotation.x = -Math.PI / 2;
-      m.scale.set(poopAspect, 1, 1);
-      m.frustumCulled = false;
-      m.castShadow = collectibleMoneyShadows;
-      m.receiveShadow = collectibleMoneyShadows;
-      m.renderOrder = 2;
-      return m;
-    }
-    const m = new Mesh(sphereGeom, sphereMat);
-    m.castShadow = true;
-    m.receiveShadow = true;
-    m.renderOrder = 2;
-    return m;
+    if (kind === 'sphere') return makeSphereCollectibleMesh();
+    const sprite = planarSpriteByKind.get(kind);
+    if (sprite) return makePlanarSpriteMesh(sprite);
+    return makeSphereCollectibleMesh();
   }
 
   /** @type {Group[]} */
@@ -365,9 +332,7 @@ export async function createHoleView(container, options = {}) {
       return;
     }
 
-    const m = WORLD_MAP_VIEW_MULTIPLIER;
-    const worldW = layout.designWidth * m;
-    const worldH = layout.designHeight * m;
+    const { worldW, worldH } = layoutWorldSize(layout);
     const base = Math.min(layout.designWidth, layout.designHeight);
     const rObj = objectWorldR(layout, item);
     const sHole = g.holeRadius01 * base;
@@ -529,13 +494,11 @@ export async function createHoleView(container, options = {}) {
       groundMat.dispose();
       sphereGeom.dispose();
       sphereMat.dispose();
-      moneyGeom.dispose();
-      moneyMat.dispose();
-      moneyTex.dispose();
-      trumpMat.dispose();
-      trumpTex.dispose();
-      poopMat.dispose();
-      poopTex.dispose();
+      planarSpriteGeom.dispose();
+      for (const { tex, mat } of planarSpriteByKind.values()) {
+        mat.dispose();
+        tex.dispose();
+      }
       renderer.dispose();
       coreGeom.dispose();
       rimGeom.dispose();

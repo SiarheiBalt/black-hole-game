@@ -10,7 +10,7 @@
 | Портрет (демо) | [`src/assets/trump.png`](../src/assets/trump.png) | `trump` | Четыре экземпляра по «углам» внутри кольца сфер: углы квадрата на окружности (`π/4 + k·π/2`), радиус [`COLLECTIBLE_TRUMP_CIRCLE_R01`](../src/core/constants.js). Рендер как у `planar`, отдельная текстура в [`createHoleView`](../src/render/three/createHoleView.js). |
 | «Какашка» (демо) | [`src/assets/poop.png`](../src/assets/poop.png) | `poop` | Два экземпляра **снаружи** кольца денег ([`COLLECTIBLE_POOP_CIRCLE_R01`](../src/core/constants.js) > [`COLLECTIBLE_MONEY_CIRCLE_R01`](../src/core/constants.js)), по **горизонтали**: углы `0` и `π`. Рендер как у `trump`. |
 
-Демо-раскладка в [`getCollectibleItems`](../src/core/collectibleState.js): сферы; кольцо денег; внутри кольца сфер — только [`COLLECTIBLE_TRUMP_COUNT`](../src/core/constants.js) **`trump`**; [`COLLECTIBLE_POOP_COUNT`](../src/core/constants.js) **`poop`** на отдельном **внешнем** радиусе [`COLLECTIBLE_POOP_CIRCLE_R01`](../src/core/constants.js). [`getCollectibleSlotKind`](../src/core/collectibleState.js): сферы → `planar` → `trump` → `poop`. Плоские: [`isPlanarCollectibleKind`](../src/core/collectibleState.js) (`planar`, `trump`, `poop`).
+Порядок колец и формулы углов — в одном месте: [`COLLECTIBLE_RING_LAYOUT`](../src/core/collectibleState.js) (сумма `count` при старте проверяется на равенство [`COLLECTIBLE_COUNT`](../src/core/constants.js)). [`getCollectibleItems`](../src/core/collectibleState.js) и [`getCollectibleSlotKind`](../src/core/collectibleState.js) строятся из этого массива. PNG для плоских kind — [`COLLECTIBLE_PLANAR_SPRITE_FILES`](../src/core/collectibleState.js); `createHoleView` подгружает их по этой таблице.
 
 ## Два уровня данных
 

@@ -26,31 +26,108 @@ import {
  */
 
 /**
- * Плоские коллектаблы: та же логика коллизий, но в Three.js — `PlaneGeometry` и «planar» fall.
+ * Одно концентрическое кольцо: порядок в массиве = порядок слотов `c-0 …` в игре.
+ * @typedef {Object} CollectibleRingSpec
+ * @property {number} count
+ * @property {CollectibleKind} kind
+ * @property {number} circleR01 — доля `min(designWidth, designHeight)`; радиус кольца в мире
+ * @property {number} itemRadius01 — `radius01` каждого предмета на кольце
+ * @property {(ringIndex: number, ringCount: number) => number} angleRadians
+ */
+
+/**
+ * Единственный источник правды для порядка слотов и `getCollectibleSlotKind`.
+ * @type {readonly CollectibleRingSpec[]}
+ */
+export const COLLECTIBLE_RING_LAYOUT = Object.freeze([
+  {
+    count: COLLECTIBLE_SPHERE_COUNT,
+    kind: 'sphere',
+    circleR01: COLLECTIBLE_CIRCLE_R01,
+    itemRadius01: COLLECTIBLE_RADIUS_01,
+    angleRadians: (i, n) => (i / n) * Math.PI * 2,
+  },
+  {
+    count: COLLECTIBLE_MONEY_COUNT,
+    kind: 'planar',
+    circleR01: COLLECTIBLE_MONEY_CIRCLE_R01,
+    itemRadius01: COLLECTIBLE_MONEY_RADIUS_01,
+    angleRadians: (i, n) => ((i + 0.5) / n) * Math.PI * 2,
+  },
+  {
+    count: COLLECTIBLE_TRUMP_COUNT,
+    kind: 'trump',
+    circleR01: COLLECTIBLE_TRUMP_CIRCLE_R01,
+    itemRadius01: COLLECTIBLE_TRUMP_RADIUS_01,
+    angleRadians: (i) => Math.PI / 4 + i * (Math.PI / 2),
+  },
+  {
+    count: COLLECTIBLE_POOP_COUNT,
+    kind: 'poop',
+    circleR01: COLLECTIBLE_POOP_CIRCLE_R01,
+    itemRadius01: COLLECTIBLE_POOP_RADIUS_01,
+    angleRadians: (i) => i * Math.PI,
+  },
+]);
+
+const _layoutSlotTotal = COLLECTIBLE_RING_LAYOUT.reduce((s, r) => s + r.count, 0);
+if (_layoutSlotTotal !== COLLECTIBLE_COUNT) {
+  throw new Error(
+    `COLLECTIBLE_RING_LAYOUT total ${_layoutSlotTotal} !== COLLECTIBLE_COUNT ${COLLECTIBLE_COUNT}`,
+  );
+}
+
+/**
+ * Имя файла в `src/assets/` для плоского спрайта; ключи должны совпадать с kind в {@link COLLECTIBLE_RING_LAYOUT}.
+ * @type {Readonly<Record<'planar' | 'trump' | 'poop', string>>}
+ */
+export const COLLECTIBLE_PLANAR_SPRITE_FILES = Object.freeze({
+  planar: 'money.png',
+  trump: 'trump.png',
+  poop: 'poop.png',
+});
+
+for (const ring of COLLECTIBLE_RING_LAYOUT) {
+  if (ring.kind === 'sphere') continue;
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      COLLECTIBLE_PLANAR_SPRITE_FILES,
+      ring.kind,
+    )
+  ) {
+    throw new Error(
+      `COLLECTIBLE_RING_LAYOUT kind "${ring.kind}" missing in COLLECTIBLE_PLANAR_SPRITE_FILES`,
+    );
+  }
+}
+
+const PLANAR_SPRITE_KINDS = new Set(
+  /** @type {CollectibleKind[]} */ (
+    Object.keys(COLLECTIBLE_PLANAR_SPRITE_FILES)
+  ),
+);
+
+/**
+ * Плоские коллектаблы: та же логика коллизий, в Three.js — `PlaneGeometry` и planar fall.
  * @param {CollectibleKind} kind
  * @returns {boolean}
  */
 export function isPlanarCollectibleKind(kind) {
-  return kind === 'planar' || kind === 'trump' || kind === 'poop';
+  return PLANAR_SPRITE_KINDS.has(kind);
 }
 
 /**
- * Тип предмета для слота по индексу (должен совпадать с раскладкой в `getCollectibleItems`).
- * Сферы → `planar` (деньги) → `trump` → `poop` (вне кольца денег).
+ * Тип предмета для слота по индексу (совпадает с {@link COLLECTIBLE_RING_LAYOUT}).
  * @param {number} index
  * @returns {CollectibleKind}
  */
 export function getCollectibleSlotKind(index) {
-  if (index < COLLECTIBLE_SPHERE_COUNT) return 'sphere';
-  if (index < COLLECTIBLE_SPHERE_COUNT + COLLECTIBLE_MONEY_COUNT) return 'planar';
-  if (
-    index <
-    COLLECTIBLE_SPHERE_COUNT +
-      COLLECTIBLE_MONEY_COUNT +
-      COLLECTIBLE_TRUMP_COUNT
-  )
-    return 'trump';
-  return 'poop';
+  let base = 0;
+  for (const ring of COLLECTIBLE_RING_LAYOUT) {
+    if (index < base + ring.count) return ring.kind;
+    base += ring.count;
+  }
+  return 'sphere';
 }
 
 /**
@@ -99,74 +176,60 @@ export function getCollectibleZoneSummary(states) {
 }
 
 /**
+ * Размер логического мира в тех же единицах, что смещения в `getCollectibleItems` / коллизии.
+ * @param {ReturnType<import('./viewport.js').computeLayout>} layout
+ * @returns {{ worldW: number, worldH: number }}
+ */
+export function layoutWorldSize(layout) {
+  const m = WORLD_MAP_VIEW_MULTIPLIER;
+  return {
+    worldW: layout.designWidth * m,
+    worldH: layout.designHeight * m,
+  };
+}
+
+/**
+ * @param {number} dx
+ * @param {number} worldW
+ */
+function mapNxFromWorldDx(dx, worldW) {
+  return 0.5 + dx / worldW;
+}
+
+/**
+ * @param {number} dz
+ * @param {number} worldH
+ */
+function mapNyFromWorldDz(dz, worldH) {
+  return 0.5 + dz / worldH;
+}
+
+/**
  * Позиции и метаданные уровня (круг, центр 0.5/0.5). Пересчитывается при смене layout.
  * @param {ReturnType<import('./viewport.js').computeLayout>} layout
  * @returns {CollectibleItem[]}
  */
 export function getCollectibleItems(layout) {
-  const m = WORLD_MAP_VIEW_MULTIPLIER;
-  const worldW = layout.designWidth * m;
-  const worldH = layout.designHeight * m;
+  const { worldW, worldH } = layoutWorldSize(layout);
   const minSide = Math.min(layout.designWidth, layout.designHeight);
-  const rSphere = COLLECTIBLE_CIRCLE_R01 * minSide;
-  const rMoney = COLLECTIBLE_MONEY_CIRCLE_R01 * minSide;
-  const rTrump = COLLECTIBLE_TRUMP_CIRCLE_R01 * minSide;
-  const rPoop = COLLECTIBLE_POOP_CIRCLE_R01 * minSide;
   const out = /** @type {CollectibleItem[]} */ ([]);
-  for (let i = 0; i < COLLECTIBLE_SPHERE_COUNT; i++) {
-    const a = (i / COLLECTIBLE_SPHERE_COUNT) * Math.PI * 2;
-    const dx = rSphere * Math.cos(a);
-    const dz = rSphere * Math.sin(a);
-    out.push({
-      id: `c-${i}`,
-      kind: 'sphere',
-      mapNx: 0.5 + dx / worldW,
-      mapNy: 0.5 + dz / worldH,
-      radius01: COLLECTIBLE_RADIUS_01,
-    });
-  }
-  for (let j = 0; j < COLLECTIBLE_MONEY_COUNT; j++) {
-    const i = COLLECTIBLE_SPHERE_COUNT + j;
-    const a = ((j + 0.5) / COLLECTIBLE_MONEY_COUNT) * Math.PI * 2;
-    const dx = rMoney * Math.cos(a);
-    const dz = rMoney * Math.sin(a);
-    out.push({
-      id: `c-${i}`,
-      kind: 'planar',
-      mapNx: 0.5 + dx / worldW,
-      mapNy: 0.5 + dz / worldH,
-      radius01: COLLECTIBLE_MONEY_RADIUS_01,
-    });
-  }
-  for (let k = 0; k < COLLECTIBLE_TRUMP_COUNT; k++) {
-    const i = COLLECTIBLE_SPHERE_COUNT + COLLECTIBLE_MONEY_COUNT + k;
-    const a = Math.PI / 4 + k * (Math.PI / 2);
-    const dx = rTrump * Math.cos(a);
-    const dz = rTrump * Math.sin(a);
-    out.push({
-      id: `c-${i}`,
-      kind: 'trump',
-      mapNx: 0.5 + dx / worldW,
-      mapNy: 0.5 + dz / worldH,
-      radius01: COLLECTIBLE_TRUMP_RADIUS_01,
-    });
-  }
-  for (let q = 0; q < COLLECTIBLE_POOP_COUNT; q++) {
-    const i =
-      COLLECTIBLE_SPHERE_COUNT +
-      COLLECTIBLE_MONEY_COUNT +
-      COLLECTIBLE_TRUMP_COUNT +
-      q;
-    const a = q * Math.PI;
-    const dx = rPoop * Math.cos(a);
-    const dz = rPoop * Math.sin(a);
-    out.push({
-      id: `c-${i}`,
-      kind: 'poop',
-      mapNx: 0.5 + dx / worldW,
-      mapNy: 0.5 + dz / worldH,
-      radius01: COLLECTIBLE_POOP_RADIUS_01,
-    });
+  let globalIndex = 0;
+  for (const ring of COLLECTIBLE_RING_LAYOUT) {
+    const rWorld = ring.circleR01 * minSide;
+    const n = ring.count;
+    for (let i = 0; i < n; i++) {
+      const a = ring.angleRadians(i, n);
+      const dx = rWorld * Math.cos(a);
+      const dz = rWorld * Math.sin(a);
+      out.push({
+        id: `c-${globalIndex}`,
+        kind: ring.kind,
+        mapNx: mapNxFromWorldDx(dx, worldW),
+        mapNy: mapNyFromWorldDz(dz, worldH),
+        radius01: ring.itemRadius01,
+      });
+      globalIndex += 1;
+    }
   }
   return out;
 }
@@ -181,10 +244,8 @@ export function getCollectibleItems(layout) {
 export function shouldCollectibleBeConsumed(game, layout, run, item) {
   if (run.phase !== 'idle') return false;
 
-  const m = WORLD_MAP_VIEW_MULTIPLIER;
   const { designWidth, designHeight } = layout;
-  const worldW = designWidth * m;
-  const worldH = designHeight * m;
+  const { worldW, worldH } = layoutWorldSize(layout);
   const mapNx = item.mapNx;
   const mapNy = item.mapNy;
   const dx = (mapNx - game.mapNx) * worldW;
