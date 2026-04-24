@@ -6,6 +6,8 @@ import {
   setPointerTarget,
   beginPointerDrag,
   endPointerDrag,
+  getHoleSizeLevelFromConsumed,
+  getHoleRadius01FromConsumed,
 } from '../core/gameState.js';
 import {
   createCollectibleRunStates,
@@ -70,12 +72,12 @@ async function main() {
 
   playfield.setScroll(state.mapNx, state.mapNy, layout);
   holeView.setScreenCentered();
-  holeView.setRadius01(state.holeRadius01);
+  holeView.setHoleRadius01Immediate(state.holeRadius01);
 
   const holeJoystick = createHoleJoystick(container);
   const holeProgressBar = createHoleProgressBar(container);
   const holePopScore = createHolePopScore(container);
-  holeProgressBar.sync(0, layout, state.holeRadius01, state.holeSizeLevel);
+  holeProgressBar.sync(0, layout, state.holeRadius01);
 
   const detachPointer = attachPointerDrag(
     container,
@@ -96,18 +98,19 @@ async function main() {
     playfield.setScroll(state.mapNx, state.mapNy, layout);
     holeView.resize(layout);
     holeView.setScreenCentered();
-    holeView.setRadius01(state.holeRadius01);
-    holeProgressBar.sync(
-      getCollectibleZoneSummary(collectibleRuns).consumed,
-      layout,
-      state.holeRadius01,
-      state.holeSizeLevel,
-    );
+    const consumed0 = getCollectibleZoneSummary(collectibleRuns).consumed;
+    state.holeRadius01 = getHoleRadius01FromConsumed(consumed0);
+    state.holeSizeLevel = getHoleSizeLevelFromConsumed(consumed0);
+    holeView.setHoleRadius01Immediate(state.holeRadius01);
+    holeProgressBar.sync(consumed0, layout, state.holeRadius01);
   });
   ro.observe(container);
 
   app.ticker.add(() => {
     const dt = app.ticker.deltaMS / 1000;
+    let consumed = getCollectibleZoneSummary(collectibleRuns).consumed;
+    state.holeSizeLevel = getHoleSizeLevelFromConsumed(consumed);
+    state.holeRadius01 = getHoleRadius01FromConsumed(consumed);
     stepHolePhysics(state, dt, layout);
     const items = getCollectibleItems(layout);
     for (let i = 0; i < COLLECTIBLE_COUNT; i++) {
@@ -123,6 +126,11 @@ async function main() {
     }
     playfield.setScroll(state.mapNx, state.mapNy, layout);
     holeView.setScreenCentered();
+    consumed = getCollectibleZoneSummary(collectibleRuns).consumed;
+    state.holeRadius01 = getHoleRadius01FromConsumed(consumed);
+    state.holeSizeLevel = getHoleSizeLevelFromConsumed(consumed);
+    holeView.setHoleRadiusTarget01(state.holeRadius01);
+    holeView.stepHoleRadiusAnimation(dt);
     holeView.updateCollectibles(collectibleRuns, layout, {
       mapNx: state.mapNx,
       mapNy: state.mapNy,
@@ -133,12 +141,7 @@ async function main() {
     });
     holeView.render();
     holeJoystick.sync(state, layout);
-    holeProgressBar.sync(
-      getCollectibleZoneSummary(collectibleRuns).consumed,
-      layout,
-      state.holeRadius01,
-      state.holeSizeLevel,
-    );
+    holeProgressBar.sync(consumed, layout, state.holeRadius01);
   });
 
   window.addEventListener('pagehide', () => {

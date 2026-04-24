@@ -8,7 +8,15 @@
  * Подробнее: {@link ../../docs/hole-control.md}
  */
 
-import { getMapPositionBounds01, WORLD_MAP_VIEW_MULTIPLIER } from './constants.js';
+import {
+  getMapPositionBounds01,
+  WORLD_MAP_VIEW_MULTIPLIER,
+  COLLECTIBLE_PROGRESS_MAX,
+  HOLE_RADIUS_BASE_01,
+  HOLE_RADIUS_GROWTH_PER_SIZE_LEVEL_01,
+  HOLE_RADIUS_MAX_01,
+  HOLE_SPEED_SIZE_SLOWDOWN,
+} from './constants.js';
 
 /**
  * @typedef {Object} GameState
@@ -21,7 +29,7 @@ import { getMapPositionBounds01, WORLD_MAP_VIEW_MULTIPLIER } from './constants.j
  * @property {number} controlCenterNx — точка pointerdown, центр стика
  * @property {number} controlCenterNy
  * @property {number} holeRadius01
- * @property {number} holeSizeLevel — подпись в прогресс-баре (`size 1`, `size 2`…); дальше будет меняться с прогрессией
+ * @property {number} holeSizeLevel — «размер» дыры для геймлея/апгрейдов: 1 + число **полных** заполнений прогресс-бара (по {@link COLLECTIBLE_PROGRESS_MAX} поглощённых на сегмент)
  * @property {boolean} dragging
  */
 
@@ -41,6 +49,57 @@ export const HOLE_STICK_DEAD_ZONE = 0.008;
 /** After release, velocity decay (~per second). */
 export const HOLE_RELEASE_FRICTION = 6;
 
+/**
+ * Сколько поглощений учитывается в **текущем** сегменте бара (после заполнения шаг 0 снова).
+ * @param {number} totalConsumed — всего с `phase === 'done'`
+ */
+export function getProgressSegmentConsumed(totalConsumed) {
+  const c = Math.max(0, Math.floor(totalConsumed));
+  const m = Math.max(1, COLLECTIBLE_PROGRESS_MAX);
+  return c % m;
+}
+
+/**
+ * Уровень размера дыры: при полном баре (первый раз) → 2, далее +1 за каждое повторное заполнение.
+ * @param {number} totalConsumed — всего поглощённых
+ */
+export function getHoleSizeLevelFromConsumed(totalConsumed) {
+  const c = Math.max(0, Math.floor(totalConsumed));
+  const m = Math.max(1, COLLECTIBLE_PROGRESS_MAX);
+  return 1 + Math.floor(c / m);
+}
+
+/**
+ * Радиус в долях min стороны от уровня `size` (1 = база, +1 ступень за каждый инкремент `size`).
+ * @param {number} sizeLevel — как {@link getHoleSizeLevelFromConsumed}
+ */
+export function getHoleRadius01FromSizeLevel(sizeLevel) {
+  const L = Math.max(1, Math.floor(sizeLevel));
+  const steps = L - 1;
+  const r = HOLE_RADIUS_BASE_01 + HOLE_RADIUS_GROWTH_PER_SIZE_LEVEL_01 * steps;
+  return Math.min(HOLE_RADIUS_MAX_01, r);
+}
+
+/**
+ * Радиус дыры: меняется только при смене уровня `size`, не на каждое поглощение.
+ * @param {number} totalConsumed
+ */
+export function getHoleRadius01FromConsumed(totalConsumed) {
+  return getHoleRadius01FromSizeLevel(getHoleSizeLevelFromConsumed(totalConsumed));
+}
+
+/**
+ * Множитель к `HOLE_MAX_SPEED`: с каждым уровнем `size` (не с каждым поглощённым объектом) потолок ниже.
+ * Шаги по `size` согласованы с ростом радиуса: один инкремент `size` даёт тот же `rel`, что и +`HOLE_RADIUS_GROWTH_PER_SIZE_LEVEL_01` к базовому радиусу.
+ * @param {number} sizeLevel — как `GameState.holeSizeLevel` / {@link getHoleSizeLevelFromConsumed}
+ */
+export function getHoleMaxSpeedScaleFromSizeLevel(sizeLevel) {
+  const L = Math.max(1, Math.floor(sizeLevel));
+  const steps = L - 1;
+  const rel = steps * (HOLE_RADIUS_GROWTH_PER_SIZE_LEVEL_01 / HOLE_RADIUS_BASE_01);
+  return 1 / (1 + HOLE_SPEED_SIZE_SLOWDOWN * rel);
+}
+
 /** @returns {GameState} */
 export function createGameState() {
   return {
@@ -52,7 +111,7 @@ export function createGameState() {
     pointerTargetNy: 0.5,
     controlCenterNx: 0.5,
     controlCenterNy: 0.5,
-    holeRadius01: 0.065,
+    holeRadius01: getHoleRadius01FromSizeLevel(1),
     holeSizeLevel: 1,
     dragging: false,
   };
@@ -113,7 +172,8 @@ export function stepHolePhysics(state, dt, layout) {
   const worldW = Math.max(vw * m, 1e-6);
   const worldH = Math.max(vh * m, 1e-6);
   const minWorldSpan = Math.max(Math.min(worldW, worldH), 1e-6);
-  const pixelMax = HOLE_MAX_SPEED * minWorldSpan;
+  const speedScale = getHoleMaxSpeedScaleFromSizeLevel(state.holeSizeLevel);
+  const pixelMax = HOLE_MAX_SPEED * minWorldSpan * speedScale;
   const minCss = Math.max(Math.min(vw, vh), 1e-6);
   const deadPx = HOLE_STICK_DEAD_ZONE * minCss;
   const rangePx = HOLE_STICK_RANGE * minCss;

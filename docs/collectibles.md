@@ -38,7 +38,7 @@ getCollectibleZoneSummary(runs)
 - **consumed** — `phase === 'done'`.
 - **total** — длина массива = число слотов (см. `COLLECTIBLE_COUNT`).
 
-Оверлей **прогресс-бар** под визуалом дыры ([`src/ui/holeProgressBar.js`](../src/ui/holeProgressBar.js)): заполнение = `consumed / COLLECTIBLE_PROGRESS_MAX` (сейчас 20 поглощённых = 100% шкалы; значение в [`COLLECTIBLE_PROGRESS_MAX`](../src/core/constants.js)). Обновление в [`bootstrap.js`](../src/app/bootstrap.js) по `getCollectibleZoneSummary(runs).consumed`.
+Оверлей **прогресс-бар** под визуалом дыры ([`src/ui/holeProgressBar.js`](../src/ui/holeProgressBar.js)): заполнение = `consumed / COLLECTIBLE_PROGRESS_MAX` (сейчас 20 поглощённых = 100% шкалы; значение в [`COLLECTIBLE_PROGRESS_MAX`](../src/core/constants.js)). Обновление в [`bootstrap.js`](../src/app/bootstrap.js) по `getCollectibleZoneSummary(runs).consumed`. Радиус дыры `holeRadius01` наращивается **по уровню `size`** ([`getHoleRadius01FromSizeLevel`](../src/core/gameState.js) / [`getHoleRadius01FromConsumed`](../src/core/gameState.js)), а не на каждый объект; потолок скорости — [`getHoleMaxSpeedScaleFromSizeLevel`](../src/core/gameState.js) по `holeSizeLevel` (константы `HOLE_RADIUS_*`, `HOLE_SPEED_SIZE_SLOWDOWN` в [`constants.js`](../src/core/constants.js)).
 
 ## Раскладка на уровне
 

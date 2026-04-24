@@ -28,7 +28,7 @@
 3. Иначе:
    - направление на экране: `(ux, uy) = (dx, dy) / distPx`;
    - `tilt = min(1, distPx / (HOLE_STICK_RANGE * minCss))`;
-   - `pixPerSec = HOLE_MAX_SPEED * minSpan * tilt` — одинаковая скорость сдвига поля в px/s по осям при полном наклоне;
+   - `pixPerSec = HOLE_MAX_SPEED * minSpan * tilt * speedScale`, где `speedScale = getHoleMaxSpeedScaleFromSizeLevel(holeSizeLevel)` (замедление **по уровню `size`**, не по числу объектов; см. [`gameState.js`](../src/core/gameState.js), `HOLE_SPEED_SIZE_SLOWDOWN` в [`constants.js`](../src/core/constants.js));
    - скорость на карте: `holeVnX = ux * pixPerSec / worldW`, `holeVnY = uy * pixPerSec / worldH` (согласовано с `setScroll` в `createPlayfield.js`).
 
 Интеграция позиции на **карте**: `map += holeVn * dt` (с ограничением `dt` в коде).

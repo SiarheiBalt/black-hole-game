@@ -20,6 +20,27 @@ export const HOLE_ELLIPSE_Z = 0.92;
 /** Коэффициент внутри радиуса дыры (около границы тёмного ядра) — для проверки «шар внутри дыры». */
 export const HOLE_BALL_EAT_INNER = 0.78;
 
+/**
+ * Базовый визуальный/коллайдерный радиус дыры: доля min(designWidth, designHeight) при `size` 1.
+ * Рост: `HOLE_RADIUS_GROWTH_PER_SIZE_LEVEL_01` за каждый инкремент уровня `size` (полное заполнение прогресс-бара), верх — `HOLE_RADIUS_MAX_01`.
+ */
+export const HOLE_RADIUS_BASE_01 = 0.065;
+/** Добавка к {@link HOLE_RADIUS_BASE_01} за каждый уровень `size` (не за отдельный собираемый объект). */
+export const HOLE_RADIUS_GROWTH_PER_SIZE_LEVEL_01 = 0.0144;
+export const HOLE_RADIUS_MAX_01 = 0.108;
+/**
+ * Замедление от уровня `size`: `speedScale = 1 / (1 + f * steps * (dr/r0))`, где
+ * `steps = max(0, sizeLevel - 1)`, `dr` = {@link HOLE_RADIUS_GROWTH_PER_SIZE_LEVEL_01}, `r0` = {@link HOLE_RADIUS_BASE_01}, `f` = это значение.
+ */
+export const HOLE_SPEED_SIZE_SLOWDOWN = 0.42;
+/**
+ * Мгновенный вылет визуала дыры при увеличении `holeRadius01`, дальше — сглаживание.
+ * `display = target * (1 + HOLE_VISUAL_BUMP_ON_GROW)`.
+ */
+export const HOLE_VISUAL_BUMP_ON_GROW = 0.18;
+/** Скорость сглаживания визуала к целевому r01: `1 - exp(-rate * dt)`. */
+export const HOLE_VISUAL_SETTLE_RATE = 7.5;
+
 /** Сферы: внутреннее кольцо вокруг центра карты. */
 export const COLLECTIBLE_SPHERE_COUNT = 30;
 /** Деньги: внешнее кольцо (дальше от центра, «за» шарами). */

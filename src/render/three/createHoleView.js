@@ -29,6 +29,8 @@ import {
   HOLE_OUTLINE_COLOR,
   HOLE_ELLIPSE_X,
   HOLE_ELLIPSE_Z,
+  HOLE_VISUAL_BUMP_ON_GROW,
+  HOLE_VISUAL_SETTLE_RATE,
   COLLECTIBLE_RADIUS_01,
   COLLECTIBLE_COUNT,
   COLLECTIBLE_FALL_POW,
@@ -265,6 +267,21 @@ export async function createHoleView(container, options = {}) {
   outline.renderOrder = 9;
 
   holeVisual.scale.set(ELLIPSE_X, 1, ELLIPSE_Z);
+
+  let holeRTarget = 0.065;
+  let holeRDisplay = 0.065;
+  let holeRLast = 0.065;
+  let holeRAnimInited = false;
+  /** Сразу после роста target — кадр показать вылет без lerp, следующий `step` сглаживает. */
+  let holeRJustBumped = false;
+
+  function applyHoleScale01(r01) {
+    if (!layoutCache) return;
+    const base = Math.min(layoutCache.designWidth, layoutCache.designHeight);
+    const rWorld = r01 * base;
+    const s = rWorld;
+    holeVisual.scale.set(ELLIPSE_X * s, 1, ELLIPSE_Z * s);
+  }
 
   /** Индикатор направления: один равнобедренный треугольник (+Y — остриё → после поворота на XZ указывает ход). */
   function buildDirectionArrowShape() {
@@ -614,12 +631,57 @@ export async function createHoleView(container, options = {}) {
       holePivot.position.set(worldX, 0, worldZ);
     },
 
-    setRadius01(r01) {
+    /**
+     * Старт / resize: без овершута, дисплей = логике.
+     * @param {number} r01
+     */
+    setHoleRadius01Immediate(r01) {
       if (!layoutCache) return;
-      const base = Math.min(layoutCache.designWidth, layoutCache.designHeight);
-      const rWorld = r01 * base;
-      const s = rWorld / 1;
-      holeVisual.scale.set(ELLIPSE_X * s, 1, ELLIPSE_Z * s);
+      holeRTarget = r01;
+      holeRDisplay = r01;
+      holeRLast = r01;
+      holeRAnimInited = true;
+      holeRJustBumped = false;
+      applyHoleScale01(r01);
+    },
+    /**
+     * Целевой r01 с игры: при росте — скачок `display` вверх, потом `stepHoleRadiusAnimation` сглаживает.
+     * @param {number} r01
+     */
+    setHoleRadiusTarget01(r01) {
+      if (!layoutCache) return;
+      if (!holeRAnimInited) {
+        holeRTarget = r01;
+        holeRDisplay = r01;
+        holeRLast = r01;
+        holeRAnimInited = true;
+        applyHoleScale01(holeRDisplay);
+        return;
+      }
+      holeRTarget = r01;
+      if (r01 > holeRLast + 1e-7) {
+        holeRDisplay = r01 * (1 + HOLE_VISUAL_BUMP_ON_GROW);
+        holeRLast = r01;
+        holeRJustBumped = true;
+      }
+    },
+    /**
+     * @param {number} dt
+     */
+    stepHoleRadiusAnimation(dt) {
+      if (!layoutCache || !holeRAnimInited) return;
+      if (holeRJustBumped) {
+        holeRJustBumped = false;
+        applyHoleScale01(holeRDisplay);
+        return;
+      }
+      const d = Math.min(Math.max(0, dt), 0.1);
+      const t = 1 - Math.exp(-HOLE_VISUAL_SETTLE_RATE * d);
+      holeRDisplay += (holeRTarget - holeRDisplay) * t;
+      if (Math.abs(holeRDisplay - holeRTarget) < 1e-5) {
+        holeRDisplay = holeRTarget;
+      }
+      applyHoleScale01(holeRDisplay);
     },
 
     /**
