@@ -17,6 +17,7 @@ import {
   GAME_VIEW_SHAKE_RESONANCE,
   GAME_VIEW_ZOOM_FLASH_MAX,
   GAME_VIEW_ZOOM_FLASH_DECAY,
+  ROUND_TIME_SEC,
 } from '../core/constants.js';
 import {
   createCollectibleRunStates,
@@ -34,6 +35,7 @@ import { createHoleJoystick } from '../ui/holeJoystick.js';
 import { createHoleProgressBar } from '../ui/holeProgressBar.js';
 import { createHolePopScore } from '../ui/holePopScore.js';
 import { createCollectibleStatsHud } from '../ui/collectibleStatsHud.js';
+import { createGameOverOverlay } from '../ui/gameOverOverlay.js';
 
 function centerPointerNorm() {
   return { nx: 0.5, ny: 0.5 };
@@ -102,7 +104,14 @@ async function main() {
   const holeProgressBar = createHoleProgressBar(container);
   const holePopScore = createHolePopScore(container);
   const collectibleStatsHud = createCollectibleStatsHud(container);
-  collectibleStatsHud.sync(getConsumedCountsByKind(collectibleRuns), layout);
+  const gameOverOverlay = createGameOverOverlay(container);
+  let timeLeftSec = ROUND_TIME_SEC;
+  let gameEnded = false;
+  collectibleStatsHud.sync(
+    getConsumedCountsByKind(collectibleRuns),
+    layout,
+    timeLeftSec,
+  );
   holeProgressBar.sync(0, layout, state.holeRadius01);
 
   const detachPointer = attachPointerDrag(
@@ -136,12 +145,20 @@ async function main() {
     gameScene.style.transform = '';
     gameSceneFlash.style.opacity = '0';
     holeProgressBar.sync(consumed0, layout, state.holeRadius01);
-    collectibleStatsHud.sync(getConsumedCountsByKind(collectibleRuns), layout);
+    collectibleStatsHud.sync(
+      getConsumedCountsByKind(collectibleRuns),
+      layout,
+      timeLeftSec,
+    );
   });
   ro.observe(container);
 
   app.ticker.add(() => {
+    if (gameEnded) {
+      return;
+    }
     const dt = app.ticker.deltaMS / 1000;
+    timeLeftSec = Math.max(0, timeLeftSec - dt);
     let consumed = getCollectibleZoneSummary(collectibleRuns).consumed;
     state.holeSizeLevel = getHoleSizeLevelFromConsumed(consumed);
     state.holeRadius01 = getHoleRadius01FromConsumed(consumed);
@@ -216,7 +233,18 @@ async function main() {
     holeView.render();
     holeJoystick.sync(state, layout);
     holeProgressBar.sync(consumed, layout, state.holeRadius01);
-    collectibleStatsHud.sync(getConsumedCountsByKind(collectibleRuns), layout);
+    collectibleStatsHud.sync(
+      getConsumedCountsByKind(collectibleRuns),
+      layout,
+      timeLeftSec,
+    );
+    if (consumed >= COLLECTIBLE_COUNT) {
+      gameOverOverlay.show('Wonderful', true);
+      gameEnded = true;
+    } else if (timeLeftSec <= 0) {
+      gameOverOverlay.show("Time's up", false);
+      gameEnded = true;
+    }
   });
 
   window.addEventListener('pagehide', () => {
@@ -227,6 +255,7 @@ async function main() {
     holeProgressBar.destroy();
     holePopScore.destroy();
     collectibleStatsHud.destroy();
+    gameOverOverlay.destroy();
     holeView.dispose();
     app.destroy(true, { children: true, texture: true });
   });

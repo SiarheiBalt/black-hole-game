@@ -1,4 +1,5 @@
 import './collectibleStatsHud.css';
+import { ROUND_TIME_SEC } from '../core/constants.js';
 
 const MONEY_SRC = new URL('../assets/money.png', import.meta.url).href;
 const TRUMP_SRC = new URL('../assets/trump.png', import.meta.url).href;
@@ -12,6 +13,9 @@ export function createCollectibleStatsHud(container) {
   const root = document.createElement('div');
   root.className = 'collectible-stats';
   root.setAttribute('aria-label', 'Поглощено по типам');
+
+  const rowsWrap = document.createElement('div');
+  rowsWrap.className = 'collectible-stats__rows';
 
   const rows = [
     { key: 'sphere', iconKind: 'sphere' },
@@ -51,18 +55,31 @@ export function createCollectibleStatsHud(container) {
     count.textContent = '0';
 
     row.append(iconEl, count);
-    root.appendChild(row);
+    rowsWrap.appendChild(row);
     countEls.push({ key: spec.key, el: count });
     byKind.set(spec.key, { row, iconEl, count });
   }
 
+  const timer = document.createElement('div');
+  timer.className = 'collectible-stats__timer';
+  timer.setAttribute('aria-label', 'Time remaining');
+  const timerValue = document.createElement('span');
+  timerValue.className = 'collectible-stats__timer-value';
+  {
+    const s0 = Math.max(0, Math.floor(ROUND_TIME_SEC));
+    timerValue.textContent = `${Math.floor(s0 / 60)}:${(s0 % 60).toString().padStart(2, '0')}`;
+  }
+  timer.appendChild(timerValue);
+
+  root.append(rowsWrap, timer);
   container.appendChild(root);
 
   /**
-   * @param {{ sphere: number, planar: number, trump: number, poop: number }} byKind
+   * @param {{ sphere: number, planar: number, trump: number, poop: number }} byKindCounts
    * @param {ReturnType<import('../core/viewport.js').computeLayout>} layout
+   * @param {number} [secondsLeft] — оставшееся время (сек), по умолчанию `ROUND_TIME_SEC` из `constants`
    */
-  function sync(byKind, layout) {
+  function sync(byKindCounts, layout, secondsLeft = ROUND_TIME_SEC) {
     const minCss = Math.max(Math.min(layout.designWidth, layout.designHeight), 1e-6);
     const pad = Math.max(11, 0.025 * minCss);
     const gap = Math.max(6, 0.0165 * minCss);
@@ -77,8 +94,14 @@ export function createCollectibleStatsHud(container) {
     root.style.setProperty('--stats-font', `${font}px`);
 
     for (const { key, el } of countEls) {
-      el.textContent = String(byKind[key] ?? 0);
+      el.textContent = String(byKindCounts[key] ?? 0);
     }
+
+    const s = Math.max(0, Math.floor(secondsLeft));
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    timerValue.textContent = `${m}:${sec.toString().padStart(2, '0')}`;
+    timer.classList.toggle('collectible-stats__timer--warn', s > 0 && s <= 10);
   }
 
   function destroy() {

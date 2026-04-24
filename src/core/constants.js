@@ -56,6 +56,11 @@ export const GAME_VIEW_SHAKE_RESONANCE = 1.2;
 export const GAME_VIEW_ZOOM_FLASH_MAX = 0.11;
 export const GAME_VIEW_ZOOM_FLASH_DECAY = 5.2;
 
+/**
+ * Старт раунда: сколько секунд на сбор **всех** коллектаблов (см. `bootstrap` и таймер в HUD).
+ */
+export const ROUND_TIME_SEC = 30;
+
 /** Сферы: внутреннее кольцо вокруг центра карты. */
 export const COLLECTIBLE_SPHERE_COUNT = 30;
 /** Деньги: внешнее кольцо (дальше от центра, «за» шарами). */
