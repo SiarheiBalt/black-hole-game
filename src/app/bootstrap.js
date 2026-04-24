@@ -8,7 +8,16 @@ import {
   endPointerDrag,
   getHoleSizeLevelFromConsumed,
   getHoleRadius01FromConsumed,
+  getViewZoomTargetFromSizeLevel,
 } from '../core/gameState.js';
+import {
+  HOLE_VIEW_ZOOM_SMOOTH_RATE,
+  GAME_VIEW_SHAKE_AMP_PX,
+  GAME_VIEW_SHAKE_DECAY,
+  GAME_VIEW_SHAKE_RESONANCE,
+  GAME_VIEW_ZOOM_FLASH_MAX,
+  GAME_VIEW_ZOOM_FLASH_DECAY,
+} from '../core/constants.js';
 import {
   createCollectibleRunStates,
   getCollectibleItems,
@@ -34,6 +43,12 @@ async function main() {
 
   let layout = computeLayout(container);
 
+  const gameScene = document.createElement('div');
+  gameScene.className = 'game-scene';
+  container.appendChild(gameScene);
+  const gameSceneFlash = document.createElement('div');
+  gameSceneFlash.className = 'game-scene__flash';
+
   const app = new Application();
   await app.init({
     resizeTo: container,
@@ -43,7 +58,7 @@ async function main() {
     autoDensity: true,
   });
   app.canvas.classList.add('pixi-layer');
-  container.appendChild(app.canvas);
+  gameScene.appendChild(app.canvas);
 
   if (import.meta.env.DEV) {
     const { initDevtools } = await import('@pixi/devtools');
@@ -54,11 +69,17 @@ async function main() {
   const playfield = createPlayfield(app);
   playfield.resize(layout);
 
-  const holeView = await createHoleView(container, {
+  const holeView = await createHoleView(gameScene, {
     collectibleMoneyShadows: false,
     planarCollectibleFall: true,
   });
+  gameScene.appendChild(gameSceneFlash);
   holeView.resize(layout);
+  let viewZoomCurrent = getViewZoomTargetFromSizeLevel(1);
+  let lastViewZoomTarget = viewZoomCurrent;
+  let viewShakeStrength = 0;
+  let viewZoomFlashStrength = 0;
+  let viewShakeTime = 0;
 
   const state = createGameState();
   const collectibleRuns = createCollectibleRunStates();
@@ -70,7 +91,8 @@ async function main() {
   state.controlCenterNx = c.nx;
   state.controlCenterNy = c.ny;
 
-  playfield.setScroll(state.mapNx, state.mapNy, layout);
+  playfield.setScroll(state.mapNx, state.mapNy, layout, viewZoomCurrent);
+  holeView.setViewZoom(viewZoomCurrent);
   holeView.setScreenCentered();
   holeView.setHoleRadius01Immediate(state.holeRadius01);
 
@@ -95,13 +117,20 @@ async function main() {
   const ro = new ResizeObserver(() => {
     layout = computeLayout(container);
     playfield.resize(layout);
-    playfield.setScroll(state.mapNx, state.mapNy, layout);
     holeView.resize(layout);
     holeView.setScreenCentered();
     const consumed0 = getCollectibleZoneSummary(collectibleRuns).consumed;
     state.holeRadius01 = getHoleRadius01FromConsumed(consumed0);
     state.holeSizeLevel = getHoleSizeLevelFromConsumed(consumed0);
+    viewZoomCurrent = getViewZoomTargetFromSizeLevel(state.holeSizeLevel);
+    lastViewZoomTarget = viewZoomCurrent;
+    holeView.setViewZoom(viewZoomCurrent);
+    playfield.setScroll(state.mapNx, state.mapNy, layout, viewZoomCurrent);
     holeView.setHoleRadius01Immediate(state.holeRadius01);
+    viewShakeStrength = 0;
+    viewZoomFlashStrength = 0;
+    gameScene.style.transform = '';
+    gameSceneFlash.style.opacity = '0';
     holeProgressBar.sync(consumed0, layout, state.holeRadius01);
   });
   ro.observe(container);
@@ -124,11 +153,38 @@ async function main() {
       }
       stepCollectibleFall(collectibleRuns[i], dt, () => {});
     }
-    playfield.setScroll(state.mapNx, state.mapNy, layout);
-    holeView.setScreenCentered();
     consumed = getCollectibleZoneSummary(collectibleRuns).consumed;
     state.holeRadius01 = getHoleRadius01FromConsumed(consumed);
     state.holeSizeLevel = getHoleSizeLevelFromConsumed(consumed);
+    const zTarget = getViewZoomTargetFromSizeLevel(state.holeSizeLevel);
+    const zAlpha = 1 - Math.exp(-HOLE_VIEW_ZOOM_SMOOTH_RATE * Math.min(dt, 0.1));
+    viewZoomCurrent += (zTarget - viewZoomCurrent) * zAlpha;
+    if (Math.abs(viewZoomCurrent - zTarget) < 1.5e-4) {
+      viewZoomCurrent = zTarget;
+    }
+    if (zTarget > lastViewZoomTarget + 1e-7) {
+      viewShakeStrength = 1;
+      viewZoomFlashStrength = 1;
+    }
+    lastViewZoomTarget = zTarget;
+    viewShakeTime += dt * (34 + 22 * viewShakeStrength);
+    viewShakeStrength *= Math.exp(-GAME_VIEW_SHAKE_DECAY * dt);
+    if (viewShakeStrength < 0.004) viewShakeStrength = 0;
+    viewZoomFlashStrength *= Math.exp(-GAME_VIEW_ZOOM_FLASH_DECAY * dt);
+    if (viewZoomFlashStrength < 0.003) viewZoomFlashStrength = 0;
+    const sAmp =
+      GAME_VIEW_SHAKE_AMP_PX * viewShakeStrength * GAME_VIEW_SHAKE_RESONANCE;
+    const oxs = Math.sin(viewShakeTime * 3.7) * sAmp;
+    const oys = Math.sin(viewShakeTime * 2.1 + 1.1) * sAmp * 0.86;
+    gameScene.style.transform =
+      viewShakeStrength > 0.002
+        ? `translate3d(${oxs}px, ${oys}px, 0)`
+        : '';
+    const fOp = viewZoomFlashStrength * GAME_VIEW_ZOOM_FLASH_MAX;
+    gameSceneFlash.style.opacity = fOp > 0.002 ? String(fOp) : '0';
+    playfield.setScroll(state.mapNx, state.mapNy, layout, viewZoomCurrent);
+    holeView.setViewZoom(viewZoomCurrent);
+    holeView.setScreenCentered();
     holeView.setHoleRadiusTarget01(state.holeRadius01);
     holeView.stepHoleRadiusAnimation(dt);
     holeView.updateCollectibles(collectibleRuns, layout, {

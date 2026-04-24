@@ -40,6 +40,21 @@ export const HOLE_SPEED_SIZE_SLOWDOWN = 0.42;
 export const HOLE_VISUAL_BUMP_ON_GROW = 0.18;
 /** Скорость сглаживания визуала к целевому r01: `1 - exp(-rate * dt)`. */
 export const HOLE_VISUAL_SETTLE_RATE = 7.5;
+/**
+ * «Отъезд» камеры: frustum/поле ×(1+…* шаг) за каждый уровень `size` &gt; 1; верх, чтобы кадр не уезжал слишком далеко.
+ */
+export const HOLE_VIEW_ZOOM_PER_SIZE_LEVEL = 0.02;
+export const HOLE_VIEW_ZOOM_MAX = 1.2;
+/**
+ * Сглаживание к целевому зуму: `1 - exp(-rate * dt)`.
+ */
+export const HOLE_VIEW_ZOOM_SMOOTH_RATE = 2.1;
+/** «Удар» при смене целевого зума: сила сотрясения 0..1, амплитуда translate в px, затухание/с. */
+export const GAME_VIEW_SHAKE_AMP_PX = 6.5;
+export const GAME_VIEW_SHAKE_DECAY = 10;
+export const GAME_VIEW_SHAKE_RESONANCE = 1.2;
+export const GAME_VIEW_ZOOM_FLASH_MAX = 0.11;
+export const GAME_VIEW_ZOOM_FLASH_DECAY = 5.2;
 
 /** Сферы: внутреннее кольцо вокруг центра карты. */
 export const COLLECTIBLE_SPHERE_COUNT = 30;

@@ -352,9 +352,12 @@ export async function createHoleView(container, options = {}) {
   const fallStartX = new Float32Array(COLLECTIBLE_COUNT);
   const fallStartZ = new Float32Array(COLLECTIBLE_COUNT);
 
+  let viewZoomFactor = 1;
+
   function syncSunShadowToLayout(layout) {
-    const w = layout.worldHalfW;
-    const h = layout.worldHalfH;
+    const z = Math.max(1, viewZoomFactor);
+    const w = layout.worldHalfW * z;
+    const h = layout.worldHalfH * z;
     const halfDiagonal = Math.hypot(w, h);
     const span = halfDiagonal * 2.1;
     const cam = sun.shadow.camera;
@@ -365,6 +368,19 @@ export async function createHoleView(container, options = {}) {
     cam.near = 0.05;
     cam.far = 200;
     cam.updateProjectionMatrix();
+  }
+
+  function applyMainCameraLayout() {
+    if (!layoutCache) return;
+    const z = Math.max(1, viewZoomFactor);
+    const hw = layoutCache.worldHalfW * z;
+    const hh = layoutCache.worldHalfH * z;
+    camera.left = -hw;
+    camera.right = hw;
+    camera.top = hh;
+    camera.bottom = -hh;
+    camera.updateProjectionMatrix();
+    syncSunShadowToLayout(layoutCache);
   }
 
   /**
@@ -600,17 +616,10 @@ export async function createHoleView(container, options = {}) {
   }
 
   function updateCamera(layout) {
-    const hw = layout.worldHalfW;
-    const hh = layout.worldHalfH;
-    camera.left = -hw;
-    camera.right = hw;
-    camera.top = hh;
-    camera.bottom = -hh;
-    camera.updateProjectionMatrix();
+    applyMainCameraLayout();
     const pr = Math.min(window.devicePixelRatio || 1, 2);
     renderer.setPixelRatio(pr);
     renderer.setSize(layout.cssW, layout.cssH, false);
-    syncSunShadowToLayout(layout);
   }
 
   return {
@@ -618,6 +627,16 @@ export async function createHoleView(container, options = {}) {
       layoutCache = layout;
       updateCamera(layout);
       updateGroundScale(layout);
+    },
+
+    /**
+     * «Отъезд» камеры: `viewZoom` &gt;1 расширяет ортогон (должно совпадать с Pixi `setScroll` fourth arg).
+     * @param {number} zoom
+     */
+    setViewZoom(zoom) {
+      if (!layoutCache) return;
+      viewZoomFactor = Math.max(1, zoom);
+      applyMainCameraLayout();
     },
 
     setScreenCentered() {

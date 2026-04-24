@@ -16,6 +16,8 @@ import {
   HOLE_RADIUS_GROWTH_PER_SIZE_LEVEL_01,
   HOLE_RADIUS_MAX_01,
   HOLE_SPEED_SIZE_SLOWDOWN,
+  HOLE_VIEW_ZOOM_PER_SIZE_LEVEL,
+  HOLE_VIEW_ZOOM_MAX,
 } from './constants.js';
 
 /**
@@ -98,6 +100,19 @@ export function getHoleMaxSpeedScaleFromSizeLevel(sizeLevel) {
   const steps = L - 1;
   const rel = steps * (HOLE_RADIUS_GROWTH_PER_SIZE_LEVEL_01 / HOLE_RADIUS_BASE_01);
   return 1 / (1 + HOLE_SPEED_SIZE_SLOWDOWN * rel);
+}
+
+/**
+ * Целевой ортогональный зум (1 = исходно, &gt;1 — смотрим шире / «камера дальше»).
+ * @param {number} sizeLevel
+ */
+export function getViewZoomTargetFromSizeLevel(sizeLevel) {
+  const L = Math.max(1, Math.floor(sizeLevel));
+  const steps = L - 1;
+  return Math.min(
+    HOLE_VIEW_ZOOM_MAX,
+    1 + steps * HOLE_VIEW_ZOOM_PER_SIZE_LEVEL,
+  );
 }
 
 /** @returns {GameState} */

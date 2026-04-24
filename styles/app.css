@@ -17,6 +17,29 @@ body {
   overflow: hidden;
 }
 
+#game-container .game-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  will-change: transform;
+  pointer-events: auto;
+}
+
+#game-container .game-scene__flash {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    65% 55% at 50% 50%,
+    rgba(200, 245, 255, 0.5) 0%,
+    rgba(120, 200, 255, 0.12) 45%,
+    transparent 72%
+  );
+  mix-blend-mode: screen;
+}
+
 #game-container canvas {
   display: block;
   position: absolute;

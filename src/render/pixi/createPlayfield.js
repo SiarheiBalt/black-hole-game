@@ -81,8 +81,9 @@ export function createPlayfield(app) {
      * @param {number} mapNx
      * @param {number} mapNy
      * @param {ReturnType<import('../../core/viewport.js').computeLayout>} layout
+     * @param {number} [viewZoom=1] — &gt;1: вид шире (как в Three.js-ортогоне; масштаб `1/zoom` у корня).
      */
-    setScroll(mapNx, mapNy, layout) {
+    setScroll(mapNx, mapNy, layout, viewZoom = 1) {
       const m = WORLD_MAP_VIEW_MULTIPLIER;
       const { designWidth: vw, designHeight: vh } = layout;
       const worldW = vw * m;
@@ -92,7 +93,10 @@ export function createPlayfield(app) {
       const ny = Math.max(min, Math.min(max, mapNy));
       const px = nx * worldW;
       const py = ny * worldH;
-      worldRoot.position.set(vw / 2 - px, vh / 2 - py);
+      const z = Math.max(1, viewZoom);
+      const s = 1 / z;
+      worldRoot.scale.set(s, s);
+      worldRoot.position.set(vw / 2 - px * s, vh / 2 - py * s);
     },
     getLayout() {
       return layoutRef;
