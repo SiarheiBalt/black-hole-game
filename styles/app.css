@@ -56,3 +56,36 @@ body {
   z-index: 1;
   pointer-events: none;
 }
+
+/* Пульсация по углам: последние TIME_URGENT_LAST_SEC c (см. constants + bootstrap) */
+#game-container .time-urgent-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  box-sizing: border-box;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  background:
+    radial-gradient(ellipse 62% 50% at 0% 0%, rgba(255, 60, 55, 0.34) 0%, transparent 72%),
+    radial-gradient(ellipse 62% 50% at 100% 0%, rgba(240, 50, 55, 0.3) 0%, transparent 72%),
+    radial-gradient(ellipse 62% 50% at 0% 100%, rgba(235, 45, 50, 0.3) 0%, transparent 72%),
+    radial-gradient(ellipse 62% 50% at 100% 100%, rgba(255, 55, 58, 0.32) 0%, transparent 72%);
+  transition: opacity 0.2s ease, visibility 0.2s;
+}
+
+#game-container .time-urgent-vignette--on {
+  visibility: visible;
+  opacity: 0.7;
+  animation: time-urgent-corner-pulse 0.85s ease-in-out infinite;
+}
+
+@keyframes time-urgent-corner-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.72;
+  }
+}

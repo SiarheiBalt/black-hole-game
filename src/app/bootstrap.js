@@ -18,6 +18,7 @@ import {
   GAME_VIEW_ZOOM_FLASH_MAX,
   GAME_VIEW_ZOOM_FLASH_DECAY,
   ROUND_TIME_SEC,
+  TIME_URGENT_LAST_SEC,
 } from '../core/constants.js';
 import {
   createCollectibleRunStates,
@@ -50,6 +51,10 @@ async function main() {
   const gameScene = document.createElement('div');
   gameScene.className = 'game-scene';
   container.appendChild(gameScene);
+  const timeUrgencyVignette = document.createElement('div');
+  timeUrgencyVignette.className = 'time-urgent-vignette';
+  timeUrgencyVignette.setAttribute('aria-hidden', 'true');
+  container.appendChild(timeUrgencyVignette);
   const gameSceneFlash = document.createElement('div');
   gameSceneFlash.className = 'game-scene__flash';
 
@@ -107,6 +112,10 @@ async function main() {
   const gameOverOverlay = createGameOverOverlay(container);
   let timeLeftSec = ROUND_TIME_SEC;
   let gameEnded = false;
+  /** `true` с первого кадра, где дыра реально движется (ненулевая скорость). */
+  let roundTimerStarted = false;
+  /** Квадрат скорости в норм. коорд.; ниже — шум/округление. */
+  const HOLE_V2_START_EPS = 1e-20;
   collectibleStatsHud.sync(
     getConsumedCountsByKind(collectibleRuns),
     layout,
@@ -158,11 +167,17 @@ async function main() {
       return;
     }
     const dt = app.ticker.deltaMS / 1000;
-    timeLeftSec = Math.max(0, timeLeftSec - dt);
     let consumed = getCollectibleZoneSummary(collectibleRuns).consumed;
     state.holeSizeLevel = getHoleSizeLevelFromConsumed(consumed);
     state.holeRadius01 = getHoleRadius01FromConsumed(consumed);
     stepHolePhysics(state, dt, layout);
+    if (!roundTimerStarted) {
+      const v2 = state.holeVnX * state.holeVnX + state.holeVnY * state.holeVnY;
+      if (v2 > HOLE_V2_START_EPS) {
+        roundTimerStarted = true;
+        collectibleStatsHud.playTimerStartFlyout();
+      }
+    }
     const items = getCollectibleItems(layout);
     for (let i = 0; i < COLLECTIBLE_COUNT; i++) {
       if (
@@ -231,6 +246,9 @@ async function main() {
       pointerDragging: state.dragging,
     });
     holeView.render();
+    if (roundTimerStarted) {
+      timeLeftSec = Math.max(0, timeLeftSec - dt);
+    }
     holeJoystick.sync(state, layout);
     holeProgressBar.sync(consumed, layout, state.holeRadius01);
     collectibleStatsHud.sync(
@@ -245,6 +263,13 @@ async function main() {
       gameOverOverlay.show("Time's up", false);
       gameEnded = true;
     }
+    timeUrgencyVignette.classList.toggle(
+      'time-urgent-vignette--on',
+      roundTimerStarted &&
+        !gameEnded &&
+        timeLeftSec > 0 &&
+        timeLeftSec <= TIME_URGENT_LAST_SEC,
+    );
   });
 
   window.addEventListener('pagehide', () => {
@@ -256,6 +281,7 @@ async function main() {
     holePopScore.destroy();
     collectibleStatsHud.destroy();
     gameOverOverlay.destroy();
+    timeUrgencyVignette.remove();
     holeView.dispose();
     app.destroy(true, { children: true, texture: true });
   });

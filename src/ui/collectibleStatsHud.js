@@ -197,5 +197,45 @@ export function createCollectibleStatsHud(container) {
     });
   }
 
-  return { sync, destroy, playArrival };
+  /** Старт отсчёта: вылет подписи в центр игрового поля. */
+  function playTimerStartFlyout() {
+    const w = container.clientWidth;
+    const h = container.clientHeight;
+    const x = w * 0.5;
+    const y = h * 0.5;
+    const upPx = Math.min(52, 0.06 * h);
+
+    const el = document.createElement('div');
+    el.className = 'collectible-stats__timer-flyout';
+    el.textContent = "Time's running!";
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
+    Object.assign(el.style, {
+      position: 'absolute',
+      left: `${x}px`,
+      top: `${y}px`,
+      zIndex: '9',
+    });
+    container.appendChild(el);
+    const anim = el.animate(
+      [
+        { transform: 'translate(-50%, -50%) translate(0, 10px) scale(0.45)', opacity: 0 },
+        {
+          offset: 0.22,
+          opacity: 1,
+          transform: 'translate(-50%, -50%) translate(0, 0) scale(1)',
+        },
+        {
+          transform: `translate(-50%, -50%) translate(0, ${-upPx}px) scale(1.04)`,
+          opacity: 0,
+        },
+      ],
+      { duration: 900, easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)' },
+    );
+    void anim.finished.then(() => {
+      el.remove();
+    });
+  }
+
+  return { sync, destroy, playArrival, playTimerStartFlyout };
 }

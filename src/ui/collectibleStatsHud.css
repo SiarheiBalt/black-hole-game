@@ -166,3 +166,20 @@
   min-width: 4.2ch;
   font-variant-numeric: tabular-nums;
 }
+
+/* Старт таймера: вылет «Time's running!» в центр поля (анимация в JS). */
+.collectible-stats__timer-flyout {
+  pointer-events: none;
+  will-change: transform, opacity;
+  font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif;
+  font-size: clamp(1.4rem, 4.2vmin, 2rem);
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #e8fbff;
+  text-shadow:
+    0 0 4px rgba(0, 0, 0, 0.95),
+    0 0 12px rgba(0, 200, 220, 0.55),
+    0 2px 3px rgba(0, 0, 0, 0.75);
+  white-space: nowrap;
+  user-select: none;
+}

@@ -57,9 +57,15 @@ export const GAME_VIEW_ZOOM_FLASH_MAX = 0.11;
 export const GAME_VIEW_ZOOM_FLASH_DECAY = 5.2;
 
 /**
- * Старт раунда: сколько секунд на сбор **всех** коллектаблов (см. `bootstrap` и таймер в HUD).
+ * Сколько секунд даётся после **первого движения** дыры на сбор **всех** коллектаблов
+ * (таймер в HUD стартует в этот момент; до этого показывается полное значение). См. `bootstrap`.
  */
 export const ROUND_TIME_SEC = 30;
+
+/**
+ * Красные угла и «срочный» режим: последние N секунд таймера; см. `time-urgent-vignette` в `app.css` / `bootstrap`.
+ */
+export const TIME_URGENT_LAST_SEC = 5;
 
 /** Сферы: внутреннее кольцо вокруг центра карты. */
 export const COLLECTIBLE_SPHERE_COUNT = 30;
