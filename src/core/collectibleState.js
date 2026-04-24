@@ -176,6 +176,21 @@ export function getCollectibleZoneSummary(states) {
 }
 
 /**
+ * Сколько объектов каждого вида уже провалилось (`phase === 'done'`), по слотам уровня.
+ * @param {CollectibleRunState[]} states
+ * @returns {{ sphere: number, planar: number, trump: number, poop: number }}
+ */
+export function getConsumedCountsByKind(states) {
+  const counts = { sphere: 0, planar: 0, trump: 0, poop: 0 };
+  for (let i = 0; i < states.length; i++) {
+    if (states[i].phase !== 'done') continue;
+    const k = getCollectibleSlotKind(i);
+    if (Object.prototype.hasOwnProperty.call(counts, k)) counts[k] += 1;
+  }
+  return counts;
+}
+
+/**
  * Размер логического мира в тех же единицах, что смещения в `getCollectibleItems` / коллизии.
  * @param {ReturnType<import('./viewport.js').computeLayout>} layout
  * @returns {{ worldW: number, worldH: number }}

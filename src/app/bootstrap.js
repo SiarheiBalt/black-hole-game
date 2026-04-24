@@ -22,6 +22,7 @@ import {
   createCollectibleRunStates,
   getCollectibleItems,
   getCollectibleZoneSummary,
+  getConsumedCountsByKind,
   shouldCollectibleBeConsumed,
   stepCollectibleFall,
   COLLECTIBLE_COUNT,
@@ -32,6 +33,7 @@ import { createHoleView } from '../render/three/createHoleView.js';
 import { createHoleJoystick } from '../ui/holeJoystick.js';
 import { createHoleProgressBar } from '../ui/holeProgressBar.js';
 import { createHolePopScore } from '../ui/holePopScore.js';
+import { createCollectibleStatsHud } from '../ui/collectibleStatsHud.js';
 
 function centerPointerNorm() {
   return { nx: 0.5, ny: 0.5 };
@@ -99,6 +101,8 @@ async function main() {
   const holeJoystick = createHoleJoystick(container);
   const holeProgressBar = createHoleProgressBar(container);
   const holePopScore = createHolePopScore(container);
+  const collectibleStatsHud = createCollectibleStatsHud(container);
+  collectibleStatsHud.sync(getConsumedCountsByKind(collectibleRuns), layout);
   holeProgressBar.sync(0, layout, state.holeRadius01);
 
   const detachPointer = attachPointerDrag(
@@ -132,6 +136,7 @@ async function main() {
     gameScene.style.transform = '';
     gameSceneFlash.style.opacity = '0';
     holeProgressBar.sync(consumed0, layout, state.holeRadius01);
+    collectibleStatsHud.sync(getConsumedCountsByKind(collectibleRuns), layout);
   });
   ro.observe(container);
 
@@ -198,6 +203,7 @@ async function main() {
     holeView.render();
     holeJoystick.sync(state, layout);
     holeProgressBar.sync(consumed, layout, state.holeRadius01);
+    collectibleStatsHud.sync(getConsumedCountsByKind(collectibleRuns), layout);
   });
 
   window.addEventListener('pagehide', () => {
@@ -207,6 +213,7 @@ async function main() {
     holeJoystick.destroy();
     holeProgressBar.destroy();
     holePopScore.destroy();
+    collectibleStatsHud.destroy();
     holeView.dispose();
     app.destroy(true, { children: true, texture: true });
   });
