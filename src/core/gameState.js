@@ -21,6 +21,7 @@ import { getMapPositionBounds01, WORLD_MAP_VIEW_MULTIPLIER } from './constants.j
  * @property {number} controlCenterNx — точка pointerdown, центр стика
  * @property {number} controlCenterNy
  * @property {number} holeRadius01
+ * @property {number} holeSizeLevel — подпись в прогресс-баре (`size 1`, `size 2`…); дальше будет меняться с прогрессией
  * @property {boolean} dragging
  */
 
@@ -52,6 +53,7 @@ export function createGameState() {
     controlCenterNx: 0.5,
     controlCenterNy: 0.5,
     holeRadius01: 0.065,
+    holeSizeLevel: 1,
     dragging: false,
   };
 }

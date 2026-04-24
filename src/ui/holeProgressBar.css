@@ -1,0 +1,62 @@
+/* Прогресс поглощения под дырой (оверлей, pointer-events: none). */
+
+.hole-progress {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: calc(50% + var(--pbar-offset, 36px));
+  width: var(--pbar-w, 200px);
+  margin: 0;
+  transform: translateX(-50%);
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.hole-progress__track {
+  position: relative;
+  height: var(--pbar-h, 9px);
+  min-height: 8px;
+  border-radius: calc(var(--pbar-h, 9px) * 0.5);
+  box-sizing: border-box;
+  background: rgba(12, 18, 24, 0.4);
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  box-shadow:
+    inset 0 1px 1px rgba(0, 0, 0, 0.28),
+    0 1px 0 rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.hole-progress__fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0%;
+  min-width: 0;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #6ef0ff 0%, #3fc8e8 45%, #2a9ec4 100%);
+  box-shadow: 0 0 5px rgba(80, 220, 255, 0.35);
+  transition: width 0.12s ease-out;
+}
+
+.hole-progress__label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  font-family: 'Orbitron', 'Segoe UI', system-ui, sans-serif;
+  font-size: min(0.7rem, calc((var(--pbar-h, 9px) - 2px) * 0.65));
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f2fbfe;
+  text-shadow:
+    0 0 2px rgba(0, 0, 0, 0.9),
+    0 1px 2px rgba(0, 0, 0, 0.75);
+  user-select: none;
+  pointer-events: none;
+  z-index: 1;
+}

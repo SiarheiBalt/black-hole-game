@@ -34,6 +34,8 @@ export const COLLECTIBLE_COUNT =
   COLLECTIBLE_MONEY_COUNT +
   COLLECTIBLE_TRUMP_COUNT +
   COLLECTIBLE_POOP_COUNT;
+/** Поглощённых объектов (`consumed`) для 100% прогресс-бара под дырой. */
+export const COLLECTIBLE_PROGRESS_MAX = 20;
 /**
  * Радиус внутреннего круга (сферы): доля min(ширина, высота).
  */
