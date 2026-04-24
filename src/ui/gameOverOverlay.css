@@ -9,6 +9,10 @@
   justify-content: center;
   margin: 0;
   padding: min(24px, 4vw);
+  padding-top: calc(min(24px, 4vw) + env(safe-area-inset-top, 0px));
+  padding-right: calc(min(24px, 4vw) + env(safe-area-inset-right, 0px));
+  padding-bottom: calc(min(24px, 4vw) + env(safe-area-inset-bottom, 0px));
+  padding-left: calc(min(24px, 4vw) + env(safe-area-inset-left, 0px));
   box-sizing: border-box;
   pointer-events: auto;
   user-select: none;
@@ -149,10 +153,48 @@
   }
 }
 
+.game-over-overlay__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: clamp(1rem, 3.5vw, 1.5rem) auto 0;
+  min-width: min(88vw, 280px);
+  min-height: 48px;
+  padding: 0.65rem 1.5rem;
+  box-sizing: border-box;
+  touch-action: manipulation;
+  cursor: pointer;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-size: clamp(1rem, 3.8vw, 1.2rem);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #0a1820;
+  background: linear-gradient(180deg, #fffef6 0%, #ffe066 38%, #f0b020 100%);
+  border: 2px solid rgba(0, 0, 0, 0.35);
+  border-radius: 14px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 3px 0 rgba(0, 0, 0, 0.22),
+    0 8px 22px rgba(0, 0, 0, 0.35);
+}
+
+.game-over-overlay__cta:active {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 1px 0 rgba(0, 0, 0, 0.25),
+    0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.game-over-overlay--fatal .game-over-overlay__panel {
+  border-color: rgba(255, 120, 100, 0.5);
+}
+
 .game-over-overlay__message {
   margin: 0;
   max-width: 100%;
-  font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
   font-size: clamp(1.85rem, 7vmin, 3.4rem);
   font-weight: 800;
   line-height: 1.1;

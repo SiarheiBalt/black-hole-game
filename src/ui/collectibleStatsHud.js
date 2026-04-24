@@ -74,6 +74,10 @@ export function createCollectibleStatsHud(container) {
   root.append(rowsWrap, timer);
   container.appendChild(root);
 
+  let lastLayoutMin = -1;
+  let lastCountsSig = '';
+  let lastTimerSec = -1;
+
   /**
    * @param {{ sphere: number, planar: number, trump: number, poop: number }} byKindCounts
    * @param {ReturnType<import('../core/viewport.js').computeLayout>} layout
@@ -81,27 +85,37 @@ export function createCollectibleStatsHud(container) {
    */
   function sync(byKindCounts, layout, secondsLeft = ROUND_TIME_SEC) {
     const minCss = Math.max(Math.min(layout.designWidth, layout.designHeight), 1e-6);
-    const pad = Math.max(11, 0.025 * minCss);
-    const gap = Math.max(6, 0.0165 * minCss);
-    const inset = Math.max(8, 0.021 * minCss);
-    const icon = Math.max(23, 0.045 * minCss);
-    const font = Math.max(13, 0.03 * minCss);
-    root.style.setProperty('--stats-pad', `${pad}px`);
-    root.style.setProperty('--stats-gap', `${gap}px`);
-    root.style.setProperty('--stats-inset', `${inset}px`);
-    root.style.setProperty('--stats-row-gap', `${Math.max(7, 0.018 * minCss)}px`);
-    root.style.setProperty('--stats-icon', `${icon}px`);
-    root.style.setProperty('--stats-font', `${font}px`);
+    if (minCss !== lastLayoutMin) {
+      lastLayoutMin = minCss;
+      const pad = Math.max(11, 0.025 * minCss);
+      const gap = Math.max(6, 0.0165 * minCss);
+      const inset = Math.max(8, 0.021 * minCss);
+      const icon = Math.max(23, 0.045 * minCss);
+      const font = Math.max(13, 0.03 * minCss);
+      root.style.setProperty('--stats-pad', `${pad}px`);
+      root.style.setProperty('--stats-gap', `${gap}px`);
+      root.style.setProperty('--stats-inset', `${inset}px`);
+      root.style.setProperty('--stats-row-gap', `${Math.max(7, 0.018 * minCss)}px`);
+      root.style.setProperty('--stats-icon', `${icon}px`);
+      root.style.setProperty('--stats-font', `${font}px`);
+    }
 
-    for (const { key, el } of countEls) {
-      el.textContent = String(byKindCounts[key] ?? 0);
+    const sig = countEls.map(({ key }) => String(byKindCounts[key] ?? 0)).join(',');
+    if (sig !== lastCountsSig) {
+      lastCountsSig = sig;
+      for (const { key, el } of countEls) {
+        el.textContent = String(byKindCounts[key] ?? 0);
+      }
     }
 
     const s = Math.max(0, Math.floor(secondsLeft));
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    timerValue.textContent = `${m}:${sec.toString().padStart(2, '0')}`;
-    timer.classList.toggle('collectible-stats__timer--warn', s > 0 && s <= 10);
+    if (s !== lastTimerSec) {
+      lastTimerSec = s;
+      const m = Math.floor(s / 60);
+      const sec = s % 60;
+      timerValue.textContent = `${m}:${sec.toString().padStart(2, '0')}`;
+      timer.classList.toggle('collectible-stats__timer--warn', s > 0 && s <= 10);
+    }
   }
 
   function destroy() {

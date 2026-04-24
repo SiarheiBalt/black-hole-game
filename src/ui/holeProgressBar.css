@@ -46,7 +46,7 @@
   align-items: center;
   justify-content: center;
   margin: 0;
-  font-family: 'Orbitron', 'Segoe UI', system-ui, sans-serif;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
   font-size: min(0.7rem, calc((var(--pbar-h, 9px) - 2px) * 0.65));
   font-weight: 600;
   line-height: 1;

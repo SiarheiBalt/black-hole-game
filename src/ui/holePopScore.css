@@ -15,7 +15,7 @@
   /* Центр глифа — на верхней точке дыры: как holeVisual.scale ELLIPSE_Z в createHoleView */
   top: calc(50% - var(--pop-hole-rim-px, 0px));
   margin: 0;
-  font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
   font-size: clamp(1.85rem, 6.8vmin, 3.25rem);
   font-weight: 800;
   line-height: 1;

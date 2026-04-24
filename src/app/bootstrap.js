@@ -37,6 +37,14 @@ import { createHoleProgressBar } from '../ui/holeProgressBar.js';
 import { createHolePopScore } from '../ui/holePopScore.js';
 import { createCollectibleStatsHud } from '../ui/collectibleStatsHud.js';
 import { createGameOverOverlay } from '../ui/gameOverOverlay.js';
+import {
+  attachPlayableApp,
+  disposePlayableLifecycle,
+  fireGameEnd,
+  fireGameReady,
+  installPlayableLifecycle,
+  markGameClosed,
+} from './playableAdapter.js';
 
 function centerPointerNorm() {
   return { nx: 0.5, ny: 0.5 };
@@ -45,6 +53,23 @@ function centerPointerNorm() {
 async function main() {
   const container = document.getElementById('game-container');
   if (!container) throw new Error('#game-container missing');
+
+  const run = { gameEnded: false, fatalHandled: false };
+  /** @type {import('pixi.js').Application | undefined} */
+  let app;
+
+  const gameOverOverlay = createGameOverOverlay(container);
+
+  installPlayableLifecycle({
+    shouldResumeTicker: () => !run.gameEnded,
+    onFatalError: () => {
+      if (run.fatalHandled) return;
+      run.fatalHandled = true;
+      run.gameEnded = true;
+      app?.ticker?.stop();
+      gameOverOverlay.show('Something went wrong', false, { isFatal: true });
+    },
+  });
 
   let layout = computeLayout(container);
 
@@ -58,7 +83,7 @@ async function main() {
   const gameSceneFlash = document.createElement('div');
   gameSceneFlash.className = 'game-scene__flash';
 
-  const app = new Application();
+  app = new Application();
   await app.init({
     resizeTo: container,
     backgroundAlpha: 0,
@@ -66,6 +91,7 @@ async function main() {
     resolution: Math.min(window.devicePixelRatio || 1, 2),
     autoDensity: true,
   });
+  attachPlayableApp(app);
   app.canvas.classList.add('pixi-layer');
   gameScene.appendChild(app.canvas);
 
@@ -109,19 +135,47 @@ async function main() {
   const holeProgressBar = createHoleProgressBar(container);
   const holePopScore = createHolePopScore(container);
   const collectibleStatsHud = createCollectibleStatsHud(container);
-  const gameOverOverlay = createGameOverOverlay(container);
   let timeLeftSec = ROUND_TIME_SEC;
-  let gameEnded = false;
-  /** `true` с первого кадра, где дыра реально движется (ненулевая скорость). */
+  /** С первого кадра, где дыра реально движется (ненулевая скорость). */
   let roundTimerStarted = false;
-  /** Квадрат скорости в норм. коорд.; ниже — шум/округление. */
   const HOLE_V2_START_EPS = 1e-20;
+
   collectibleStatsHud.sync(
     getConsumedCountsByKind(collectibleRuns),
     layout,
     timeLeftSec,
   );
   holeProgressBar.sync(0, layout, state.holeRadius01);
+
+  fireGameReady();
+
+  function endRound(won) {
+    if (run.gameEnded) return;
+    run.gameEnded = true;
+    fireGameEnd();
+    app.ticker.stop();
+    gameOverOverlay.show(won ? 'Wonderful' : "Time's up", won);
+  }
+
+  function applyResizeSync(consumedSnapshot) {
+    state.holeRadius01 = getHoleRadius01FromConsumed(consumedSnapshot);
+    state.holeSizeLevel = getHoleSizeLevelFromConsumed(consumedSnapshot);
+    viewZoomCurrent = getViewZoomTargetFromSizeLevel(state.holeSizeLevel);
+    lastViewZoomTarget = viewZoomCurrent;
+    holeView.setViewZoom(viewZoomCurrent);
+    playfield.setScroll(state.mapNx, state.mapNy, layout, viewZoomCurrent);
+    holeView.setHoleRadius01Immediate(state.holeRadius01);
+    viewShakeStrength = 0;
+    viewZoomFlashStrength = 0;
+    gameScene.style.transform = '';
+    gameSceneFlash.style.opacity = '0';
+    holeProgressBar.sync(consumedSnapshot, layout, state.holeRadius01);
+    collectibleStatsHud.sync(
+      getConsumedCountsByKind(collectibleRuns),
+      layout,
+      timeLeftSec,
+    );
+  }
 
   const detachPointer = attachPointerDrag(
     container,
@@ -142,35 +196,18 @@ async function main() {
     holeView.resize(layout);
     holeView.setScreenCentered();
     const consumed0 = getCollectibleZoneSummary(collectibleRuns).consumed;
-    state.holeRadius01 = getHoleRadius01FromConsumed(consumed0);
-    state.holeSizeLevel = getHoleSizeLevelFromConsumed(consumed0);
-    viewZoomCurrent = getViewZoomTargetFromSizeLevel(state.holeSizeLevel);
-    lastViewZoomTarget = viewZoomCurrent;
-    holeView.setViewZoom(viewZoomCurrent);
-    playfield.setScroll(state.mapNx, state.mapNy, layout, viewZoomCurrent);
-    holeView.setHoleRadius01Immediate(state.holeRadius01);
-    viewShakeStrength = 0;
-    viewZoomFlashStrength = 0;
-    gameScene.style.transform = '';
-    gameSceneFlash.style.opacity = '0';
-    holeProgressBar.sync(consumed0, layout, state.holeRadius01);
-    collectibleStatsHud.sync(
-      getConsumedCountsByKind(collectibleRuns),
-      layout,
-      timeLeftSec,
-    );
+    applyResizeSync(consumed0);
   });
   ro.observe(container);
 
   app.ticker.add(() => {
-    if (gameEnded) {
+    if (run.gameEnded) {
       return;
     }
     const dt = app.ticker.deltaMS / 1000;
-    let consumed = getCollectibleZoneSummary(collectibleRuns).consumed;
-    state.holeSizeLevel = getHoleSizeLevelFromConsumed(consumed);
-    state.holeRadius01 = getHoleRadius01FromConsumed(consumed);
+
     stepHolePhysics(state, dt, layout);
+
     if (!roundTimerStarted) {
       const v2 = state.holeVnX * state.holeVnX + state.holeVnY * state.holeVnY;
       if (v2 > HOLE_V2_START_EPS) {
@@ -178,6 +215,7 @@ async function main() {
         collectibleStatsHud.playTimerStartFlyout();
       }
     }
+
     const items = getCollectibleItems(layout);
     for (let i = 0; i < COLLECTIBLE_COUNT; i++) {
       if (
@@ -203,9 +241,11 @@ async function main() {
         }
       });
     }
-    consumed = getCollectibleZoneSummary(collectibleRuns).consumed;
+
+    const consumed = getCollectibleZoneSummary(collectibleRuns).consumed;
     state.holeRadius01 = getHoleRadius01FromConsumed(consumed);
     state.holeSizeLevel = getHoleSizeLevelFromConsumed(consumed);
+
     const zTarget = getViewZoomTargetFromSizeLevel(state.holeSizeLevel);
     const zAlpha = 1 - Math.exp(-HOLE_VIEW_ZOOM_SMOOTH_RATE * Math.min(dt, 0.1));
     viewZoomCurrent += (zTarget - viewZoomCurrent) * zAlpha;
@@ -232,6 +272,7 @@ async function main() {
         : '';
     const fOp = viewZoomFlashStrength * GAME_VIEW_ZOOM_FLASH_MAX;
     gameSceneFlash.style.opacity = fOp > 0.002 ? String(fOp) : '0';
+
     playfield.setScroll(state.mapNx, state.mapNy, layout, viewZoomCurrent);
     holeView.setViewZoom(viewZoomCurrent);
     holeView.setScreenCentered();
@@ -246,9 +287,11 @@ async function main() {
       pointerDragging: state.dragging,
     });
     holeView.render();
+
     if (roundTimerStarted) {
       timeLeftSec = Math.max(0, timeLeftSec - dt);
     }
+
     holeJoystick.sync(state, layout);
     holeProgressBar.sync(consumed, layout, state.holeRadius01);
     collectibleStatsHud.sync(
@@ -256,23 +299,25 @@ async function main() {
       layout,
       timeLeftSec,
     );
-    if (consumed >= COLLECTIBLE_COUNT) {
-      gameOverOverlay.show('Wonderful', true);
-      gameEnded = true;
-    } else if (timeLeftSec <= 0) {
-      gameOverOverlay.show("Time's up", false);
-      gameEnded = true;
-    }
+
     timeUrgencyVignette.classList.toggle(
       'time-urgent-vignette--on',
       roundTimerStarted &&
-        !gameEnded &&
+        !run.gameEnded &&
         timeLeftSec > 0 &&
         timeLeftSec <= TIME_URGENT_LAST_SEC,
     );
+
+    if (consumed >= COLLECTIBLE_COUNT) {
+      endRound(true);
+    } else if (timeLeftSec <= 0) {
+      endRound(false);
+    }
   });
 
   window.addEventListener('pagehide', () => {
+    markGameClosed();
+    disposePlayableLifecycle();
     detachPointer();
     ro.disconnect();
     playfield.destroy();
@@ -289,4 +334,8 @@ async function main() {
 
 main().catch((e) => {
   console.error(e);
+  const c = document.getElementById('game-container');
+  if (!c) return;
+  c.replaceChildren();
+  createGameOverOverlay(c).show('Unable to start', false, { isFatal: true });
 });
