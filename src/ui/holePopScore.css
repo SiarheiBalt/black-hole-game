@@ -49,3 +49,31 @@
     opacity: 0;
   }
 }
+
+/* Рост уровня size: сильнее «вылезает» из дыры и дольше растёт */
+.hole-pop-score__item--size-up {
+  font-size: clamp(2rem, 7.5vmin, 3.6rem);
+  animation: hole-pop-size-up-float 1.05s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes hole-pop-size-up-float {
+  0% {
+    transform: translate(-50%, calc(-50% + 22px)) scale(0.12);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  55% {
+    transform: translate(-50%, calc(-50% - min(28px, 4vmin))) scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(
+        -50%,
+        calc(-50% - min(72px, 9vmin))
+      )
+      scale(1.38);
+    opacity: 0;
+  }
+}

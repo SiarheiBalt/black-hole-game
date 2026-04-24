@@ -45,6 +45,7 @@ import {
   installPlayableLifecycle,
   markGameClosed,
 } from './playableAdapter.js';
+import { createGameAudio, SOUND_IDS } from '../audio/gameAudio.js';
 
 function centerPointerNorm() {
   return { nx: 0.5, ny: 0.5 };
@@ -115,6 +116,8 @@ async function main() {
   let viewShakeStrength = 0;
   let viewZoomFlashStrength = 0;
   let viewShakeTime = 0;
+  /** Чтобы при апгрейде size показать подпись один раз и не дублировать после resize. */
+  let prevHoleSizeLevel = 1;
 
   const state = createGameState();
   const collectibleRuns = createCollectibleRunStates();
@@ -135,6 +138,13 @@ async function main() {
   const holeProgressBar = createHoleProgressBar(container);
   const holePopScore = createHolePopScore(container);
   const collectibleStatsHud = createCollectibleStatsHud(container);
+  const gameAudio = createGameAudio();
+  let audioUnlocked = false;
+  function ensureAudioUnlocked() {
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+    gameAudio.unlock();
+  }
   let timeLeftSec = ROUND_TIME_SEC;
   /** С первого кадра, где дыра реально движется (ненулевая скорость). */
   let roundTimerStarted = false;
@@ -146,6 +156,7 @@ async function main() {
     timeLeftSec,
   );
   holeProgressBar.sync(0, layout, state.holeRadius01);
+  prevHoleSizeLevel = state.holeSizeLevel;
 
   fireGameReady();
 
@@ -170,6 +181,7 @@ async function main() {
     gameScene.style.transform = '';
     gameSceneFlash.style.opacity = '0';
     holeProgressBar.sync(consumedSnapshot, layout, state.holeRadius01);
+    prevHoleSizeLevel = state.holeSizeLevel;
     collectibleStatsHud.sync(
       getConsumedCountsByKind(collectibleRuns),
       layout,
@@ -180,12 +192,15 @@ async function main() {
   const detachPointer = attachPointerDrag(
     container,
     (nx, ny) => {
+      ensureAudioUnlocked();
       setPointerTarget(state, nx, ny);
     },
     (nx, ny) => {
+      ensureAudioUnlocked();
       beginPointerDrag(state, nx, ny);
     },
     () => {
+      ensureAudioUnlocked();
       endPointerDrag(state);
     },
   );
@@ -225,6 +240,7 @@ async function main() {
         collectibleRuns[i].phase = 'falling';
         collectibleRuns[i].t = 0;
         holePopScore.pop(layout, state.holeRadius01);
+        gameAudio.play(SOUND_IDS.suction);
       }
       stepCollectibleFall(collectibleRuns[i], dt, () => {
         const kind = items[i].kind;
@@ -245,6 +261,12 @@ async function main() {
     const consumed = getCollectibleZoneSummary(collectibleRuns).consumed;
     state.holeRadius01 = getHoleRadius01FromConsumed(consumed);
     state.holeSizeLevel = getHoleSizeLevelFromConsumed(consumed);
+    if (state.holeSizeLevel > prevHoleSizeLevel) {
+      holePopScore.pop(layout, state.holeRadius01, `size ${state.holeSizeLevel}`, {
+        kind: 'sizeUp',
+      });
+      prevHoleSizeLevel = state.holeSizeLevel;
+    }
 
     const zTarget = getViewZoomTargetFromSizeLevel(state.holeSizeLevel);
     const zAlpha = 1 - Math.exp(-HOLE_VIEW_ZOOM_SMOOTH_RATE * Math.min(dt, 0.1));
@@ -255,6 +277,7 @@ async function main() {
     if (zTarget > lastViewZoomTarget + 1e-7) {
       viewShakeStrength = 1;
       viewZoomFlashStrength = 1;
+      gameAudio.play(SOUND_IDS.holeZoom);
     }
     lastViewZoomTarget = zTarget;
     viewShakeTime += dt * (34 + 22 * viewShakeStrength);
@@ -328,6 +351,7 @@ async function main() {
     gameOverOverlay.destroy();
     timeUrgencyVignette.remove();
     holeView.dispose();
+    gameAudio.dispose();
     app.destroy(true, { children: true, texture: true });
   });
 }
