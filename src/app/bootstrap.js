@@ -20,6 +20,7 @@ import { createPlayfield } from '../render/pixi/createPlayfield.js';
 import { createHoleView } from '../render/three/createHoleView.js';
 import { createHoleJoystick } from '../ui/holeJoystick.js';
 import { createHoleProgressBar } from '../ui/holeProgressBar.js';
+import { createHolePopScore } from '../ui/holePopScore.js';
 
 function centerPointerNorm() {
   return { nx: 0.5, ny: 0.5 };
@@ -73,6 +74,7 @@ async function main() {
 
   const holeJoystick = createHoleJoystick(container);
   const holeProgressBar = createHoleProgressBar(container);
+  const holePopScore = createHolePopScore(container);
   holeProgressBar.sync(0, layout, state.holeRadius01, state.holeSizeLevel);
 
   const detachPointer = attachPointerDrag(
@@ -115,6 +117,7 @@ async function main() {
       ) {
         collectibleRuns[i].phase = 'falling';
         collectibleRuns[i].t = 0;
+        holePopScore.pop(layout, state.holeRadius01);
       }
       stepCollectibleFall(collectibleRuns[i], dt, () => {});
     }
@@ -144,6 +147,7 @@ async function main() {
     playfield.destroy();
     holeJoystick.destroy();
     holeProgressBar.destroy();
+    holePopScore.destroy();
     holeView.dispose();
     app.destroy(true, { children: true, texture: true });
   });

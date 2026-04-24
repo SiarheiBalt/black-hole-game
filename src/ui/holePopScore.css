@@ -1,0 +1,51 @@
+/* Вылетающий «+1» с верхней кромки эллипса дыры: масштаб ↑ и затухание. */
+
+.hole-pop-score {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.hole-pop-score__item {
+  --pop-hole-rim-px: 0px;
+  position: absolute;
+  left: calc(50% + var(--pop-dx, 0px));
+  /* Центр глифа — на верхней точке дыры: как holeVisual.scale ELLIPSE_Z в createHoleView */
+  top: calc(50% - var(--pop-hole-rim-px, 0px));
+  margin: 0;
+  font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif;
+  font-size: clamp(1.85rem, 6.8vmin, 3.25rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: #d4fff2;
+  text-shadow:
+    0 0 4px rgba(0, 0, 0, 0.98),
+    0 0 14px rgba(0, 230, 210, 0.55),
+    0 0 22px rgba(0, 180, 170, 0.25),
+    0 3px 3px rgba(0, 0, 0, 0.7);
+  user-select: none;
+  white-space: nowrap;
+  will-change: transform, opacity;
+  animation: hole-pop-score-float 0.75s ease-out forwards;
+}
+
+@keyframes hole-pop-score-float {
+  0% {
+    transform: translate(-50%, calc(-50% + 14px)) scale(0.3);
+    opacity: 0;
+  }
+  14% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(
+        -50%,
+        calc(-50% - min(56px, 7vmin))
+      )
+      scale(1.1);
+    opacity: 0;
+  }
+}
