@@ -156,7 +156,20 @@ async function main() {
         collectibleRuns[i].t = 0;
         holePopScore.pop(layout, state.holeRadius01);
       }
-      stepCollectibleFall(collectibleRuns[i], dt, () => {});
+      stepCollectibleFall(collectibleRuns[i], dt, () => {
+        const kind = items[i].kind;
+        if (
+          kind === 'sphere' ||
+          kind === 'planar' ||
+          kind === 'trump' ||
+          kind === 'poop'
+        ) {
+          collectibleStatsHud.playArrival(
+            kind,
+            holeView.getHoleScreenCenterIn(container),
+          );
+        }
+      });
     }
     consumed = getCollectibleZoneSummary(collectibleRuns).consumed;
     state.holeRadius01 = getHoleRadius01FromConsumed(consumed);

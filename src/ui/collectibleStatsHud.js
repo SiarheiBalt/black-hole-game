@@ -23,9 +23,13 @@ export function createCollectibleStatsHud(container) {
   /** @type {{ key: string, el: HTMLElement }[]} */
   const countEls = [];
 
+  /** @type {Map<string, { row: HTMLElement, iconEl: HTMLElement, count: HTMLElement }>} */
+  const byKind = new Map();
+
   for (const spec of rows) {
     const row = document.createElement('div');
     row.className = 'collectible-stats__row';
+    row.dataset.collectibleKind = spec.key;
 
     let iconEl;
     if (spec.iconKind === 'sphere') {
@@ -49,6 +53,7 @@ export function createCollectibleStatsHud(container) {
     row.append(iconEl, count);
     root.appendChild(row);
     countEls.push({ key: spec.key, el: count });
+    byKind.set(spec.key, { row, iconEl, count });
   }
 
   container.appendChild(root);
@@ -80,5 +85,94 @@ export function createCollectibleStatsHud(container) {
     root.remove();
   }
 
-  return { sync, destroy };
+  /**
+   * После поглощения в 3D: мини-иконка летит от дыры к строке, при прилёте — пульс иконки.
+   * @param {string} kind — `sphere` | `planar` | `trump` | `poop`
+   * @param {{ x: number, y: number }} from — центр дыры в пикселях от `container` (как getBoundingClientRect-разница)
+   */
+  function playArrival(kind, from) {
+    const rec = byKind.get(kind);
+    if (!rec) return;
+
+    const cRect = container.getBoundingClientRect();
+    const iRect = rec.iconEl.getBoundingClientRect();
+    const toX = iRect.left + iRect.width * 0.5 - cRect.left;
+    const toY = iRect.top + iRect.height * 0.5 - cRect.top;
+    const fromX = from.x;
+    const fromY = from.y;
+
+    /** Квадратичная Безье: контрольная точка под хордой (нижняя дуга; Y вниз по экрану). */
+    const chord = Math.hypot(toX - fromX, toY - fromY);
+    const sag = Math.max(52, Math.min(220, 0.22 * cRect.height + 0.16 * chord));
+    const cx = (fromX + toX) * 0.5;
+    const cy = (fromY + toY) * 0.5 + sag;
+    const quad = (t) => {
+      const u = 1 - t;
+      return {
+        x: u * u * fromX + 2 * u * t * cx + t * t * toX,
+        y: u * u * fromY + 2 * u * t * cy + t * t * toY,
+      };
+    };
+
+    const size = Math.max(28, Math.min(56, (iRect.width + iRect.height) * 0.5));
+
+    const fly = document.createElement('div');
+    fly.className = 'collectible-stats__fly';
+    fly.setAttribute('aria-hidden', 'true');
+
+    const inner =
+      rec.iconEl.tagName === 'IMG'
+        ? (() => {
+            const img = document.createElement('img');
+            img.className = 'collectible-stats__fly-icon collectible-stats__fly-icon--img';
+            img.src = /** @type {HTMLImageElement} */ (rec.iconEl).src;
+            img.alt = '';
+            return img;
+          })()
+        : (() => {
+            const m = document.createElement('div');
+            m.className =
+              'collectible-stats__fly-icon collectible-stats__icon collectible-stats__icon--sphere';
+            return m;
+          })();
+
+    fly.appendChild(inner);
+    container.appendChild(fly);
+    Object.assign(fly.style, {
+      position: 'absolute',
+      left: '0',
+      top: '0',
+      width: `${size}px`,
+      height: `${size}px`,
+      zIndex: '8',
+    });
+
+    const durationMs = 920;
+    const nSeg = 12;
+    const stops = Array.from({ length: nSeg + 1 }, (_, j) => j / nSeg);
+    const kf = stops.map((t) => {
+      const p = quad(t);
+      const sc = 0.28 + (1 - 0.28) * t;
+      return {
+        offset: t,
+        transform: `translate(${p.x}px, ${p.y}px) translate(-50%, -50%) scale(${sc})`,
+        opacity: 0.92 - 0.04 * t,
+      };
+    });
+    const anim = fly.animate(kf, {
+      duration: durationMs,
+      easing: 'cubic-bezier(0.33, 0, 0.2, 1)',
+    });
+    void anim.finished.then(() => {
+      fly.remove();
+      rec.iconEl.classList.add('collectible-stats__icon--arrived');
+      const onEnd = () => {
+        rec.iconEl.removeEventListener('animationend', onEnd);
+        rec.iconEl.classList.remove('collectible-stats__icon--arrived');
+      };
+      rec.iconEl.addEventListener('animationend', onEnd);
+    });
+  }
+
+  return { sync, destroy, playArrival };
 }

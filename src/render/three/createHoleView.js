@@ -716,6 +716,21 @@ export async function createHoleView(container, options = {}) {
       renderer.render(scene, camera);
     },
 
+    /**
+     * Центр canvas дыры в координатах от `offsetParent` (как смещения от `getBoundingClientRect`).
+     * @param {HTMLElement} offsetParent
+     * @returns {{ x: number, y: number }}
+     */
+    getHoleScreenCenterIn(offsetParent) {
+      const el = renderer.domElement;
+      const er = el.getBoundingClientRect();
+      const pr = offsetParent.getBoundingClientRect();
+      return {
+        x: er.left + er.width * 0.5 - pr.left,
+        y: er.top + er.height * 0.5 - pr.top,
+      };
+    },
+
     dispose() {
       groundGeom.dispose();
       groundMat.dispose();
