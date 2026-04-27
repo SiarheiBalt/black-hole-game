@@ -1,6 +1,7 @@
 import { Howl, Howler } from 'howler';
 import suctionUrl from '../assets/sounds/suction.mp3';
 import holeZoomUrl from '../assets/sounds/hole-zoom.mp3';
+import backUrl from '../assets/sounds/back.mp3';
 
 /**
  * Идентификаторы звуков. Новые треки: добавить ключ сюда и запись в {@link SOUND_MANIFEST}.
@@ -9,26 +10,73 @@ import holeZoomUrl from '../assets/sounds/hole-zoom.mp3';
 export const SOUND_IDS = Object.freeze({
   suction: 'suction',
   holeZoom: 'holeZoom',
+  background: 'background',
 });
 
 /**
  * @typedef {Object} SoundSpec
  * @property {readonly string[]} src
  * @property {number} [volume]
+ * @property {boolean} [loop]
+ * @property {boolean} [html5] — длинный фон на iOS стабильнее через HTML5 Audio
  */
 
 /** @type {Readonly<Record<string, SoundSpec>>} */
 const SOUND_MANIFEST = Object.freeze({
   [SOUND_IDS.suction]: { src: [suctionUrl], volume: 0.75 },
   [SOUND_IDS.holeZoom]: { src: [holeZoomUrl], volume: 0.7 },
+  [SOUND_IDS.background]: {
+    src: [backUrl],
+    volume: 0.8,
+    loop: true,
+    html5: true,
+  },
 });
 
+function resumeAudioContext() {
+  const ctx = Howler.ctx;
+  if (ctx && ctx.state === 'suspended') {
+    ctx.resume().catch(() => {});
+  }
+}
+
 /**
- * @returns {{ play: (id: string) => void, unlock: () => void, dispose: () => void }}
+ * @returns {{
+ *   initPlayableAudioLifecycle: () => void,
+ *   play: (id: string) => void,
+ *   unlock: () => void,
+ *   dispose: () => void,
+ * }}
  */
 export function createGameAudio() {
   /** @type {Record<string, import('howler').Howl>} */
   const howls = {};
+  let audioUnlocked = false;
+  let backgroundMusicStarted = false;
+  let disposed = false;
+  let lifecycleStarted = false;
+  /** @type {(() => void)[]} */
+  const detachFns = [];
+
+  function pauseAll() {
+    for (const h of Object.values(howls)) {
+      h.pause();
+    }
+  }
+
+  function tryResumeBackground() {
+    if (disposed || !audioUnlocked || !backgroundMusicStarted) return;
+    const h = howls[SOUND_IDS.background];
+    if (h && !h.playing()) {
+      h.play();
+    }
+  }
+
+  function onVisibilityOrFocusReturn() {
+    if (disposed || document.hidden) return;
+    resumeAudioContext();
+    tryResumeBackground();
+  }
 
   /**
    * @param {string} id
@@ -42,6 +90,8 @@ export function createGameAudio() {
       h = new Howl({
         src: [...spec.src],
         volume: spec.volume ?? 1,
+        loop: spec.loop ?? false,
+        html5: spec.html5 ?? false,
         preload: true,
       });
       howls[id] = h;
@@ -49,20 +99,70 @@ export function createGameAudio() {
     return h;
   }
 
+  function startBackgroundAfterUnlock() {
+    if (disposed || !audioUnlocked || backgroundMusicStarted) return;
+    backgroundMusicStarted = true;
+    const h = getHowl(SOUND_IDS.background);
+    if (h && !h.playing()) {
+      h.play();
+    }
+  }
+
+  function markUnlockedFromUserGesture() {
+    if (disposed || audioUnlocked) return;
+    audioUnlocked = true;
+    resumeAudioContext();
+    startBackgroundAfterUnlock();
+  }
+
   return {
+    initPlayableAudioLifecycle() {
+      if (lifecycleStarted || disposed) return;
+      lifecycleStarted = true;
+
+      const once = { once: true, passive: true };
+      for (const type of ['pointerdown', 'touchstart', 'click']) {
+        const fn = () => markUnlockedFromUserGesture();
+        document.addEventListener(type, fn, once);
+        detachFns.push(() => document.removeEventListener(type, fn, once));
+      }
+
+      const onVis = () => {
+        if (document.hidden) pauseAll();
+        else onVisibilityOrFocusReturn();
+      };
+      document.addEventListener('visibilitychange', onVis, { passive: true });
+      detachFns.push(() =>
+        document.removeEventListener('visibilitychange', onVis),
+      );
+
+      const onBlur = () => pauseAll();
+      const onFocus = () => onVisibilityOrFocusReturn();
+      window.addEventListener('blur', onBlur, { passive: true });
+      window.addEventListener('focus', onFocus, { passive: true });
+      detachFns.push(() => window.removeEventListener('blur', onBlur));
+      detachFns.push(() => window.removeEventListener('focus', onFocus));
+
+      const onPageHide = () => pauseAll();
+      window.addEventListener('pagehide', onPageHide, { passive: true });
+      detachFns.push(() => window.removeEventListener('pagehide', onPageHide));
+    },
+
     play(id) {
+      if (disposed || !audioUnlocked) return;
+      resumeAudioContext();
       const h = getHowl(id);
       if (h) h.play();
     },
 
-    unlock() {
-      const ctx = Howler.ctx;
-      if (ctx && ctx.state === 'suspended') {
-        ctx.resume().catch(() => {});
-      }
-    },
+    unlock: resumeAudioContext,
 
     dispose() {
+      if (disposed) return;
+      disposed = true;
+      for (const d of detachFns) d();
+      detachFns.length = 0;
+      pauseAll();
       for (const id of Object.keys(howls)) {
         howls[id].unload();
         delete howls[id];

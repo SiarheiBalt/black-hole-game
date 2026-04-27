@@ -139,12 +139,7 @@ async function main() {
   const holePopScore = createHolePopScore(container);
   const collectibleStatsHud = createCollectibleStatsHud(container);
   const gameAudio = createGameAudio();
-  let audioUnlocked = false;
-  function ensureAudioUnlocked() {
-    if (audioUnlocked) return;
-    audioUnlocked = true;
-    gameAudio.unlock();
-  }
+  gameAudio.initPlayableAudioLifecycle();
   let timeLeftSec = ROUND_TIME_SEC;
   /** С первого кадра, где дыра реально движется (ненулевая скорость). */
   let roundTimerStarted = false;
@@ -192,15 +187,15 @@ async function main() {
   const detachPointer = attachPointerDrag(
     container,
     (nx, ny) => {
-      ensureAudioUnlocked();
+      gameAudio.unlock();
       setPointerTarget(state, nx, ny);
     },
     (nx, ny) => {
-      ensureAudioUnlocked();
+      gameAudio.unlock();
       beginPointerDrag(state, nx, ny);
     },
     () => {
-      ensureAudioUnlocked();
+      gameAudio.unlock();
       endPointerDrag(state);
     },
   );
