@@ -191,6 +191,30 @@ export function getConsumedCountsByKind(states) {
 }
 
 /**
+ * Сколько полевых кубов уже поглощено (`phase === 'done'`).
+ * @param {CollectibleRunState[]} states — `fieldDecorRuns`
+ */
+export function getFieldDecorConsumedCount(states) {
+  let n = 0;
+  for (const s of states) {
+    if (s.phase === 'done') n += 1;
+  }
+  return n;
+}
+
+/**
+ * Всего поглощений для прогресс-бара дыры и `holeSizeLevel`: основные слоты + полевые кубы.
+ * @param {CollectibleRunState[]} mainRuns — `collectibleRuns`
+ * @param {CollectibleRunState[]} fieldDecorRuns
+ */
+export function getTotalConsumedForProgress(mainRuns, fieldDecorRuns) {
+  return (
+    getCollectibleZoneSummary(mainRuns).consumed +
+    getFieldDecorConsumedCount(fieldDecorRuns)
+  );
+}
+
+/**
  * Размер логического мира в тех же единицах, что смещения в `getCollectibleItems` / коллизии.
  * @param {ReturnType<import('./viewport.js').computeLayout>} layout
  * @returns {{ worldW: number, worldH: number }}
@@ -247,6 +271,38 @@ export function getCollectibleItems(layout) {
     }
   }
   return out;
+}
+
+/** Число декоративных кубов на поле (идут в общий `totalConsumed` для прогресса дыры). */
+export const FIELD_DECOR_CUBE_COUNT = 2;
+
+/**
+ * Два куба на окружности poop (12 и 6 часов), тот же {@link COLLECTIBLE_RADIUS_01}, что у сфер.
+ * @param {ReturnType<import('./viewport.js').computeLayout>} layout
+ * @returns {CollectibleItem[]}
+ */
+export function getFieldDecorItems(layout) {
+  const { worldW, worldH } = layoutWorldSize(layout);
+  const minSide = Math.min(layout.designWidth, layout.designHeight);
+  const rWorld = COLLECTIBLE_POOP_CIRCLE_R01 * minSide;
+  const twelve = { dx: 0, dz: -rWorld };
+  const six = { dx: 0, dz: rWorld };
+  return [
+    {
+      id: 'field-decor-0',
+      kind: /** @type {const} */ ('sphere'),
+      mapNx: 0.5 + twelve.dx / worldW,
+      mapNy: 0.5 + twelve.dz / worldH,
+      radius01: COLLECTIBLE_RADIUS_01,
+    },
+    {
+      id: 'field-decor-1',
+      kind: /** @type {const} */ ('sphere'),
+      mapNx: 0.5 + six.dx / worldW,
+      mapNy: 0.5 + six.dz / worldH,
+      radius01: COLLECTIBLE_RADIUS_01,
+    },
+  ];
 }
 
 /**

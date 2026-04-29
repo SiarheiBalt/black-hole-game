@@ -22,6 +22,7 @@ export function createCollectibleStatsHud(container) {
     { key: 'planar', iconKind: 'img', src: MONEY_SRC, alt: '' },
     { key: 'trump', iconKind: 'img', src: TRUMP_SRC, alt: '' },
     { key: 'poop', iconKind: 'img', src: POOP_SRC, alt: '' },
+    { key: 'box', iconKind: 'box' },
   ];
 
   /** @type {{ key: string, el: HTMLElement }[]} */
@@ -39,6 +40,10 @@ export function createCollectibleStatsHud(container) {
     if (spec.iconKind === 'sphere') {
       iconEl = document.createElement('div');
       iconEl.className = 'collectible-stats__icon collectible-stats__icon--sphere';
+      iconEl.setAttribute('aria-hidden', 'true');
+    } else if (spec.iconKind === 'box') {
+      iconEl = document.createElement('div');
+      iconEl.className = 'collectible-stats__icon collectible-stats__icon--box';
       iconEl.setAttribute('aria-hidden', 'true');
     } else {
       const img = document.createElement('img');
@@ -79,7 +84,7 @@ export function createCollectibleStatsHud(container) {
   let lastTimerSec = -1;
 
   /**
-   * @param {{ sphere: number, planar: number, trump: number, poop: number }} byKindCounts
+   * @param {{ sphere: number, planar: number, trump: number, poop: number, box?: number }} byKindCounts
    * @param {ReturnType<import('../core/viewport.js').computeLayout>} layout
    * @param {number} [secondsLeft] — оставшееся время (сек), по умолчанию `ROUND_TIME_SEC` из `constants`
    */
@@ -124,7 +129,7 @@ export function createCollectibleStatsHud(container) {
 
   /**
    * После поглощения в 3D: мини-иконка летит от дыры к строке, при прилёте — пульс иконки.
-   * @param {string} kind — `sphere` | `planar` | `trump` | `poop`
+   * @param {string} kind — `sphere` | `planar` | `trump` | `poop` | `box`
    * @param {{ x: number, y: number }} from — центр дыры в пикселях от `container` (как getBoundingClientRect-разница)
    */
   function playArrival(kind, from) {

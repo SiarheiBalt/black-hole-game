@@ -22,12 +22,17 @@ import {
 } from '../core/constants.js';
 import {
   createCollectibleRunStates,
+  createCollectibleRunState,
   getCollectibleItems,
   getCollectibleZoneSummary,
   getConsumedCountsByKind,
+  getFieldDecorItems,
+  getFieldDecorConsumedCount,
+  getTotalConsumedForProgress,
   shouldCollectibleBeConsumed,
   stepCollectibleFall,
   COLLECTIBLE_COUNT,
+  FIELD_DECOR_CUBE_COUNT,
 } from '../core/collectibleState.js';
 import { attachPointerDrag } from '../input/pointerDrag.js';
 import { createPlayfield } from '../render/pixi/createPlayfield.js';
@@ -121,6 +126,9 @@ async function main() {
 
   const state = createGameState();
   const collectibleRuns = createCollectibleRunStates();
+  const fieldDecorRuns = Array.from({ length: FIELD_DECOR_CUBE_COUNT }, () =>
+    createCollectibleRunState(),
+  );
   const c = centerPointerNorm();
   state.mapNx = c.nx;
   state.mapNy = c.ny;
@@ -146,7 +154,10 @@ async function main() {
   const HOLE_V2_START_EPS = 1e-20;
 
   collectibleStatsHud.sync(
-    getConsumedCountsByKind(collectibleRuns),
+    {
+      ...getConsumedCountsByKind(collectibleRuns),
+      box: getFieldDecorConsumedCount(fieldDecorRuns),
+    },
     layout,
     timeLeftSec,
   );
@@ -178,7 +189,10 @@ async function main() {
     holeProgressBar.sync(consumedSnapshot, layout, state.holeRadius01);
     prevHoleSizeLevel = state.holeSizeLevel;
     collectibleStatsHud.sync(
-      getConsumedCountsByKind(collectibleRuns),
+      {
+        ...getConsumedCountsByKind(collectibleRuns),
+        box: getFieldDecorConsumedCount(fieldDecorRuns),
+      },
       layout,
       timeLeftSec,
     );
@@ -205,7 +219,10 @@ async function main() {
     playfield.resize(layout);
     holeView.resize(layout);
     holeView.setScreenCentered();
-    const consumed0 = getCollectibleZoneSummary(collectibleRuns).consumed;
+    const consumed0 = getTotalConsumedForProgress(
+      collectibleRuns,
+      fieldDecorRuns,
+    );
     applyResizeSync(consumed0);
   });
   ro.observe(container);
@@ -227,6 +244,7 @@ async function main() {
     }
 
     const items = getCollectibleItems(layout);
+    const fieldDecorItems = getFieldDecorItems(layout);
     for (let i = 0; i < COLLECTIBLE_COUNT; i++) {
       if (
         collectibleRuns[i].phase === 'idle' &&
@@ -252,10 +270,36 @@ async function main() {
         }
       });
     }
+    for (let i = 0; i < FIELD_DECOR_CUBE_COUNT; i++) {
+      if (
+        fieldDecorRuns[i].phase === 'idle' &&
+        shouldCollectibleBeConsumed(
+          state,
+          layout,
+          fieldDecorRuns[i],
+          fieldDecorItems[i],
+        )
+      ) {
+        fieldDecorRuns[i].phase = 'falling';
+        fieldDecorRuns[i].t = 0;
+        holePopScore.pop(layout, state.holeRadius01);
+        gameAudio.play(SOUND_IDS.suction);
+      }
+      stepCollectibleFall(fieldDecorRuns[i], dt, () => {
+        collectibleStatsHud.playArrival(
+          'box',
+          holeView.getHoleScreenCenterIn(container),
+        );
+      });
+    }
 
-    const consumed = getCollectibleZoneSummary(collectibleRuns).consumed;
-    state.holeRadius01 = getHoleRadius01FromConsumed(consumed);
-    state.holeSizeLevel = getHoleSizeLevelFromConsumed(consumed);
+    const mainConsumed = getCollectibleZoneSummary(collectibleRuns).consumed;
+    const totalConsumed = getTotalConsumedForProgress(
+      collectibleRuns,
+      fieldDecorRuns,
+    );
+    state.holeRadius01 = getHoleRadius01FromConsumed(totalConsumed);
+    state.holeSizeLevel = getHoleSizeLevelFromConsumed(totalConsumed);
     if (state.holeSizeLevel > prevHoleSizeLevel) {
       holePopScore.pop(layout, state.holeRadius01, `size ${state.holeSizeLevel}`, {
         kind: 'sizeUp',
@@ -303,7 +347,7 @@ async function main() {
       holeVnX: state.holeVnX,
       holeVnY: state.holeVnY,
       pointerDragging: state.dragging,
-    });
+    }, fieldDecorRuns);
     holeView.render();
 
     if (roundTimerStarted) {
@@ -311,9 +355,12 @@ async function main() {
     }
 
     holeJoystick.sync(state, layout);
-    holeProgressBar.sync(consumed, layout, state.holeRadius01);
+    holeProgressBar.sync(totalConsumed, layout, state.holeRadius01);
     collectibleStatsHud.sync(
-      getConsumedCountsByKind(collectibleRuns),
+      {
+        ...getConsumedCountsByKind(collectibleRuns),
+        box: getFieldDecorConsumedCount(fieldDecorRuns),
+      },
       layout,
       timeLeftSec,
     );
@@ -326,7 +373,7 @@ async function main() {
         timeLeftSec <= TIME_URGENT_LAST_SEC,
     );
 
-    if (consumed >= COLLECTIBLE_COUNT) {
+    if (mainConsumed >= COLLECTIBLE_COUNT) {
       endRound(true);
     } else if (timeLeftSec <= 0) {
       endRound(false);
