@@ -87,7 +87,7 @@ export async function createHoleView(container, options = {}) {
   const ambient = new AmbientLight(0xffffff, hemi);
   scene.add(ambient);
   const sun = new DirectionalLight(0xfff5e6, 0.85);
-  sun.position.set(3.2, 10.5, 2.1);
+  sun.position.set(-3.2, 10.5, -2);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
   sun.shadow.camera.near = 0.05;

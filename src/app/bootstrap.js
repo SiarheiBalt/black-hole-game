@@ -46,6 +46,7 @@ import { createHoleProgressBar } from '../ui/holeProgressBar.js';
 import { createHolePopScore } from '../ui/holePopScore.js';
 import { createCollectibleStatsHud } from '../ui/collectibleStatsHud.js';
 import { createGameOverOverlay } from '../ui/gameOverOverlay.js';
+import { createSwipeGuide } from '../ui/swipeGuide.js';
 import {
   attachPlayableApp,
   disposePlayableLifecycle,
@@ -150,6 +151,7 @@ async function main() {
   const holeProgressBar = createHoleProgressBar(container);
   const holePopScore = createHolePopScore(container);
   const collectibleStatsHud = createCollectibleStatsHud(container);
+  const swipeGuide = createSwipeGuide(container);
   const gameAudio = createGameAudio();
   gameAudio.initPlayableAudioLifecycle();
   let timeLeftSec = ROUND_TIME_SEC;
@@ -211,6 +213,7 @@ async function main() {
       setPointerTarget(state, nx, ny);
     },
     (nx, ny) => {
+      swipeGuide.hide();
       gameAudio.unlock();
       beginPointerDrag(state, nx, ny);
     },
@@ -407,6 +410,7 @@ async function main() {
     holeProgressBar.destroy();
     holePopScore.destroy();
     collectibleStatsHud.destroy();
+    swipeGuide.destroy();
     gameOverOverlay.destroy();
     timeUrgencyVignette.remove();
     holeView.dispose();
