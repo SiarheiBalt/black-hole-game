@@ -111,6 +111,16 @@ export const COLLECTIBLE_POOP_RADIUS_01 = 0.085;
 /** Скорость анимации поглощения: рост `t` 0→1 в фазе `falling` (~1/значение ≈ длительность в сек). */
 export const COLLECTIBLE_FALL_SPEED = 2.05;
 /**
+ * Радиус в px (экрана/дизайна), при котором «стоящий» объект начинает тянуться к дыре.
+ * Считается в мировых координатах (смещения `mapN` × `worldW/H`), поэтому одинаков для всех лейаутов.
+ */
+export const COLLECTIBLE_ATTRACT_RADIUS_PX = 20;
+/**
+ * Скорость скольжения к центру дыры в тех же px, что `mapN × worldW/H`, пока объект `idle`
+ * и центр уже внутри радиуса {@link COLLECTIBLE_ATTRACT_RADIUS_PX}.
+ */
+export const COLLECTIBLE_ATTRACT_PULL_PIX_PER_SEC = 34;
+/**
  * Падение: `p = 1 - (1 - t) ** COLLECTIBLE_FALL_POW`, затем позиция и
  * `sc = lerp(1, COLLECTIBLE_FALL_MIN_REL_SC, p)` — как у исходных сфер до `planar`.
  */

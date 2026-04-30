@@ -8,6 +8,8 @@ import {
   COLLECTIBLE_TRUMP_RADIUS_01,
   COLLECTIBLE_POOP_RADIUS_01,
   COLLECTIBLE_FALL_SPEED,
+  COLLECTIBLE_ATTRACT_RADIUS_PX,
+  COLLECTIBLE_ATTRACT_PULL_PIX_PER_SEC,
   COLLECTIBLE_CIRCLE_R01,
   COLLECTIBLE_MONEY_CIRCLE_R01,
   COLLECTIBLE_TRUMP_CIRCLE_R01,
@@ -145,13 +147,16 @@ export function getCollectibleSlotKind(index) {
  * @typedef {Object} CollectibleRunState
  * @property {'idle' | 'falling' | 'done'} phase
  * @property {number} t
+ * @property {number} fallSpeed — скорость нарастания `t` в фазе `falling`
+ * @property {number} [effectiveMapNx] — смещение по карте в `idle` при притяжении к дыре
+ * @property {number} [effectiveMapNy]
  */
 
 /**
  * @returns {CollectibleRunState}
  */
 export function createCollectibleRunState() {
-  return { phase: 'idle', t: 0 };
+  return { phase: 'idle', t: 0, fallSpeed: COLLECTIBLE_FALL_SPEED };
 }
 
 /** @returns {CollectibleRunState[]} */
@@ -306,15 +311,92 @@ export function getFieldDecorItems(layout) {
 }
 
 /**
+ * @param {CollectibleRunState} run
+ * @param {CollectibleItem} slotItem
+ * @returns {{ mapNx: number, mapNy: number }}
+ */
+export function getCollectibleMapPositionForRun(run, slotItem) {
+  return {
+    mapNx: run.effectiveMapNx ?? slotItem.mapNx,
+    mapNy: run.effectiveMapNy ?? slotItem.mapNy,
+  };
+}
+
+/**
+ * @param {CollectibleItem} slotItem
+ * @param {CollectibleRunState} run
+ * @returns {CollectibleItem}
+ */
+export function collectibleItemWithEffective(slotItem, run) {
+  const { mapNx, mapNy } = getCollectibleMapPositionForRun(run, slotItem);
+  if (mapNx === slotItem.mapNx && mapNy === slotItem.mapNy) return slotItem;
+  return { ...slotItem, mapNx, mapNy };
+}
+
+/**
+ * Сброс смещения притяжения (например после resize).
+ * @param {CollectibleRunState} run
+ */
+export function resetCollectibleRunAttractOffset(run) {
+  run.effectiveMapNx = undefined;
+  run.effectiveMapNy = undefined;
+}
+
+/**
+ * В `idle`: вне радиуса {@link COLLECTIBLE_ATTRACT_RADIUS_PX} центр остаётся в слоте;
+ * внутри — плавно скользит к центру дыры (логическая карта).
+ * @param {CollectibleRunState} run
  * @param {import('./gameState.js').GameState} game
  * @param {ReturnType<import('./viewport.js').computeLayout>} layout
- * @param {CollectibleRunState} run
- * @param {CollectibleItem} item
- * @returns {boolean}
+ * @param {CollectibleItem} slotItem
+ * @param {number} dt
  */
-export function shouldCollectibleBeConsumed(game, layout, run, item) {
-  if (run.phase !== 'idle') return false;
+export function stepCollectibleIdleAttract(run, game, layout, slotItem, dt) {
+  if (run.phase !== 'idle') return;
+  const { worldW, worldH } = layoutWorldSize(layout);
+  const slotNx = slotItem.mapNx;
+  const slotNy = slotItem.mapNy;
+  const effNx = run.effectiveMapNx ?? slotNx;
+  const effNy = run.effectiveMapNy ?? slotNy;
 
+  const dxWorld = (effNx - game.mapNx) * worldW;
+  const dzWorld = (effNy - game.mapNy) * worldH;
+  const dist = Math.hypot(dxWorld, dzWorld);
+
+  const base = Math.min(layout.designWidth, layout.designHeight);
+  const holeRadiusPx = game.holeRadius01 * base;
+  const attractThreshold = holeRadiusPx + COLLECTIBLE_ATTRACT_RADIUS_PX;
+  const hasEffective = run.effectiveMapNx !== undefined && run.effectiveMapNy !== undefined;
+  if (dist > attractThreshold && !hasEffective) {
+    return;
+  }
+  if (hasEffective && dist > attractThreshold) {
+    run.effectiveMapNx = effNx;
+    run.effectiveMapNy = effNy;
+    return;
+  }
+
+  if (dist < 1e-9) {
+    run.effectiveMapNx = effNx;
+    run.effectiveMapNy = effNy;
+    return;
+  }
+
+  const pullStep = COLLECTIBLE_ATTRACT_PULL_PIX_PER_SEC * Math.min(dt, 0.1);
+  const k = Math.max(0, 1 - pullStep / dist);
+  const newDx = dxWorld * k;
+  const newDz = dzWorld * k;
+  run.effectiveMapNx = game.mapNx + newDx / worldW;
+  run.effectiveMapNy = game.mapNy + newDz / worldH;
+}
+
+/**
+ * Проверка: объект находится в зоне «обычного» поглощения дыры (эллипс), без учёта фазы run.
+ * @param {import('./gameState.js').GameState} game
+ * @param {ReturnType<import('./viewport.js').computeLayout>} layout
+ * @param {CollectibleItem} item
+ */
+export function isCollectibleWithinHole(game, layout, item) {
   const { designWidth, designHeight } = layout;
   const { worldW, worldH } = layoutWorldSize(layout);
   const mapNx = item.mapNx;
@@ -330,10 +412,21 @@ export function shouldCollectibleBeConsumed(game, layout, run, item) {
 
   const r01 = item.radius01 ?? COLLECTIBLE_RADIUS_01;
   const rObj = r01 * base;
-  const safe =
-    1 - Math.min(0.25, (rObj / Math.min(a, b)) * 0.55);
+  const safe = 1 - Math.min(0.25, (rObj / Math.min(a, b)) * 0.55);
   const e = (dx * dx) / (a * a) + (dz * dz) / (b * b);
   return e < safe;
+}
+
+/**
+ * @param {import('./gameState.js').GameState} game
+ * @param {ReturnType<import('./viewport.js').computeLayout>} layout
+ * @param {CollectibleRunState} run
+ * @param {CollectibleItem} item
+ * @returns {boolean}
+ */
+export function shouldCollectibleBeConsumed(game, layout, run, item) {
+  if (run.phase !== 'idle') return false;
+  return isCollectibleWithinHole(game, layout, item);
 }
 
 /**
@@ -344,7 +437,8 @@ export function shouldCollectibleBeConsumed(game, layout, run, item) {
 export function stepCollectibleFall(run, dt, onDone) {
   if (run.phase !== 'falling') return;
   const h = Math.min(dt, 1 / 30);
-  run.t += COLLECTIBLE_FALL_SPEED * h;
+  const speed = run.fallSpeed ?? COLLECTIBLE_FALL_SPEED;
+  run.t += speed * h;
   if (run.t >= 1) {
     run.t = 1;
     run.phase = 'done';

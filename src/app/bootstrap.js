@@ -19,6 +19,7 @@ import {
   GAME_VIEW_ZOOM_FLASH_DECAY,
   ROUND_TIME_SEC,
   TIME_URGENT_LAST_SEC,
+  COLLECTIBLE_FALL_SPEED,
 } from '../core/constants.js';
 import {
   createCollectibleRunStates,
@@ -31,6 +32,9 @@ import {
   getTotalConsumedForProgress,
   shouldCollectibleBeConsumed,
   stepCollectibleFall,
+  collectibleItemWithEffective,
+  stepCollectibleIdleAttract,
+  resetCollectibleRunAttractOffset,
   COLLECTIBLE_COUNT,
   FIELD_DECOR_CUBE_COUNT,
 } from '../core/collectibleState.js';
@@ -188,6 +192,8 @@ async function main() {
     gameSceneFlash.style.opacity = '0';
     holeProgressBar.sync(consumedSnapshot, layout, state.holeRadius01);
     prevHoleSizeLevel = state.holeSizeLevel;
+    for (const run of collectibleRuns) resetCollectibleRunAttractOffset(run);
+    for (const run of fieldDecorRuns) resetCollectibleRunAttractOffset(run);
     collectibleStatsHud.sync(
       {
         ...getConsumedCountsByKind(collectibleRuns),
@@ -246,16 +252,24 @@ async function main() {
     const items = getCollectibleItems(layout);
     const fieldDecorItems = getFieldDecorItems(layout);
     for (let i = 0; i < COLLECTIBLE_COUNT; i++) {
+      const runState = collectibleRuns[i];
+      const item = items[i];
+      if (runState.phase === 'idle') {
+        stepCollectibleIdleAttract(runState, state, layout, item, dt);
+      }
+      const itemEff = collectibleItemWithEffective(item, runState);
       if (
-        collectibleRuns[i].phase === 'idle' &&
-        shouldCollectibleBeConsumed(state, layout, collectibleRuns[i], items[i])
+        runState.phase === 'idle' &&
+        shouldCollectibleBeConsumed(state, layout, runState, itemEff)
       ) {
-        collectibleRuns[i].phase = 'falling';
-        collectibleRuns[i].t = 0;
+        runState.phase = 'falling';
+        runState.t = 0;
+        runState.fallSpeed = COLLECTIBLE_FALL_SPEED;
+        resetCollectibleRunAttractOffset(runState);
         holePopScore.pop(layout, state.holeRadius01);
         gameAudio.play(SOUND_IDS.suction);
       }
-      stepCollectibleFall(collectibleRuns[i], dt, () => {
+      stepCollectibleFall(runState, dt, () => {
         const kind = items[i].kind;
         if (
           kind === 'sphere' ||
@@ -271,21 +285,24 @@ async function main() {
       });
     }
     for (let i = 0; i < FIELD_DECOR_CUBE_COUNT; i++) {
+      const runState = fieldDecorRuns[i];
+      const item = fieldDecorItems[i];
+      if (runState.phase === 'idle') {
+        stepCollectibleIdleAttract(runState, state, layout, item, dt);
+      }
+      const itemEff = collectibleItemWithEffective(item, runState);
       if (
-        fieldDecorRuns[i].phase === 'idle' &&
-        shouldCollectibleBeConsumed(
-          state,
-          layout,
-          fieldDecorRuns[i],
-          fieldDecorItems[i],
-        )
+        runState.phase === 'idle' &&
+        shouldCollectibleBeConsumed(state, layout, runState, itemEff)
       ) {
-        fieldDecorRuns[i].phase = 'falling';
-        fieldDecorRuns[i].t = 0;
+        runState.phase = 'falling';
+        runState.t = 0;
+        runState.fallSpeed = COLLECTIBLE_FALL_SPEED;
+        resetCollectibleRunAttractOffset(runState);
         holePopScore.pop(layout, state.holeRadius01);
         gameAudio.play(SOUND_IDS.suction);
       }
-      stepCollectibleFall(fieldDecorRuns[i], dt, () => {
+      stepCollectibleFall(runState, dt, () => {
         collectibleStatsHud.playArrival(
           'box',
           holeView.getHoleScreenCenterIn(container),

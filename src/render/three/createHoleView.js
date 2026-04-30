@@ -574,8 +574,8 @@ export async function createHoleView(container, options = {}) {
 
     objGroup.visible = true;
 
-    const mapNx0 = item.mapNx;
-    const mapNy0 = item.mapNy;
+    const mapNx0 = b.effectiveMapNx ?? item.mapNx;
+    const mapNy0 = b.effectiveMapNy ?? item.mapNy;
 
     /** @type {Mesh | undefined} */
     const objMesh = /** @type {Mesh | undefined} */ (objGroup.children[0]);
@@ -682,8 +682,8 @@ export async function createHoleView(container, options = {}) {
 
     objGroup.visible = true;
 
-    const mapNx0 = item.mapNx;
-    const mapNy0 = item.mapNy;
+    const mapNx0 = b.effectiveMapNx ?? item.mapNx;
+    const mapNy0 = b.effectiveMapNy ?? item.mapNy;
 
     const orient = /** @type {Group | undefined} */ (objGroup.children[0]);
     /** @type {Mesh | undefined} */

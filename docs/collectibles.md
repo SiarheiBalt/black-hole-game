@@ -31,6 +31,8 @@
 2. **`CollectibleRunState`** — **состояние** объекта в текущем запуске:
    - `phase`: `idle` → `falling` → `done`.
    - `t` — нормированный прогресс анимации поглощения, \(0 \ldots 1\), в фазе `falling`.
+   - `fallSpeed` — скорость роста `t` во время падения.
+   - `effectiveMapNx` / `effectiveMapNy` (опционально) — когда дыра в радиусе [`COLLECTIBLE_ATTRACT_RADIUS_PX`](../src/core/constants.js), центр объекта скользит к карте дыры поверх статичной раскладки [`getCollectibleItems`](../src/core/collectibleState.js)/[`getFieldDecorItems`](../src/core/collectibleState.js).
 
 Для **основных** коллектаблов массив [`getCollectibleItems`](../src/core/collectibleState.js) и массив `collectibleRuns` (**длина** [`COLLECTIBLE_COUNT`](../src/core/constants.js)) сопоставляются по индексу: `items[i]` ↔ `collectibleRuns[i]`. Полевые кубы — **отдельные** [`getFieldDecorItems(layout)`](../src/core/collectibleState.js) ↔ `fieldDecorRuns` (длина [`FIELD_DECOR_CUBE_COUNT`](../src/core/collectibleState.js)).
 
@@ -73,7 +75,7 @@ getTotalConsumedForProgress(collectibleRuns, fieldDecorRuns)
 
 ## Коллизия с дырой
 
-**`shouldCollectibleBeConsumed(game, layout, run, item)`** возвращает `true`, только если `run.phase === 'idle'`.
+**`shouldCollectibleBeConsumed(game, layout, run, item)`** возвращает `true`, только если `run.phase === 'idle'`. В `bootstrap` в проверке передаётся предмет с **эффективной** позицией после притяжения ([`collectibleItemWithEffective`](../src/core/collectibleState.js)).
 
 Смещение центра объекта относительно центра дыры в мире: те же `worldW`, `worldH`, что у карты. Проверка — попадание в **эллипс** отверстия (как визуал дыры): полуоси пропорциональны `game.holeRadius01` и эллипсу [`HOLE_ELLIPSE_X` / `HOLE_ELLIPSE_Z`](../src/core/constants.js), внутренняя зона съедания — [`HOLE_BALL_EAT_INNER`](../src/core/constants.js). Поправка на размер объекта вшита в сравнение с эллипсом (аналог «радиуса» предмета).
 
@@ -82,10 +84,10 @@ getTotalConsumedForProgress(collectibleRuns, fieldDecorRuns)
 В `bootstrap` на каждый кадр (упрощённо):
 
 1. `getCollectibleItems(layout)` — `items` основного контура.
-2. Цикл по `i ∈ [0, COLLECTIBLE_COUNT)`: при `idle` и **`shouldCollectibleBeConsumed`** — `collectibleRuns[i]` → `falling`, `t = 0` (в т.ч. `holePopScore`, звук).
+2. Цикл по `i`: при **`idle`** сначала [`stepCollectibleIdleAttract`](../src/core/collectibleState.js); она **сравнивает расстояние** до дыры с суммой её текущего радиуса (в px) и `COLLECTIBLE_ATTRACT_RADIUS_PX`. Если центр ещё вне зоны — смещение сброшено, объект остаётся на слоте; как только нужно притянуть — центр **скользит** к дыре с `COLLECTIBLE_ATTRACT_PULL_PIX_PER_SEC`. Даже если дыра проходит мимо, как только смещение появилось оно **не сбрасывается** и отображается в фактической позиции. По `dt` прокручивается `shouldCollectibleBeConsumed` на `collectibleItemWithEffective(items[i], run)`; при успехе run → `falling`, обнуление смещения, `t = 0`, поп/звук.
 3. **`stepCollectibleFall(collectibleRuns[i], …)`**; в **`onDone`** — [`playArrival`](../src/ui/collectibleStatsHud.js) по `kind` слота.
-4. `getFieldDecorItems(layout)`; цикл по **`fieldDecorRuns`**: та же коллизия, **`stepCollectibleFall`**; при старте падения — `holePopScore`, в **`onDone`** — **`playArrival('box', …)`**.
-5. **`totalConsumed`** = [`getTotalConsumedForProgress(collectibleRuns, fieldDecorRuns)`](../src/core/collectibleState.js); обновление **`state.holeRadius01`**, **`holeSizeLevel`**, **`holeProgressBar.sync(totalConsumed, …)`**; при **resize** — [`getTotalConsumedForProgress`](../src/core/collectibleState.js) для согласования бара и дыры.
+4. `getFieldDecorItems(layout)`; цикл по **`fieldDecorRuns`**: та же схема притягивания по эффективной позиции → **`stepCollectibleFall`**; при старте падения — `holePopScore`, в **`onDone`** — **`playArrival('box', …)`**.
+5. **`totalConsumed`** = [`getTotalConsumedForProgress(collectibleRuns, fieldDecorRuns)`](../src/core/collectibleState.js); обновление **`state.holeRadius01`**, **`holeSizeLevel`**, **`holeProgressBar.sync(totalConsumed, …)`**; при **resize** в `applyResizeSync` для всех runs вызывается [`resetCollectibleRunAttractOffset`](../src/core/collectibleState.js), чтобы сбросить смещение притяжения на поле.
 6. **`holeView.updateCollectibles(collectibleRuns, layout, g, fieldDecorRuns)`** — Three.js (4-й аргумент опционален в типах, в игре передаётся).
 
 Победа: **`mainConsumed`** = `getCollectibleZoneSummary(collectibleRuns).consumed` ≥ **`COLLECTIBLE_COUNT`**.
@@ -94,7 +96,7 @@ getTotalConsumedForProgress(collectibleRuns, fieldDecorRuns)
 
 ## Рендер
 
-В [`createHoleView.js`](../src/render/three/createHoleView.js) у каждого индекса **основного** списка — группа `Group` с мешем. Для `kind === 'sphere'` — общая `SphereGeometry` и `MeshStandardMaterial`. Для плоских PNG (`planar`, `trump`, `poop`) — общая `PlaneGeometry` с отдельными `MeshBasicMaterial` и текстурами (`money.png`, `trump.png`, `poop.png`), плоскость на XZ; высота центра в покое ниже (`idleCenterY`). При падении (`planarCollectibleFall`): та же траектория и `sc` по `p`, что у сфер; масштаб на **группе** (`rObj·sc`), у меша снова `(aspect, 1, 1)` — своё соотношение сторон на kind. Поворот только вокруг **мировой Y** (спин). У материалов `depthTest: false`, у мешей `frustumCulled: false`. Опция `collectibleMoneyShadows` — тени у плоских мешей. `planarCollectibleFall: false` отключает спин для плоских kind.
+В [`createHoleView.js`](../src/render/three/createHoleView.js) у каждого индекса **основного** списка — группа `Group` с мешем. В `idle` горизонтальная позиция берётся из `effectiveMapNx/Y` стейта, если они заданы, иначе из слотового `item`. Для `kind === 'sphere'` — общая `SphereGeometry` и `MeshStandardMaterial`. Для плоских PNG (`planar`, `trump`, `poop`) — общая `PlaneGeometry` с отдельными `MeshBasicMaterial` и текстурами (`money.png`, `trump.png`, `poop.png`), плоскость на XZ; высота центра в покое ниже (`idleCenterY`). При падении (`planarCollectibleFall`): та же траектория и `sc` по `p`, что у сфер; масштаб на **группе** (`rObj·sc`), у меша снова `(aspect, 1, 1)` — своё соотношение сторон на kind. Поворот только вокруг **мировой Y** (спин). У материалов `depthTest: false`, у мешей `frustumCulled: false`. Опция `collectibleMoneyShadows` — тени у плоских мешей. `planarCollectibleFall: false` отключает спин для плоских kind.
 
 **Полевые кубы:** отдельные группы, ориентация «вершиной вниз», лёгкое вращение вокруг Y в `idle` и при падении, траектория/воронка как у сфер (`applyOneFieldDecorCube`). Позиции задаются **`getFieldDecorItems`** (пересчитывается в `bootstrap` и в `applyFieldDecorCubes`).
 
@@ -108,6 +110,9 @@ getTotalConsumedForProgress(collectibleRuns, fieldDecorRuns)
 | `getFieldDecorItems` | Псевдо-`CollectibleItem[]` (позиции, коллизия как у шара) |
 | `getFieldDecorConsumedCount` | Сколько кубов в `done` |
 | `getTotalConsumedForProgress` | Сумма поглощений для бара и `holeSizeLevel` |
+| `stepCollectibleIdleAttract` | Притяжение в `idle` внутри радиуса px |
+| `collectibleItemWithEffective` | `CollectibleItem` с центром после притяжения для коллизий |
+| `resetCollectibleRunAttractOffset` | Сброс `effectiveMapNx`/`effectiveMapNy` при resize |
 
 ## Константы ([`constants.js`](../src/core/constants.js))
 
@@ -128,6 +133,8 @@ getTotalConsumedForProgress(collectibleRuns, fieldDecorRuns)
 | `COLLECTIBLE_RADIUS_01` | Базовый размер сферы, если `item.radius01` нет |
 | `COLLECTIBLE_MONEY_RADIUS_01` | Размер `planar` на внешнем кольце (в раскладке задаётся явно) |
 | `COLLECTIBLE_FALL_SPEED` | Скорость нарастания `t` в фазе `falling` (выше — быстрее засасывание) |
+| `COLLECTIBLE_ATTRACT_RADIUS_PX` | Дополнительный запас к текущему `holeRadius01` в px для начала притяжения; после начала смещение не сбрасывается. |
+| `COLLECTIBLE_ATTRACT_PULL_PIX_PER_SEC` | Максимальная скорость смещения центра к дыре в `idle` (px/сек). |
 | `COLLECTIBLE_FALL_POW` | Степень в `p = 1 - (1 - t)^n` для траектории и `sc` (исходно 2.2) |
 | `COLLECTIBLE_FALL_MIN_REL_SC` | Целевой относительный масштаб к концу падения (исходно 0.04) |
 | `COLLECTIBLE_RENDER_ORDER_IDLE` / `…_FALLING` | На полу меш ниже диска дыры; во время падения — выше (иначе предмет не виден, сжатие не читается) |

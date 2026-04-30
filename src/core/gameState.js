@@ -45,7 +45,7 @@ export const HOLE_MAX_SPEED = 0.16;
  * Cursor offset from click (norm) at which speed reaches HOLE_MAX_SPEED.
  * Closer = slower, farther (up to this) = faster.
  */
-export const HOLE_STICK_RANGE = 0.06;
+export const HOLE_STICK_RANGE = 0.05;
 /** Below this offset from click, treat as no deflection (hole stops). */
 export const HOLE_STICK_DEAD_ZONE = 0.008;
 /** After release, velocity decay (~per second). */
