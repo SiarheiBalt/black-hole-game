@@ -1,5 +1,4 @@
 import './holeJoystick.css';
-import { HOLE_STICK_RANGE } from '../core/gameState.js';
 
 /** Диаметр ручки / диаметр базы (как на референсе ~35–40%). */
 const KNOB_DIAMETER_FRAC_OF_BASE = 0.38;
@@ -7,6 +6,8 @@ const KNOB_DIAMETER_FRAC_OF_BASE = 0.38;
 const KNOB_MAX_PROTRUSION_FRAC_OF_RADIUS = 0.75;
 /** Минимальный шаг указателя (px), чтобы считать направление движения. */
 const POINTER_MOVE_MIN_PX_FRAC_MIN_SIDE = 0.008;
+/** Фиксированный визуальный размер базы джойстика для overlay. */
+const JOYSTICK_VISUAL_BASE_RADIUS_FRAC = 0.13;
 /**
  * Если скалярное произведение единичного смещения курсора с предыдущим кадром ниже этого — резкий разворот:
  * внешний круг замирает до согласования (курсор в пределах maxKnobDist от текущей базы).
@@ -66,7 +67,7 @@ export function createHoleJoystick(container) {
     const vw = layout.designWidth;
     const vh = layout.designHeight;
     const minCss = Math.max(Math.min(vw, vh), 1e-6);
-    const baseRadiusPx = HOLE_STICK_RANGE * minCss;
+    const baseRadiusPx = JOYSTICK_VISUAL_BASE_RADIUS_FRAC * minCss;
     const baseSizePx = 2 * baseRadiusPx;
     const knobSizePx = baseSizePx * KNOB_DIAMETER_FRAC_OF_BASE;
     const knobRadiusPx = knobSizePx / 2;
