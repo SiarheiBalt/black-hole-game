@@ -56,6 +56,7 @@ import {
   markGameClosed,
 } from './playableAdapter.js';
 import { createGameAudio, SOUND_IDS } from '../audio/gameAudio.js';
+import { getThemeConfig, DEFAULT_PLAYFIELD_THEME } from '../themes.js';
 
 function centerPointerNorm() {
   return { nx: 0.5, ny: 0.5 };
@@ -112,12 +113,15 @@ async function main() {
     globalThis.__PIXI_APP__ = app;
   }
 
-  const playfield = createPlayfield(app);
+  const holeTheme = getThemeConfig(import.meta.env.VITE_THEME);
+  const playfieldTheme = holeTheme.playfieldTheme ?? DEFAULT_PLAYFIELD_THEME;
+  const playfield = createPlayfield(app, playfieldTheme);
   playfield.resize(layout);
 
   const holeView = await createHoleView(gameScene, {
     collectibleMoneyShadows: false,
     planarCollectibleFall: true,
+    theme: holeTheme,
   });
   gameScene.appendChild(gameSceneFlash);
   holeView.resize(layout);
@@ -150,7 +154,9 @@ async function main() {
   const holeJoystick = createHoleJoystick(container);
   const holeProgressBar = createHoleProgressBar(container);
   const holePopScore = createHolePopScore(container);
-  const collectibleStatsHud = createCollectibleStatsHud(container);
+  const collectibleStatsHud = createCollectibleStatsHud(container, {
+    icons: holeTheme.hudIcons,
+  });
   const swipeGuide = createSwipeGuide(container);
   const gameAudio = createGameAudio();
   gameAudio.initPlayableAudioLifecycle();

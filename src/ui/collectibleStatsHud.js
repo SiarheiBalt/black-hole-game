@@ -1,15 +1,23 @@
 import './collectibleStatsHud.css';
 import { ROUND_TIME_SEC } from '../core/constants.js';
-
-const MONEY_SRC = new URL('../assets/money.png', import.meta.url).href;
-const TRUMP_SRC = new URL('../assets/trump.png', import.meta.url).href;
-const POOP_SRC = new URL('../assets/poop.png', import.meta.url).href;
+import { DEFAULT_HUD_ICONS } from '../themes.js';
 
 /**
  * HUD: иконка типа коллектабла + сколько уже провалилось в дыру.
  * @param {HTMLElement} container — `#game-container`
  */
-export function createCollectibleStatsHud(container) {
+/**
+ * @typedef {Object} CollectibleStatsHudOptions
+ * @property {{ planar: string, trump: string, poop: string }} [icons]
+ */
+
+/**
+ * HUD: иконка типа коллектабла + сколько уже провалилось в дыру.
+ * @param {HTMLElement} container — `#game-container`
+ * @param {CollectibleStatsHudOptions} [options]
+ */
+export function createCollectibleStatsHud(container, options = {}) {
+  const icons = { ...DEFAULT_HUD_ICONS, ...(options.icons ?? {}) };
   const root = document.createElement('div');
   root.className = 'collectible-stats';
   root.setAttribute('aria-label', 'Поглощено по типам');
@@ -19,9 +27,9 @@ export function createCollectibleStatsHud(container) {
 
   const rows = [
     { key: 'sphere', iconKind: 'sphere' },
-    { key: 'planar', iconKind: 'img', src: MONEY_SRC, alt: '' },
-    { key: 'trump', iconKind: 'img', src: TRUMP_SRC, alt: '' },
-    { key: 'poop', iconKind: 'img', src: POOP_SRC, alt: '' },
+    { key: 'planar', iconKind: 'img', src: icons.planar, alt: '' },
+    { key: 'trump', iconKind: 'img', src: icons.trump, alt: '' },
+    { key: 'poop', iconKind: 'img', src: icons.poop, alt: '' },
     { key: 'box', iconKind: 'box' },
   ];
 

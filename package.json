@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "vite build",
+    "build:space": "cross-env VITE_THEME=space vite build",
     "dev": "vite"
   },
   "keywords": [],

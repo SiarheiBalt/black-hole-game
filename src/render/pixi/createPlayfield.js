@@ -1,4 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
+import { DEFAULT_PLAYFIELD_THEME } from '../../themes.js';
 import {
   BG_COLOR,
   DECOR_COLOR,
@@ -19,7 +20,7 @@ function seededRandom(seed) {
   };
 }
 
-function rebuildDecor(decorLayer, w, h, count) {
+function rebuildDecor(decorLayer, w, h, count, color) {
   decorLayer.removeChildren().forEach((c) => c.destroy({ children: true }));
   const rand = seededRandom(DECOR_SEED);
   for (let i = 0; i < count; i++) {
@@ -30,7 +31,7 @@ function rebuildDecor(decorLayer, w, h, count) {
     const y = rand() * h;
     const r = 3 + rand() * 8;
     g.roundRect(-rw / 2, -rh / 2, rw, rh, r);
-    g.fill({ color: DECOR_COLOR, alpha: 0.22 + rand() * 0.25 });
+    g.fill({ color: color ?? DECOR_COLOR, alpha: 0.22 + rand() * 0.25 });
     g.position.set(x, y);
     g.rotation = rand() * Math.PI * 2;
     g.scale.set(0.85 + rand() * 0.5);
@@ -38,18 +39,48 @@ function rebuildDecor(decorLayer, w, h, count) {
   }
 }
 
+function drawPlayfieldBackground(bg, w, h, theme) {
+  bg.clear();
+  const color = theme.backgroundColor ?? DEFAULT_PLAYFIELD_THEME.backgroundColor;
+  bg.beginFill(color);
+  bg.drawRect(0, 0, w, h);
+  bg.endFill();
+}
+
+function rebuildStars(graphics, w, h, theme) {
+  graphics.clear();
+  const count = theme.starCount ?? 0;
+  if (!count) return;
+  const rand = seededRandom(DECOR_SEED + 1);
+  const starColor = theme.starColor ?? DEFAULT_PLAYFIELD_THEME.starColor;
+  const starAlpha = theme.starAlpha ?? DEFAULT_PLAYFIELD_THEME.starAlpha;
+  const starSize = theme.starSize ?? DEFAULT_PLAYFIELD_THEME.starSize;
+  graphics.beginFill(starColor, starAlpha);
+  for (let i = 0; i < count; i++) {
+    const x = rand() * w;
+    const y = rand() * h;
+    const size = Math.max(0.5, starSize * (0.75 + rand() * 0.5));
+    graphics.drawCircle(x, y, size);
+  }
+  graphics.endFill();
+}
+
 /**
  * @param {import('pixi.js').Application} app
  */
-export function createPlayfield(app) {
+export function createPlayfield(app, theme = DEFAULT_PLAYFIELD_THEME) {
+  const resolvedTheme = { ...DEFAULT_PLAYFIELD_THEME, ...theme };
   const worldRoot = new Container();
   worldRoot.label = 'playfield';
 
   const bg = new Graphics();
   const decorLayer = new Container();
   decorLayer.label = 'decor';
+  const starGraphics = new Graphics();
+  starGraphics.label = 'stars';
 
   worldRoot.addChild(bg);
+  worldRoot.addChild(starGraphics);
   worldRoot.addChild(decorLayer);
   app.stage.addChild(worldRoot);
 
@@ -67,11 +98,9 @@ export function createPlayfield(app) {
       const worldH = vh * m;
       const decorCount = Math.round(DECOR_COUNT * m * m);
 
-      bg.clear();
-      bg.rect(0, 0, worldW, worldH);
-      bg.fill(BG_COLOR);
-
-      rebuildDecor(decorLayer, worldW, worldH, decorCount);
+      drawPlayfieldBackground(bg, worldW, worldH, resolvedTheme);
+      rebuildStars(starGraphics, worldW, worldH, resolvedTheme);
+      rebuildDecor(decorLayer, worldW, worldH, decorCount, resolvedTheme.decorColor);
 
       worldRoot.scale.set(1);
     },

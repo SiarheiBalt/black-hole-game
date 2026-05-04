@@ -43,19 +43,25 @@ import {
   COLLECTIBLE_RENDER_ORDER_FALLING,
 } from '../../core/constants.js';
 import {
-  COLLECTIBLE_PLANAR_SPRITE_FILES,
   getCollectibleItems,
-  getCollectibleSlotKind,
   getFieldDecorItems,
   isPlanarCollectibleKind,
   layoutWorldSize,
   FIELD_DECOR_CUBE_COUNT,
 } from '../../core/collectibleState.js';
+import { DEFAULT_HOLE_THEME } from '../../themes.js';
+
+/**
+ * @typedef {import('../../themes.js').HoleThemeConfig} HoleThemeConfig
+ */
+
+const DEFAULT_FIELD_DECOR_COLORS = [0x5eead4, 0xff7eb3];
 
 /**
  * @typedef {Object} CreateHoleViewOptions
  * @property {boolean} [collectibleMoneyShadows=false] — cast/receive shadow map для плоских PNG (`planar`, `trump`, `poop`); обычно выкл.
  * @property {boolean} [planarCollectibleFall=true] — для плоских kind (`planar`, `trump`, `poop`): падение + масштаб + спин по Y.
+ * @property {HoleThemeConfig} [theme] — без пропсов `theme` берёт значения по-умолчанию (см. `docs/themes.md`).
  */
 
 /**
@@ -63,8 +69,13 @@ import {
  * @param {CreateHoleViewOptions} [options]
  */
 export async function createHoleView(container, options = {}) {
-  const { collectibleMoneyShadows = false, planarCollectibleFall = true } =
-    options;
+  const {
+    collectibleMoneyShadows = false,
+    planarCollectibleFall = true,
+    theme = DEFAULT_HOLE_THEME,
+  } = options;
+  const holeTheme = theme ?? DEFAULT_HOLE_THEME;
+  const slotRenderKinds = holeTheme.slotRenderKinds;
   const renderer = new WebGLRenderer({
     alpha: true,
     antialias: true,
@@ -152,8 +163,15 @@ export async function createHoleView(container, options = {}) {
   const fieldDecor = new Group();
   mapLayer.add(fieldDecor);
 
-  const decorCube12 = createFieldDecorCubeGroup(0x5eead4, 0);
-  const decorCube6 = createFieldDecorCubeGroup(0xff7eb3, 0.63);
+  const decorColors =
+    Array.isArray(holeTheme.fieldDecorColors) &&
+    holeTheme.fieldDecorColors.length >= FIELD_DECOR_CUBE_COUNT
+      ? holeTheme.fieldDecorColors
+      : DEFAULT_FIELD_DECOR_COLORS;
+  const [decorColor12 = DEFAULT_FIELD_DECOR_COLORS[0], decorColor6 = DEFAULT_FIELD_DECOR_COLORS[1]] =
+    decorColors;
+  const decorCube12 = createFieldDecorCubeGroup(decorColor12, 0);
+  const decorCube6 = createFieldDecorCubeGroup(decorColor6, 0.63);
   fieldDecor.add(decorCube12.group);
   fieldDecor.add(decorCube6.group);
   const decorCubePivots = [decorCube12.group, decorCube6.group];
@@ -161,7 +179,7 @@ export async function createHoleView(container, options = {}) {
   const sphereSeg = 24;
   const sphereGeom = new SphereGeometry(1, sphereSeg, sphereSeg);
   const sphereMat = new MeshStandardMaterial({
-    color: 0x4cc4ff,
+    color: holeTheme.sphereColor,
     metalness: 0.2,
     roughness: 0.38,
     emissive: 0x0a1a2a,
@@ -170,41 +188,75 @@ export async function createHoleView(container, options = {}) {
 
   /** @type {Map<import('../../core/collectibleState.js').CollectibleKind, { aspect: number, mat: MeshBasicMaterial, tex: import('three').Texture }>} */
   const planarSpriteByKind = new Map();
+  /** @type {Map<number, { aspect: number, mat: MeshBasicMaterial, tex: import('three').Texture }>} */
+  const slotPlanarSpriteBySlot = new Map();
+  const textureLoader = new TextureLoader();
 
-  await Promise.all(
-    Object.entries(COLLECTIBLE_PLANAR_SPRITE_FILES).map(([kind, file]) => {
-      const url = new URL(`../../assets/${file}`, import.meta.url).href;
-      return new Promise((resolve, reject) => {
-        new TextureLoader().load(
-          url,
-          (tex) => {
-            tex.colorSpace = SRGBColorSpace;
-            const img = /** @type {HTMLImageElement | undefined} */ (tex.image);
-            const aspect =
-              img?.naturalWidth && img?.naturalHeight
-                ? img.naturalWidth / img.naturalHeight
-                : 1;
-            const mat = new MeshBasicMaterial({
-              map: tex,
-              transparent: true,
-              depthWrite: false,
-              depthTest: false,
-              side: DoubleSide,
-            });
-            planarSpriteByKind.set(
-              /** @type {import('../../core/collectibleState.js').CollectibleKind} */ (
-                kind
-              ),
-              { aspect, mat, tex },
-            );
-            resolve(undefined);
-          },
-          undefined,
-          reject,
+  /**
+   * @param {string} url
+   */
+  function loadPlanarSpriteByUrl(url) {
+    return new Promise((resolve, reject) => {
+      textureLoader.load(
+        url,
+        (tex) => {
+          tex.colorSpace = SRGBColorSpace;
+          const img = /** @type {HTMLImageElement | undefined} */ (tex.image);
+          const aspect =
+            img?.naturalWidth && img?.naturalHeight
+              ? img.naturalWidth / img.naturalHeight
+              : 1;
+          const mat = new MeshBasicMaterial({
+            map: tex,
+            transparent: true,
+            depthWrite: false,
+            depthTest: false,
+            side: DoubleSide,
+          });
+          resolve({ aspect, mat, tex });
+        },
+        undefined,
+        reject,
+      );
+    });
+  }
+
+  const assetPromises = [];
+  const planarAssets = holeTheme.planarAssets;
+  for (const [kind, file] of Object.entries(planarAssets)) {
+    assetPromises.push(
+      loadPlanarSpriteByUrl(
+        new URL(`../../assets/${file}`, import.meta.url).href,
+      ).then((sprite) => {
+        planarSpriteByKind.set(
+          /** @type {import('../../core/collectibleState.js').CollectibleKind} */ (kind),
+          sprite,
         );
-      });
-    }),
-  );
+      }),
+    );
+  }
+  const slotOverrides = Array.isArray(holeTheme.slotAssetOverrides)
+    ? holeTheme.slotAssetOverrides
+    : [];
+  for (const override of slotOverrides) {
+    if (
+      !override ||
+      !Number.isInteger(override.position) ||
+      override.position < 0 ||
+      override.position >= COLLECTIBLE_COUNT
+    ) {
+      continue;
+    }
+    if (!override.asset) continue;
+    const renderKind = slotRenderKinds[override.position];
+    if (!isPlanarCollectibleKind(renderKind)) continue;
+    assetPromises.push(
+      loadPlanarSpriteByUrl(override.asset).then((sprite) => {
+        slotPlanarSpriteBySlot.set(override.position, sprite);
+      }),
+    );
+  }
+  await Promise.all(assetPromises);
 
   const planarSpriteGeom = new PlaneGeometry(1, 1);
 
@@ -231,18 +283,24 @@ export async function createHoleView(container, options = {}) {
   }
 
   /**
-   * @param {import('../../core/collectibleState.js').CollectibleItem} item
+   * @param {import('../../core/collectibleState.js').CollectibleKind} kind
    */
-  function planarSpriteAspect(item) {
-    return planarSpriteByKind.get(item.kind)?.aspect ?? 1;
+  function planarSpriteAspect(kind, slotIndex) {
+    if (typeof slotIndex === 'number') {
+      const slotSprite = slotPlanarSpriteBySlot.get(slotIndex);
+      if (slotSprite) return slotSprite.aspect;
+    }
+    return planarSpriteByKind.get(kind)?.aspect ?? 1;
   }
 
   /**
-   * @param {import('../../core/collectibleState.js').CollectibleItem['kind']} kind
+   * @param {number} slotIndex
    */
-  function makeObjectMesh(kind) {
+  function makeObjectMesh(slotIndex) {
+    const kind = slotRenderKinds[slotIndex] ?? 'sphere';
     if (kind === 'sphere') return makeSphereCollectibleMesh();
-    const sprite = planarSpriteByKind.get(kind);
+    const sprite =
+      slotPlanarSpriteBySlot.get(slotIndex) ?? planarSpriteByKind.get(kind);
     if (sprite) return makePlanarSpriteMesh(sprite);
     return makeSphereCollectibleMesh();
   }
@@ -250,7 +308,7 @@ export async function createHoleView(container, options = {}) {
   /** @type {Group[]} */
   const collectiblePivots = [];
   for (let i = 0; i < COLLECTIBLE_COUNT; i++) {
-    const mesh = makeObjectMesh(getCollectibleSlotKind(i));
+    const mesh = makeObjectMesh(i);
     const bg = new Group();
     bg.add(mesh);
     mapLayer.add(bg);
@@ -579,14 +637,15 @@ export async function createHoleView(container, options = {}) {
 
     /** @type {Mesh | undefined} */
     const objMesh = /** @type {Mesh | undefined} */ (objGroup.children[0]);
+    const renderKind = slotRenderKinds[i] ?? 'sphere';
 
     if (b.phase === 'idle') {
       if (objGroup.parent !== mapLayer) {
         mapLayer.add(objGroup);
       }
       setCollectibleMeshRenderOrder(objGroup, COLLECTIBLE_RENDER_ORDER_IDLE);
-      if (objMesh && isPlanarCollectibleKind(item.kind)) {
-        objMesh.scale.set(planarSpriteAspect(item), 1, 1);
+      if (objMesh && isPlanarCollectibleKind(renderKind)) {
+        objMesh.scale.set(planarSpriteAspect(renderKind, i), 1, 1);
       } else if (objMesh) {
         objMesh.scale.set(1, 1, 1);
       }
@@ -630,14 +689,14 @@ export async function createHoleView(container, options = {}) {
       const fsz = fallStartZ[i];
       objGroup.position.set(fsx * pull + sideX, y, fsz * pull + sideZ);
       if (objMesh) {
-        if (isPlanarCollectibleKind(item.kind)) {
-          objMesh.scale.set(planarSpriteAspect(item), 1, 1);
+        if (isPlanarCollectibleKind(renderKind)) {
+          objMesh.scale.set(planarSpriteAspect(renderKind, i), 1, 1);
         } else {
           objMesh.scale.set(1, 1, 1);
         }
       }
       objGroup.scale.setScalar(rObj * sc);
-      if (isPlanarCollectibleKind(item.kind)) {
+      if (isPlanarCollectibleKind(renderKind)) {
         if (planarCollectibleFall) {
           const spin = Math.sin(t * Math.PI) * 0.72;
           objGroup.rotation.set(0, spin, 0);
@@ -910,6 +969,10 @@ export async function createHoleView(container, options = {}) {
       sphereMat.dispose();
       planarSpriteGeom.dispose();
       for (const { tex, mat } of planarSpriteByKind.values()) {
+        mat.dispose();
+        tex.dispose();
+      }
+      for (const { tex, mat } of slotPlanarSpriteBySlot.values()) {
         mat.dispose();
         tex.dispose();
       }
