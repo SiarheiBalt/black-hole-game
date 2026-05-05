@@ -28,6 +28,7 @@ import {
   getCollectibleZoneSummary,
   getConsumedCountsByKind,
   getFieldDecorItems,
+  getFieldDecorTriangleItems,
   getFieldDecorConsumedCount,
   getTotalConsumedForProgress,
   shouldCollectibleBeConsumed,
@@ -37,6 +38,7 @@ import {
   resetCollectibleRunAttractOffset,
   COLLECTIBLE_COUNT,
   FIELD_DECOR_CUBE_COUNT,
+  FIELD_DECOR_TRIANGLE_COUNT,
 } from '../core/collectibleState.js';
 import { attachPointerDrag } from '../input/pointerDrag.js';
 import { createPlayfield } from '../render/pixi/createPlayfield.js';
@@ -135,8 +137,13 @@ async function main() {
 
   const state = createGameState();
   const collectibleRuns = createCollectibleRunStates();
-  const fieldDecorRuns = Array.from({ length: FIELD_DECOR_CUBE_COUNT }, () =>
-    createCollectibleRunState(),
+  const fieldDecorCubeRuns = Array.from(
+    { length: FIELD_DECOR_CUBE_COUNT },
+    () => createCollectibleRunState(),
+  );
+  const fieldDecorTriangleRuns = Array.from(
+    { length: FIELD_DECOR_TRIANGLE_COUNT },
+    () => createCollectibleRunState(),
   );
   const c = centerPointerNorm();
   state.mapNx = c.nx;
@@ -168,7 +175,10 @@ async function main() {
   collectibleStatsHud.sync(
     {
       ...getConsumedCountsByKind(collectibleRuns),
-      box: getFieldDecorConsumedCount(fieldDecorRuns),
+      triangle: getFieldDecorConsumedCount(fieldDecorTriangleRuns),
+      box:
+        getFieldDecorConsumedCount(fieldDecorCubeRuns) +
+        getFieldDecorConsumedCount(fieldDecorTriangleRuns),
     },
     layout,
     timeLeftSec,
@@ -201,11 +211,16 @@ async function main() {
     holeProgressBar.sync(consumedSnapshot, layout, state.holeRadius01);
     prevHoleSizeLevel = state.holeSizeLevel;
     for (const run of collectibleRuns) resetCollectibleRunAttractOffset(run);
-    for (const run of fieldDecorRuns) resetCollectibleRunAttractOffset(run);
+    for (const run of fieldDecorCubeRuns) resetCollectibleRunAttractOffset(run);
+    for (const run of fieldDecorTriangleRuns)
+      resetCollectibleRunAttractOffset(run);
     collectibleStatsHud.sync(
       {
         ...getConsumedCountsByKind(collectibleRuns),
-        box: getFieldDecorConsumedCount(fieldDecorRuns),
+        triangle: getFieldDecorConsumedCount(fieldDecorTriangleRuns),
+        box:
+          getFieldDecorConsumedCount(fieldDecorCubeRuns) +
+          getFieldDecorConsumedCount(fieldDecorTriangleRuns),
       },
       layout,
       timeLeftSec,
@@ -236,7 +251,8 @@ async function main() {
     holeView.setScreenCentered();
     const consumed0 = getTotalConsumedForProgress(
       collectibleRuns,
-      fieldDecorRuns,
+      fieldDecorCubeRuns,
+      fieldDecorTriangleRuns,
     );
     applyResizeSync(consumed0);
   });
@@ -260,6 +276,7 @@ async function main() {
 
     const items = getCollectibleItems(layout);
     const fieldDecorItems = getFieldDecorItems(layout);
+    const fieldDecorTriangleItems = getFieldDecorTriangleItems(layout);
     for (let i = 0; i < COLLECTIBLE_COUNT; i++) {
       const runState = collectibleRuns[i];
       const item = items[i];
@@ -293,36 +310,41 @@ async function main() {
         }
       });
     }
-    for (let i = 0; i < FIELD_DECOR_CUBE_COUNT; i++) {
-      const runState = fieldDecorRuns[i];
-      const item = fieldDecorItems[i];
-      if (runState.phase === 'idle') {
-        stepCollectibleIdleAttract(runState, state, layout, item, dt);
+    function processFieldDecorRunSet(runs, itemsList, arrivalKind) {
+      for (let i = 0; i < runs.length; i++) {
+        const runState = runs[i];
+        const item = itemsList[i];
+        if (runState.phase === 'idle') {
+          stepCollectibleIdleAttract(runState, state, layout, item, dt);
+        }
+        const itemEff = collectibleItemWithEffective(item, runState);
+        if (
+          runState.phase === 'idle' &&
+          shouldCollectibleBeConsumed(state, layout, runState, itemEff)
+        ) {
+          runState.phase = 'falling';
+          runState.t = 0;
+          runState.fallSpeed = COLLECTIBLE_FALL_SPEED;
+          resetCollectibleRunAttractOffset(runState);
+          holePopScore.pop(layout, state.holeRadius01);
+          gameAudio.play(SOUND_IDS.suction);
+        }
+        stepCollectibleFall(runState, dt, () => {
+          collectibleStatsHud.playArrival(
+            arrivalKind,
+            holeView.getHoleScreenCenterIn(container),
+          );
+        });
       }
-      const itemEff = collectibleItemWithEffective(item, runState);
-      if (
-        runState.phase === 'idle' &&
-        shouldCollectibleBeConsumed(state, layout, runState, itemEff)
-      ) {
-        runState.phase = 'falling';
-        runState.t = 0;
-        runState.fallSpeed = COLLECTIBLE_FALL_SPEED;
-        resetCollectibleRunAttractOffset(runState);
-        holePopScore.pop(layout, state.holeRadius01);
-        gameAudio.play(SOUND_IDS.suction);
-      }
-      stepCollectibleFall(runState, dt, () => {
-        collectibleStatsHud.playArrival(
-          'box',
-          holeView.getHoleScreenCenterIn(container),
-        );
-      });
     }
+    processFieldDecorRunSet(fieldDecorCubeRuns, fieldDecorItems, 'box');
+    processFieldDecorRunSet(fieldDecorTriangleRuns, fieldDecorTriangleItems, 'triangle');
 
     const mainConsumed = getCollectibleZoneSummary(collectibleRuns).consumed;
     const totalConsumed = getTotalConsumedForProgress(
       collectibleRuns,
-      fieldDecorRuns,
+      fieldDecorCubeRuns,
+      fieldDecorTriangleRuns,
     );
     state.holeRadius01 = getHoleRadius01FromConsumed(totalConsumed);
     state.holeSizeLevel = getHoleSizeLevelFromConsumed(totalConsumed);
@@ -373,7 +395,7 @@ async function main() {
       holeVnX: state.holeVnX,
       holeVnY: state.holeVnY,
       pointerDragging: state.dragging,
-    }, fieldDecorRuns);
+    }, fieldDecorCubeRuns, fieldDecorTriangleRuns);
     holeView.render();
 
     if (roundTimerStarted) {
@@ -385,7 +407,10 @@ async function main() {
     collectibleStatsHud.sync(
       {
         ...getConsumedCountsByKind(collectibleRuns),
-        box: getFieldDecorConsumedCount(fieldDecorRuns),
+        triangle: getFieldDecorConsumedCount(fieldDecorTriangleRuns),
+        box:
+          getFieldDecorConsumedCount(fieldDecorCubeRuns) +
+          getFieldDecorConsumedCount(fieldDecorTriangleRuns),
       },
       layout,
       timeLeftSec,

@@ -10,6 +10,7 @@ import {
   CircleGeometry,
   BoxGeometry,
   SphereGeometry,
+  ConeGeometry,
   MeshStandardMaterial,
   PlaneGeometry,
   ShadowMaterial,
@@ -45,9 +46,11 @@ import {
 import {
   getCollectibleItems,
   getFieldDecorItems,
+  getFieldDecorTriangleItems,
   isPlanarCollectibleKind,
   layoutWorldSize,
   FIELD_DECOR_CUBE_COUNT,
+  FIELD_DECOR_TRIANGLE_COUNT,
 } from '../../core/collectibleState.js';
 import { DEFAULT_HOLE_THEME } from '../../themes.js';
 
@@ -123,6 +126,7 @@ export async function createHoleView(container, options = {}) {
   mapLayer.add(ground);
 
   const fieldDecorCubeGeom = new BoxGeometry(1, 1, 1);
+  const fieldDecorTriangleGeom = new ConeGeometry(1, 1.6, 3);
 
   /**
    * Куб стоит на одной вершине: диагональ (1,1,1) → вниз, затем скрутка yaw вокруг Y; выравнивание по нижней точке через Box3.
@@ -160,6 +164,34 @@ export async function createHoleView(container, options = {}) {
     return { group: g, mat };
   }
 
+  function createFieldDecorTriangleGroup(color, yaw = 0) {
+    const g = new Group();
+    const orient = new Group();
+    const mat = new MeshStandardMaterial({
+      color,
+      roughness: 0.32,
+      metalness: 0.04,
+      emissive: color,
+      emissiveIntensity: 0.08,
+      flatShading: true,
+    });
+    const mesh = new Mesh(fieldDecorTriangleGeom, mat);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    orient.add(mesh);
+    const twist = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), yaw);
+    orient.quaternion.copy(twist);
+    orient.updateMatrixWorld(true);
+    const bounds = new Box3().setFromObject(orient);
+    orient.position.y = -bounds.min.y;
+    g.add(orient);
+    g.renderOrder = 1;
+    orient.traverse((o) => {
+      if ('isMesh' in o && o.isMesh) o.renderOrder = 1;
+    });
+    return { group: g, mat };
+  }
+
   const fieldDecor = new Group();
   mapLayer.add(fieldDecor);
 
@@ -175,6 +207,20 @@ export async function createHoleView(container, options = {}) {
   fieldDecor.add(decorCube12.group);
   fieldDecor.add(decorCube6.group);
   const decorCubePivots = [decorCube12.group, decorCube6.group];
+  const fieldDecorTriangles = new Group();
+  mapLayer.add(fieldDecorTriangles);
+  const triangleYaws = [0.2, 1.05, 2.15, 3.1];
+  const triangleInfos = Array.from(
+    { length: FIELD_DECOR_TRIANGLE_COUNT },
+    (_, index) => {
+      const yaw = triangleYaws[index % triangleYaws.length];
+      const color = decorColors[index % decorColors.length];
+      const info = createFieldDecorTriangleGroup(color, yaw);
+      fieldDecorTriangles.add(info.group);
+      return info;
+    },
+  );
+  const decorTrianglePivots = triangleInfos.map((info) => info.group);
 
   const sphereSeg = 24;
   const sphereGeom = new SphereGeometry(1, sphereSeg, sphereSeg);
@@ -466,6 +512,8 @@ export async function createHoleView(container, options = {}) {
   const fallStartZ = new Float32Array(COLLECTIBLE_COUNT);
   const decorFallStartX = new Float32Array(FIELD_DECOR_CUBE_COUNT);
   const decorFallStartZ = new Float32Array(FIELD_DECOR_CUBE_COUNT);
+  const triangleFallStartX = new Float32Array(FIELD_DECOR_TRIANGLE_COUNT);
+  const triangleFallStartZ = new Float32Array(FIELD_DECOR_TRIANGLE_COUNT);
 
   let viewZoomFactor = 1;
 
@@ -810,6 +858,98 @@ export async function createHoleView(container, options = {}) {
     }
   }
 
+  function applyOneFieldDecorTriangle(b, objGroup, i, item, layout, g) {
+    if (b.phase === 'done') {
+      objGroup.visible = false;
+      return;
+    }
+
+    const { worldW, worldH } = layoutWorldSize(layout);
+    const base = Math.min(layout.designWidth, layout.designHeight);
+    const rObj = objectWorldR(layout, item);
+    const sHole = g.holeRadius01 * base;
+    const y0 = 0;
+
+    objGroup.visible = true;
+
+    const mapNx0 = b.effectiveMapNx ?? item.mapNx;
+    const mapNy0 = b.effectiveMapNy ?? item.mapNy;
+
+    const orient = /** @type {Group | undefined} */ (objGroup.children[0]);
+    /** @type {Mesh | undefined} */
+    const objMesh =
+      orient?.children[0] && 'isMesh' in orient.children[0]
+        ? /** @type {Mesh} */ (orient.children[0])
+        : undefined;
+
+    const triangleSpinTime =
+      fieldDecorSpinClock.getElapsedTime() * 0.66 + i * 0.8;
+    const spinY = triangleSpinTime * 0.9;
+    const swayX = Math.sin(triangleSpinTime * 1.2) * 0.22;
+    const swayZ = Math.cos(triangleSpinTime * 0.78) * 0.14;
+    const idlePitch = Math.sin(triangleSpinTime * 0.9) * 0.18;
+    const idleRoll = Math.cos(triangleSpinTime * 0.65) * 0.1;
+    const bobY = Math.sin(triangleSpinTime * 2.1) * 0.06;
+
+    if (b.phase === 'idle') {
+      if (objGroup.parent !== mapLayer) {
+        mapLayer.add(objGroup);
+      }
+      setCollectibleMeshRenderOrder(objGroup, COLLECTIBLE_RENDER_ORDER_IDLE);
+      if (objMesh) objMesh.scale.set(1, 1, 1);
+      objGroup.scale.setScalar(1.6 * rObj);
+      const ox = (mapNx0 - g.mapNx) * worldW;
+      const oz = (mapNy0 - g.mapNy) * worldH;
+      objGroup.position.set(ox, y0 + bobY, oz);
+      objGroup.scale.setScalar(2.4 * rObj);
+      objGroup.rotation.set(swayX + idlePitch, spinY, swayZ + idleRoll);
+    } else if (b.phase === 'falling') {
+      if (objGroup.parent !== holePivot) {
+        holePivot.attach(objGroup);
+        triangleFallStartX[i] = objGroup.position.x;
+        triangleFallStartZ[i] = objGroup.position.z;
+      }
+      setCollectibleMeshRenderOrder(objGroup, COLLECTIBLE_RENDER_ORDER_FALLING);
+      const t = Math.min(1, b.t);
+      const p = 1 - (1 - t) ** COLLECTIBLE_FALL_POW;
+      const y1 = -Math.max(0.28 * sHole, 0.12 * rObj) - 0.55 * sHole;
+      const y = y0 * (1 - p) + y1 * p;
+      const sc = (1 - p) + COLLECTIBLE_FALL_MIN_REL_SC * p;
+      const pull = 1 - p;
+      const vnX = g.holeVnX ?? 0;
+      const vnY = g.holeVnY ?? 0;
+      const wFunnel = 4 * p * (1 - p);
+      const worldSlideX = -vnX * worldW;
+      const worldSlideZ = -vnY * worldH;
+      const sideGain = 0.14;
+      let sideX = worldSlideX * sideGain * wFunnel;
+      let sideZ = worldSlideZ * sideGain * wFunnel;
+      const cap = 1.05 * sHole;
+      const sideLen = Math.hypot(sideX, sideZ);
+      if (sideLen > cap && sideLen > 1e-6) {
+        const kc = cap / sideLen;
+        sideX *= kc;
+        sideZ *= kc;
+      }
+      const fsx = triangleFallStartX[i];
+      const fsz = triangleFallStartZ[i];
+      objGroup.position.set(fsx * pull + sideX, y, fsz * pull + sideZ);
+      if (objMesh) objMesh.scale.set(1, 1, 1);
+      objGroup.scale.setScalar(1.6 * rObj * sc);
+      const wobble = (1 - t) * (1 - t);
+      const tiltF = 2.6 * wFunnel * wobble;
+      const rx =
+        Math.sin(t * Math.PI * 2.1) * ballWobbleBase * wobble - vnY * tiltF;
+      const ry = t * 3.1 + t * t * 2.4;
+      const rz =
+        Math.sin(t * Math.PI * 2.5 + 0.3) * ballWobbleBase * wobble +
+        vnX * tiltF;
+      const extraTiltX = Math.sin(triangleSpinTime * 2 + t * 6) * 0.12;
+      const extraTiltZ = Math.cos(triangleSpinTime * 1.5 + t * 4) * 0.08;
+      objGroup.rotation.set(rx + extraTiltX, ry + spinY, rz + extraTiltZ);
+    }
+  }
+
   /**
    * @param {import('../../core/collectibleState.js').CollectibleRunState[] | undefined} decorRuns
    * @param {NonNullable<typeof layoutCache>} layout
@@ -830,18 +970,40 @@ export async function createHoleView(container, options = {}) {
     }
   }
 
+  function applyFieldDecorTriangles(triangleRuns, layout, g) {
+    if (!triangleRuns || triangleRuns.length !== FIELD_DECOR_TRIANGLE_COUNT) return;
+    const items = getFieldDecorTriangleItems(layout);
+    for (let i = 0; i < FIELD_DECOR_TRIANGLE_COUNT; i++) {
+      applyOneFieldDecorTriangle(
+        triangleRuns[i],
+        decorTrianglePivots[i],
+        i,
+        items[i],
+        layout,
+        g,
+      );
+    }
+  }
+
   /**
    * @param {import('../../core/collectibleState.js').CollectibleRunState[]} runStates
    * @param {NonNullable<typeof layoutCache>} layout
    * @param {{ mapNx: number, mapNy: number, holeRadius01: number, holeVnX?: number, holeVnY?: number, pointerDragging?: boolean }} g
    */
-  function applyCollectiblesVisual(runStates, layout, g, decorRuns) {
+  function applyCollectiblesVisual(
+    runStates,
+    layout,
+    g,
+    decorRuns,
+    triangleRuns,
+  ) {
     if (runStates.length !== collectiblePivots.length) return;
     const items = getCollectibleItems(layout);
     for (let i = 0; i < collectiblePivots.length; i++) {
       applyOneCollectible(runStates[i], collectiblePivots[i], i, items[i], layout, g);
     }
     applyFieldDecorCubes(decorRuns, layout, g);
+    applyFieldDecorTriangles(triangleRuns, layout, g);
     updateMoveArrow(layout, g);
   }
 
@@ -939,8 +1101,20 @@ export async function createHoleView(container, options = {}) {
      * @param {{ mapNx: number, mapNy: number, holeRadius01: number, holeVnX?: number, holeVnY?: number, pointerDragging?: boolean }} g
      * @param {import('../../core/collectibleState.js').CollectibleRunState[] | undefined} [fieldDecorRuns]
      */
-    updateCollectibles(runStates, layout, g, fieldDecorRuns) {
-      applyCollectiblesVisual(runStates, layout, g, fieldDecorRuns);
+    updateCollectibles(
+      runStates,
+      layout,
+      g,
+      fieldDecorRuns,
+      fieldDecorTriangleRuns,
+    ) {
+      applyCollectiblesVisual(
+        runStates,
+        layout,
+        g,
+        fieldDecorRuns,
+        fieldDecorTriangleRuns,
+      );
     },
 
     render() {
@@ -991,6 +1165,10 @@ export async function createHoleView(container, options = {}) {
       fieldDecorCubeGeom.dispose();
       decorCube12.mat.dispose();
       decorCube6.mat.dispose();
+      fieldDecorTriangleGeom.dispose();
+      for (const info of triangleInfos) {
+        info.mat.dispose();
+      }
       renderer.domElement.remove();
     },
   };

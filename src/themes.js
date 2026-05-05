@@ -8,6 +8,7 @@ import {
 } from './core/constants.js';
 import {
   FIELD_DECOR_CUBE_COUNT,
+  FIELD_DECOR_TRIANGLE_COUNT,
   COLLECTIBLE_PLANAR_SPRITE_FILES,
   getCollectibleSlotKind,
   isPlanarCollectibleKind,
@@ -29,17 +30,20 @@ const DEFAULT_HUD_ICON_PATHS = {
   poop: new URL('./assets/poop.png', import.meta.url).href,
 };
 
+const FIELD_DECOR_TOTAL_COUNT =
+  FIELD_DECOR_CUBE_COUNT + FIELD_DECOR_TRIANGLE_COUNT;
+
 function buildFieldDecorColors(candidate) {
   if (
     Array.isArray(candidate) &&
-    candidate.length >= FIELD_DECOR_CUBE_COUNT &&
-    FIELD_DECOR_CUBE_COUNT > 0
+    candidate.length >= FIELD_DECOR_TOTAL_COUNT &&
+    FIELD_DECOR_TOTAL_COUNT > 0
   ) {
-    return candidate.slice(0, FIELD_DECOR_CUBE_COUNT);
+    return candidate.slice(0, FIELD_DECOR_TOTAL_COUNT);
   }
-  if (FIELD_DECOR_CUBE_COUNT === 0) return [];
+  if (FIELD_DECOR_TOTAL_COUNT === 0) return [];
   return Array.from(
-    { length: FIELD_DECOR_CUBE_COUNT },
+    { length: FIELD_DECOR_TOTAL_COUNT },
     (_, index) => DEFAULT_FIELD_DECOR_COLORS[index % DEFAULT_FIELD_DECOR_COLORS.length],
   );
 }

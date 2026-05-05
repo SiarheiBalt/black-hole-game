@@ -30,6 +30,7 @@ export function createCollectibleStatsHud(container, options = {}) {
     { key: 'planar', iconKind: 'img', src: icons.planar, alt: '' },
     { key: 'trump', iconKind: 'img', src: icons.trump, alt: '' },
     { key: 'poop', iconKind: 'img', src: icons.poop, alt: '' },
+    { key: 'triangle', iconKind: 'triangle' },
     { key: 'box', iconKind: 'box' },
   ];
 
@@ -52,6 +53,11 @@ export function createCollectibleStatsHud(container, options = {}) {
     } else if (spec.iconKind === 'box') {
       iconEl = document.createElement('div');
       iconEl.className = 'collectible-stats__icon collectible-stats__icon--box';
+      iconEl.setAttribute('aria-hidden', 'true');
+    } else if (spec.iconKind === 'triangle') {
+      iconEl = document.createElement('div');
+      iconEl.className =
+        'collectible-stats__icon collectible-stats__icon--triangle';
       iconEl.setAttribute('aria-hidden', 'true');
     } else {
       const img = document.createElement('img');

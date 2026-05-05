@@ -200,6 +200,7 @@ export function getConsumedCountsByKind(states) {
  * @param {CollectibleRunState[]} states — `fieldDecorRuns`
  */
 export function getFieldDecorConsumedCount(states) {
+  if (!states) return 0;
   let n = 0;
   for (const s of states) {
     if (s.phase === 'done') n += 1;
@@ -208,14 +209,20 @@ export function getFieldDecorConsumedCount(states) {
 }
 
 /**
- * Всего поглощений для прогресс-бара дыры и `holeSizeLevel`: основные слоты + полевые кубы.
+ * Всего поглощений для прогресс-бара дыры и `holeSizeLevel`: основные слоты + полевые кубы и треугольники.
  * @param {CollectibleRunState[]} mainRuns — `collectibleRuns`
- * @param {CollectibleRunState[]} fieldDecorRuns
+ * @param {CollectibleRunState[]} [fieldDecorRuns]
+ * @param {CollectibleRunState[]} [triangleRuns]
  */
-export function getTotalConsumedForProgress(mainRuns, fieldDecorRuns) {
+export function getTotalConsumedForProgress(
+  mainRuns,
+  fieldDecorRuns,
+  triangleRuns,
+) {
   return (
     getCollectibleZoneSummary(mainRuns).consumed +
-    getFieldDecorConsumedCount(fieldDecorRuns)
+    getFieldDecorConsumedCount(fieldDecorRuns) +
+    getFieldDecorConsumedCount(triangleRuns)
   );
 }
 
@@ -280,6 +287,9 @@ export function getCollectibleItems(layout) {
 
 /** Число декоративных кубов на поле (идут в общий `totalConsumed` для прогресса дыры). */
 export const FIELD_DECOR_CUBE_COUNT = 2;
+export const FIELD_DECOR_TRIANGLE_COUNT = 4;
+
+const FIELD_DECOR_TRIANGLE_POSITIONS = [2, 5, 8, 11];
 
 /**
  * Два куба на окружности poop (12 и 6 часов), тот же {@link COLLECTIBLE_RADIUS_01}, что у сфер.
@@ -308,6 +318,29 @@ export function getFieldDecorItems(layout) {
       radius01: COLLECTIBLE_RADIUS_01,
     },
   ];
+}
+
+/**
+ * Четыре треугольника по окружности `poop`, аналогично кубам.
+ * @param {ReturnType<import('./viewport.js').computeLayout>} layout
+ * @returns {CollectibleItem[]}
+ */
+export function getFieldDecorTriangleItems(layout) {
+  const { worldW, worldH } = layoutWorldSize(layout);
+  const minSide = Math.min(layout.designWidth, layout.designHeight);
+  const rWorld = COLLECTIBLE_POOP_CIRCLE_R01 * minSide;
+  return FIELD_DECOR_TRIANGLE_POSITIONS.map((position, index) => {
+    const angle = (position * Math.PI) / 6;
+    const dx = rWorld * Math.cos(angle);
+    const dz = rWorld * Math.sin(angle);
+    return {
+      id: `field-decor-triangle-${index}`,
+      kind: /** @type {const} */ ('sphere'),
+      mapNx: 0.5 + dx / worldW,
+      mapNy: 0.5 + dz / worldH,
+      radius01: COLLECTIBLE_RADIUS_01,
+    };
+  });
 }
 
 /**

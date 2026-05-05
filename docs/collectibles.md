@@ -16,7 +16,11 @@
 
 Идентификаторы `field-decor-0` / `field-decor-1`; длина массива ран-тайма = [`FIELD_DECOR_CUBE_COUNT`](../src/core/collectibleState.js) (константа в [`collectibleState.js`](../src/core/collectibleState.js), не в `constants.js`). Для **`shouldCollectibleBeConsumed`** элементы описаны как **`kind: 'sphere'`** и [`COLLECTIBLE_RADIUS_01`](../src/core/constants.js) — так переиспользуется та же эллиптическая коллизия, что у шаров; визуал и анимация падения — отдельная ветка `applyOneFieldDecorCube` в [`createHoleView`](../src/render/three/createHoleView.js).
 
-Счётчик **`box`** в [`collectibleStatsHud`](../src/ui/collectibleStatsHud.js) заполняется через [`getFieldDecorConsumedCount(fieldDecorRuns)`](../src/core/collectibleState.js) (мердж в `bootstrap` с [`getConsumedCountsByKind`](../src/core/collectibleState.js)); это **не** слот `COLLECTIBLE_RING_LAYOUT`.
+Cчётчик **`box`** в [`collectibleStatsHud`](../src/ui/collectibleStatsHud.js) заполняется через [`getFieldDecorConsumedCount(fieldDecorRuns)`](../src/core/collectibleState.js) (мердж в `bootstrap` с [`getConsumedCountsByKind`](../src/core/collectibleState.js)); это **не** слот `COLLECTIBLE_RING_LAYOUT`.
+
+### Треугольники на внешнем радиусе
+
+Площадку дополняют четыре крутящихся треугольника: они стоят на **том же радиусе**, что и кубы, но смещены по углам `2`, `5`, `8`, `11` на внешней окружности [`COLLECTIBLE_POOP_CIRCLE_R01`](../src/core/constants.js) (см. [`getFieldDecorTriangleItems`](../src/core/collectibleState.js)). Логика коллизий и притяжения такая же, как у кубов (`kind: 'sphere'`, [`COLLECTIBLE_RADIUS_01`](../src/core/constants.js)), состояние хранится в массиве длины [`FIELD_DECOR_TRIANGLE_COUNT`](../src/core/collectibleState.js), а `createHoleView` рендерит их через `applyFieldDecorTriangles` с мягким вращением вокруг Y. После падения `collectibleStatsHud.playArrival('triangle', …)` обновляет новый счётчик `triangle`, поэтому HUD показывает, сколько треугольников уже поглощено (строка рядом с `box`).
 
 Порядок колец и формулы углов — в одном месте: [`COLLECTIBLE_RING_LAYOUT`](../src/core/collectibleState.js) (сумма `count` при старте проверяется на равенство [`COLLECTIBLE_COUNT`](../src/core/constants.js)). [`getCollectibleItems`](../src/core/collectibleState.js) и [`getCollectibleSlotKind`](../src/core/collectibleState.js) строятся из этого массива. PNG для плоских kind — [`COLLECTIBLE_PLANAR_SPRITE_FILES`](../src/core/collectibleState.js); `createHoleView` подгружает их по этой таблице.
 
@@ -48,12 +52,17 @@ getCollectibleZoneSummary(runs)
 - **consumed** — `phase === 'done'`.
 - **total** — длина переданного массива (для основного контура — `COLLECTIBLE_COUNT`).
 
-Для **прогресс-бара дыры** и **уровня `size`** используется суммарное число поглощений **основных слотов + полевых кубов**:
+Для **прогресс-бара дыры** и **уровня `size`** используется суммарное число поглощений **основных слотов + полевых кубов и треугольников**:
 
 ```js
-getTotalConsumedForProgress(collectibleRuns, fieldDecorRuns)
+getTotalConsumedForProgress(
+  collectibleRuns,
+  fieldDecorRuns,
+  triangleRuns,
+)
 // = getCollectibleZoneSummary(collectibleRuns).consumed
 //   + getFieldDecorConsumedCount(fieldDecorRuns)
+//   + getFieldDecorConsumedCount(triangleRuns)
 ```
 
 Оверлей **прогресс-бар** ([`holeProgressBar.js`](../src/ui/holeProgressBar.js)): внутри сегмента значение [`getProgressSegmentConsumed(totalConsumed)`](../src/core/gameState.js) (полный сегмент = [`COLLECTIBLE_PROGRESS_MAX`](../src/core/constants.js), сейчас 20) задаёт долю заполнения; **`totalConsumed`** передаётся из [`bootstrap.js`](../src/app/bootstrap.js). **Радиус** `holeRadius01` и **уровень** `holeSizeLevel` берутся из [`getHoleRadius01FromConsumed`](../src/core/gameState.js) / [`getHoleSizeLevelFromConsumed`](../src/core/gameState.js) с тем же **`totalConsumed`** (ступени размера — не на каждый объект по отдельности). Потолок скорости — [`getHoleMaxSpeedScaleFromSizeLevel`](../src/core/gameState.js) по `holeSizeLevel`.
@@ -86,9 +95,9 @@ getTotalConsumedForProgress(collectibleRuns, fieldDecorRuns)
 1. `getCollectibleItems(layout)` — `items` основного контура.
 2. Цикл по `i`: при **`idle`** сначала [`stepCollectibleIdleAttract`](../src/core/collectibleState.js); она **сравнивает расстояние** до дыры с суммой её текущего радиуса (в px) и `COLLECTIBLE_ATTRACT_RADIUS_PX`. Если центр ещё вне зоны — смещение сброшено, объект остаётся на слоте; как только нужно притянуть — центр **скользит** к дыре с `COLLECTIBLE_ATTRACT_PULL_PIX_PER_SEC`. Даже если дыра проходит мимо, как только смещение появилось оно **не сбрасывается** и отображается в фактической позиции. По `dt` прокручивается `shouldCollectibleBeConsumed` на `collectibleItemWithEffective(items[i], run)`; при успехе run → `falling`, обнуление смещения, `t = 0`, поп/звук.
 3. **`stepCollectibleFall(collectibleRuns[i], …)`**; в **`onDone`** — [`playArrival`](../src/ui/collectibleStatsHud.js) по `kind` слота.
-4. `getFieldDecorItems(layout)`; цикл по **`fieldDecorRuns`**: та же схема притягивания по эффективной позиции → **`stepCollectibleFall`**; при старте падения — `holePopScore`, в **`onDone`** — **`playArrival('box', …)`**.
-5. **`totalConsumed`** = [`getTotalConsumedForProgress(collectibleRuns, fieldDecorRuns)`](../src/core/collectibleState.js); обновление **`state.holeRadius01`**, **`holeSizeLevel`**, **`holeProgressBar.sync(totalConsumed, …)`**; при **resize** в `applyResizeSync` для всех runs вызывается [`resetCollectibleRunAttractOffset`](../src/core/collectibleState.js), чтобы сбросить смещение притяжения на поле.
-6. **`holeView.updateCollectibles(collectibleRuns, layout, g, fieldDecorRuns)`** — Three.js (4-й аргумент опционален в типах, в игре передаётся).
+4. `getFieldDecorItems(layout)` + `getFieldDecorTriangleItems(layout)`; циклы по **`fieldDecorRuns`** и **`fieldDecorTriangleRuns`**: та же схема притягивания по эффективной позиции → **`stepCollectibleFall`**; при старте падения — `holePopScore`, в **`onDone`** — **`playArrival('box', …)`**.
+5. **`totalConsumed`** = [`getTotalConsumedForProgress(collectibleRuns, fieldDecorRuns, triangleRuns)`](../src/core/collectibleState.js); обновление **`state.holeRadius01`**, **`holeSizeLevel`**, **`holeProgressBar.sync(totalConsumed, …)`**; при **resize** в `applyResizeSync` для всех runs вызывается [`resetCollectibleRunAttractOffset`](../src/core/collectibleState.js), чтобы сбросить смещение притяжения на поле.
+6. **`holeView.updateCollectibles(collectibleRuns, layout, g, fieldDecorRuns, fieldDecorTriangleRuns)`** — Three.js (4-й и 5-й аргументы опциональны в типах, в игре передаются).
 
 Победа: **`mainConsumed`** = `getCollectibleZoneSummary(collectibleRuns).consumed` ≥ **`COLLECTIBLE_COUNT`**.
 
@@ -108,6 +117,8 @@ getTotalConsumedForProgress(collectibleRuns, fieldDecorRuns)
 |-----|--------|
 | `FIELD_DECOR_CUBE_COUNT` | Число полевых кубов |
 | `getFieldDecorItems` | Псевдо-`CollectibleItem[]` (позиции, коллизия как у шара) |
+| `FIELD_DECOR_TRIANGLE_COUNT` | Число дополнительных треугольников на поле |
+| `getFieldDecorTriangleItems` | Как и кубы, `CollectibleItem[]` для треугольников на кольце `poop` |
 | `getFieldDecorConsumedCount` | Сколько кубов в `done` |
 | `getTotalConsumedForProgress` | Сумма поглощений для бара и `holeSizeLevel` |
 | `stepCollectibleIdleAttract` | Притяжение в `idle` внутри радиуса px |
