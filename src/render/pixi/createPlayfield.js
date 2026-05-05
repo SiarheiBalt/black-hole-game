@@ -1,4 +1,4 @@
-import { Container, Graphics } from 'pixi.js';
+import { Assets, Container, Graphics, Sprite } from 'pixi.js';
 import { DEFAULT_PLAYFIELD_THEME } from '../../themes.js';
 import {
   BG_COLOR,
@@ -47,6 +47,21 @@ function drawPlayfieldBackground(bg, w, h, theme) {
   bg.endFill();
 }
 
+/**
+ * @param {Sprite} sprite
+ * @param {number} w
+ * @param {number} h
+ */
+function layoutBackgroundCover(sprite, w, h) {
+  const tex = sprite.texture;
+  if (!tex || !tex.width || !tex.height) return;
+  const tw = tex.width;
+  const th = tex.height;
+  const scale = Math.max(w / tw, h / th);
+  sprite.scale.set(scale);
+  sprite.position.set((w - tw * scale) / 2, (h - th * scale) / 2);
+}
+
 function rebuildStars(graphics, w, h, theme) {
   graphics.clear();
   const count = theme.starCount ?? 0;
@@ -73,36 +88,65 @@ export function createPlayfield(app, theme = DEFAULT_PLAYFIELD_THEME) {
   const worldRoot = new Container();
   worldRoot.label = 'playfield';
 
-  const bg = new Graphics();
+  const bgFill = new Graphics();
+  const bgImage = new Sprite();
+  bgImage.visible = false;
+  bgImage.label = 'playfield-bg-image';
+  const bgLayer = new Container();
+  bgLayer.label = 'playfield-bg';
+  bgLayer.addChild(bgFill);
+  bgLayer.addChild(bgImage);
+
   const decorLayer = new Container();
   decorLayer.label = 'decor';
   const starGraphics = new Graphics();
   starGraphics.label = 'stars';
 
-  worldRoot.addChild(bg);
+  worldRoot.addChild(bgLayer);
   worldRoot.addChild(starGraphics);
   worldRoot.addChild(decorLayer);
   app.stage.addChild(worldRoot);
 
   /** @type {ReturnType<import('../../core/viewport.js').computeLayout> | null} */
   let layoutRef = null;
+  /** @type {Promise<void> | null} */
+  let bgLoadPromise = null;
+
+  /** @param {ReturnType<import('../../core/viewport.js').computeLayout>} layout */
+  function applyResize(layout) {
+    layoutRef = layout;
+    const { designWidth: vw, designHeight: vh } = layout;
+    const m = WORLD_MAP_VIEW_MULTIPLIER;
+    const worldW = vw * m;
+    const worldH = vh * m;
+    const decorCount = Math.round(DECOR_COUNT * m * m);
+
+    drawPlayfieldBackground(bgFill, worldW, worldH, resolvedTheme);
+    layoutBackgroundCover(bgImage, worldW, worldH);
+    rebuildStars(starGraphics, worldW, worldH, resolvedTheme);
+    rebuildDecor(decorLayer, worldW, worldH, decorCount, resolvedTheme.decorColor);
+
+    worldRoot.scale.set(1);
+  }
 
   return {
     worldRoot,
     /** @param {ReturnType<import('../../core/viewport.js').computeLayout>} layout */
     resize(layout) {
-      layoutRef = layout;
-      const { designWidth: vw, designHeight: vh } = layout;
-      const m = WORLD_MAP_VIEW_MULTIPLIER;
-      const worldW = vw * m;
-      const worldH = vh * m;
-      const decorCount = Math.round(DECOR_COUNT * m * m);
+      applyResize(layout);
+    },
 
-      drawPlayfieldBackground(bg, worldW, worldH, resolvedTheme);
-      rebuildStars(starGraphics, worldW, worldH, resolvedTheme);
-      rebuildDecor(decorLayer, worldW, worldH, decorCount, resolvedTheme.decorColor);
-
-      worldRoot.scale.set(1);
+    /** Загружает опциональную текстуру `playfieldTheme.backgroundImage` (Pixi). */
+    async loadThemeAssets() {
+      const url = resolvedTheme.backgroundImage;
+      if (!url || bgLoadPromise) return bgLoadPromise ?? Promise.resolve();
+      bgLoadPromise = (async () => {
+        const tex = await Assets.load(url);
+        bgImage.texture = tex;
+        bgImage.visible = true;
+        if (layoutRef) applyResize(layoutRef);
+      })();
+      return bgLoadPromise;
     },
 
     /**

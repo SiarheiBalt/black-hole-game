@@ -6,9 +6,9 @@
 
 | id (логический тип) | Файл | `kind` в коде | Описание |
 |---------------------|------|---------------|----------|
-| Деньги / валюта | [`src/assets/money.png`](../src/assets/money.png) | `planar` | Плоский спрайт на XZ, текстура `money.png`, масштаб по соотношению сторон; та же анимация падения, что у `trump`. |
-| Портрет (демо) | [`src/assets/trump.png`](../src/assets/trump.png) | `trump` | Четыре экземпляра по «углам» внутри кольца сфер: углы квадрата на окружности (`π/4 + k·π/2`), радиус [`COLLECTIBLE_TRUMP_CIRCLE_R01`](../src/core/constants.js). Рендер как у `planar`, отдельная текстура в [`createHoleView`](../src/render/three/createHoleView.js). |
-| «Какашка» (демо) | [`src/assets/poop.png`](../src/assets/poop.png) | `poop` | Два экземпляра **снаружи** кольца денег ([`COLLECTIBLE_POOP_CIRCLE_R01`](../src/core/constants.js) > [`COLLECTIBLE_MONEY_CIRCLE_R01`](../src/core/constants.js)), по **горизонтали**: углы `0` и `π`. Рендер как у `trump`. |
+| Деньги / валюта | [`src/assets/money.webp`](../src/assets/money.webp) | `planar` | Плоский спрайт на XZ, текстура `money.webp`, масштаб по соотношению сторон; та же анимация падения, что у `trump`. |
+| Портрет (демо) | [`src/assets/trump.webp`](../src/assets/trump.webp) | `trump` | Четыре экземпляра по «углам» внутри кольца сфер: углы квадрата на окружности (`π/4 + k·π/2`), радиус [`COLLECTIBLE_TRUMP_CIRCLE_R01`](../src/core/constants.js). Рендер как у `planar`, отдельная текстура в [`createHoleView`](../src/render/three/createHoleView.js). |
+| «Какашка» (демо) | [`src/assets/poop.webp`](../src/assets/poop.webp) | `poop` | Два экземпляра **снаружи** кольца денег ([`COLLECTIBLE_POOP_CIRCLE_R01`](../src/core/constants.js) > [`COLLECTIBLE_MONEY_CIRCLE_R01`](../src/core/constants.js)), по **горизонтали**: углы `0` и `π`. Рендер как у `trump`. |
 
 ## Полевые кубы (вне `COLLECTIBLE_RING_LAYOUT`)
 
@@ -28,7 +28,7 @@ Cчётчик **`box`** в [`collectibleStatsHud`](../src/ui/collectibleStatsHud
 
 1. **`CollectibleItem`** — описание **экземпляра** на уровне: не меняется в рантайме.
    - `id` — строка, удобна для сейвов, аналитики, сопоставления с UI.
-   - `kind` — тип визуала/коллайдера для **основных** слотов: `'sphere'`, `'planar'` ([`money.png`](../src/assets/money.png)), `'trump'`, `'poop'`; в типах зарезервировано `'box'`. У **полевых кубов** в данных для коллизии пока стоит `'sphere'` (см. раздел выше), а ключ **`box`** в HUD — отдельный счётчик.
+   - `kind` — тип визуала/коллайдера для **основных** слотов: `'sphere'`, `'planar'` ([`money.webp`](../src/assets/money.webp)), `'trump'`, `'poop'`; в типах зарезервировано `'box'`. У **полевых кубов** в данных для коллизии пока стоит `'sphere'` (см. раздел выше), а ключ **`box`** в HUD — отдельный счётчик.
    - `mapNx`, `mapNy` — позиция на **логической карте** в \([0,1]^2\), в том же пространстве, что `gameState.mapNx` / `mapNy`.
    - `radius01` (опционально) — «радиус» объекта как доля `min(ширина, высота)` дизайн-макета; если не задан, берётся [`COLLECTIBLE_RADIUS_01`](../src/core/constants.js).
 
@@ -105,7 +105,7 @@ getTotalConsumedForProgress(
 
 ## Рендер
 
-В [`createHoleView.js`](../src/render/three/createHoleView.js) у каждого индекса **основного** списка — группа `Group` с мешем. В `idle` горизонтальная позиция берётся из `effectiveMapNx/Y` стейта, если они заданы, иначе из слотового `item`. Для `kind === 'sphere'` — общая `SphereGeometry` и `MeshStandardMaterial`. Для плоских PNG (`planar`, `trump`, `poop`) — общая `PlaneGeometry` с отдельными `MeshBasicMaterial` и текстурами (`money.png`, `trump.png`, `poop.png`), плоскость на XZ; высота центра в покое ниже (`idleCenterY`). При падении (`planarCollectibleFall`): та же траектория и `sc` по `p`, что у сфер; масштаб на **группе** (`rObj·sc`), у меша снова `(aspect, 1, 1)` — своё соотношение сторон на kind. Поворот только вокруг **мировой Y** (спин). У материалов `depthTest: false`, у мешей `frustumCulled: false`. Опция `collectibleMoneyShadows` — тени у плоских мешей. `planarCollectibleFall: false` отключает спин для плоских kind.
+В [`createHoleView.js`](../src/render/three/createHoleView.js) у каждого индекса **основного** списка — группа `Group` с мешем. В `idle` горизонтальная позиция берётся из `effectiveMapNx/Y` стейта, если они заданы, иначе из слотового `item`. Для `kind === 'sphere'` — общая `SphereGeometry` и `MeshStandardMaterial`. Для плоских спрайтов (`planar`, `trump`, `poop`) — общая `PlaneGeometry` с отдельными `MeshBasicMaterial` и текстурами (`money.webp`, `trump.webp`, `poop.webp`), плоскость на XZ; высота центра в покое ниже (`idleCenterY`). При падении (`planarCollectibleFall`): та же траектория и `sc` по `p`, что у сфер; масштаб на **группе** (`rObj·sc`), у меша снова `(aspect, 1, 1)` — своё соотношение сторон на kind. Поворот только вокруг **мировой Y** (спин). У материалов `depthTest: false`, у мешей `frustumCulled: false`. Опция `collectibleMoneyShadows` — тени у плоских мешей. `planarCollectibleFall: false` отключает спин для плоских kind.
 
 **Полевые кубы:** отдельные группы, ориентация «вершиной вниз», лёгкое вращение вокруг Y в `idle` и при падении, траектория/воронка как у сфер (`applyOneFieldDecorCube`). Позиции задаются **`getFieldDecorItems`** (пересчитывается в `bootstrap` и в `applyFieldDecorCubes`).
 

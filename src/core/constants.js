@@ -71,9 +71,9 @@ export const TIME_URGENT_LAST_SEC = 5;
 export const COLLECTIBLE_SPHERE_COUNT = 30;
 /** Деньги: внешнее кольцо (дальше от центра, «за» шарами). */
 export const COLLECTIBLE_MONEY_COUNT = 40;
-/** Портреты `trump.png`: четыре угла внутри кольца сфер. */
+/** Портреты `trump.webp`: четыре угла внутри кольца сфер. */
 export const COLLECTIBLE_TRUMP_COUNT = 4;
-/** `poop.png`: два слота **снаружи** кольца денег, по горизонтали (0° и 180°). */
+/** `poop.webp`: два слота **снаружи** кольца денег, по горизонтали (0° и 180°). */
 export const COLLECTIBLE_POOP_COUNT = 2;
 /** Всего слотов = сферы + деньги + trump + poop. */
 export const COLLECTIBLE_COUNT =

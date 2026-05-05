@@ -38,6 +38,7 @@ import {
   HOLE_VISUAL_SETTLE_RATE,
   COLLECTIBLE_RADIUS_01,
   COLLECTIBLE_COUNT,
+  COLLECTIBLE_SPHERE_COUNT,
   COLLECTIBLE_FALL_POW,
   COLLECTIBLE_FALL_MIN_REL_SC,
   COLLECTIBLE_RENDER_ORDER_IDLE,
@@ -224,13 +225,22 @@ export async function createHoleView(container, options = {}) {
 
   const sphereSeg = 24;
   const sphereGeom = new SphereGeometry(1, sphereSeg, sphereSeg);
-  const sphereMat = new MeshStandardMaterial({
-    color: holeTheme.sphereColor,
-    metalness: 0.2,
-    roughness: 0.38,
-    emissive: 0x0a1a2a,
-    emissiveIntensity: 0.08,
-  });
+  const sphereColorList =
+    Array.isArray(holeTheme.sphereColors) &&
+    holeTheme.sphereColors.length === COLLECTIBLE_SPHERE_COUNT
+      ? holeTheme.sphereColors
+      : Array.from({ length: COLLECTIBLE_SPHERE_COUNT }, () => holeTheme.sphereColor);
+
+  const sphereMats = sphereColorList.map(
+    (hex) =>
+      new MeshStandardMaterial({
+        color: hex,
+        metalness: 0.12,
+        roughness: 0.32,
+        emissive: hex,
+        emissiveIntensity: 0.16,
+      }),
+  );
 
   /** @type {Map<import('../../core/collectibleState.js').CollectibleKind, { aspect: number, mat: MeshBasicMaterial, tex: import('three').Texture }>} */
   const planarSpriteByKind = new Map();
@@ -320,8 +330,10 @@ export async function createHoleView(container, options = {}) {
     return m;
   }
 
-  function makeSphereCollectibleMesh() {
-    const m = new Mesh(sphereGeom, sphereMat);
+  function makeSphereCollectibleMesh(slotIndex) {
+    const mat =
+      sphereMats[Math.max(0, Math.min(COLLECTIBLE_SPHERE_COUNT - 1, slotIndex))] ?? sphereMats[0];
+    const m = new Mesh(sphereGeom, mat);
     m.castShadow = true;
     m.receiveShadow = true;
     m.renderOrder = 2;
@@ -344,11 +356,11 @@ export async function createHoleView(container, options = {}) {
    */
   function makeObjectMesh(slotIndex) {
     const kind = slotRenderKinds[slotIndex] ?? 'sphere';
-    if (kind === 'sphere') return makeSphereCollectibleMesh();
+    if (kind === 'sphere') return makeSphereCollectibleMesh(slotIndex);
     const sprite =
       slotPlanarSpriteBySlot.get(slotIndex) ?? planarSpriteByKind.get(kind);
     if (sprite) return makePlanarSpriteMesh(sprite);
-    return makeSphereCollectibleMesh();
+    return makeSphereCollectibleMesh(slotIndex);
   }
 
   /** @type {Group[]} */
@@ -1140,7 +1152,7 @@ export async function createHoleView(container, options = {}) {
       groundGeom.dispose();
       groundMat.dispose();
       sphereGeom.dispose();
-      sphereMat.dispose();
+      for (const m of sphereMats) m.dispose();
       planarSpriteGeom.dispose();
       for (const { tex, mat } of planarSpriteByKind.values()) {
         mat.dispose();

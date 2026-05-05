@@ -14,10 +14,41 @@ import {
   isPlanarCollectibleKind,
 } from './core/collectibleState.js';
 
-const DEFAULT_SPHERE_COLOR = 0x4cc4ff;
+const DONUT_SPHERE_PALETTE = [
+  0xff3d9a,
+  0xff6fae,
+  0xffb326,
+  0xffea54,
+  0xff6b81,
+  0xe067ff,
+  0xff8f62,
+  0x58ffe8,
+  0xff9edb,
+  0xa78bff,
+];
+
+/**
+ * @param {{ sphereColor?: number, sphereColors?: number[] }} config
+ * @returns {number[]}
+ */
+function normalizeSphereColors(config) {
+  const len = COLLECTIBLE_SPHERE_COUNT;
+  const custom = Array.isArray(config.sphereColors)
+    ? config.sphereColors.filter((c) => typeof c === 'number')
+    : [];
+  if (custom.length > 0) {
+    return Array.from({ length: len }, (_, i) => custom[i % custom.length]);
+  }
+  if (typeof config.sphereColor === 'number') {
+    return Array.from({ length: len }, () => config.sphereColor);
+  }
+  return Array.from({ length: len }, (_, i) => DONUT_SPHERE_PALETTE[i % DONUT_SPHERE_PALETTE.length]);
+}
 const DEFAULT_FIELD_DECOR_COLORS = [0x5eead4, 0xff7eb3];
 const BASE_PLAYFIELD_THEME = {
   backgroundColor: BG_COLOR,
+  /** @type {string | undefined} полный URL текстуры фона (Pixi `Assets.load`), опционально */
+  backgroundImage: undefined,
   decorColor: DECOR_COLOR,
   starColor: 0xffffff,
   starAlpha: 0.45,
@@ -25,9 +56,9 @@ const BASE_PLAYFIELD_THEME = {
   starSize: 1.8,
 };
 const DEFAULT_HUD_ICON_PATHS = {
-  planar: new URL('./assets/money.png', import.meta.url).href,
-  trump: new URL('./assets/trump.png', import.meta.url).href,
-  poop: new URL('./assets/poop.png', import.meta.url).href,
+  planar: new URL('./assets/money.webp', import.meta.url).href,
+  trump: new URL('./assets/trump.webp', import.meta.url).href,
+  poop: new URL('./assets/poop.webp', import.meta.url).href,
 };
 
 const FIELD_DECOR_TOTAL_COUNT =
@@ -70,11 +101,17 @@ function buildSlotRenderKinds(overrides = []) {
 }
 
 function normalizePlayfieldTheme(theme = {}) {
+  const backgroundImageRaw = theme.backgroundImage;
+  const backgroundImage =
+    typeof backgroundImageRaw === 'string' && backgroundImageRaw.trim()
+      ? backgroundImageRaw.trim()
+      : BASE_PLAYFIELD_THEME.backgroundImage;
   return {
     backgroundColor:
       typeof theme.backgroundColor === 'number'
         ? theme.backgroundColor
         : BASE_PLAYFIELD_THEME.backgroundColor,
+    backgroundImage,
     decorColor:
       typeof theme.decorColor === 'number'
         ? theme.decorColor
@@ -115,7 +152,8 @@ function normalizeHudIcons(icons = {}) {
 /**
  * @typedef {Object} HoleThemeConfig
  * @property {string} id
- * @property {number} sphereColor
+ * @property {number} sphereColor — условный «основной» цвет шаров (совместимость); по умолчанию первый цвет из палитры пончиков
+ * @property {number[]} sphereColors — цвет каждого шара (`длина = COLLECTIBLE_SPHERE_COUNT`), задаётся в `createTheme`
  * @property {number[]} fieldDecorColors
  * @property {import('./core/collectibleState.js').CollectibleKind[]} slotRenderKinds
  * @property {Record<'planar' | 'trump' | 'poop', string>} planarAssets
@@ -132,9 +170,10 @@ function normalizeHudIcons(icons = {}) {
  * @property {number} [starAlpha]
  * @property {number} [starCount]
  * @property {number} [starSize]
+ * @property {string} [backgroundImage] — URL изображения фона поля (PNG / JPEG / WebP); поверх заливается `backgroundColor` как подложка
  */
 
-const PLANAR_ASSET_ORDER = ['trump.png', 'money.png', 'poop.png'];
+const PLANAR_ASSET_ORDER = ['trump.webp', 'money.webp', 'poop.webp'];
 
 function createTheme(config) {
   const slotOverrides = Array.isArray(config.slotOverrides) ? config.slotOverrides : [];
@@ -190,10 +229,13 @@ function createTheme(config) {
       occupiedPositions.add(idx);
     }
   }
+  const sphereColors = normalizeSphereColors(config);
+  const sphereColor =
+    typeof config.sphereColor === 'number' ? config.sphereColor : sphereColors[0];
   return {
     id: config.id ?? 'default',
-    sphereColor:
-      typeof config.sphereColor === 'number' ? config.sphereColor : DEFAULT_SPHERE_COLOR,
+    sphereColor,
+    sphereColors,
     fieldDecorColors: buildFieldDecorColors(config.fieldDecorColors),
     slotRenderKinds,
     planarAssets: {
@@ -215,16 +257,22 @@ const alienShip = new URL('./assets/themes/space/alien-ship.svg', import.meta.ur
 const sun = new URL('./assets/themes/space/sun.svg', import.meta.url).href;
 const planet = new URL('./assets/themes/space/planet.svg', import.meta.url).href;
 
+const cityPlayfieldBg = new URL(
+  './assets/themes/city/city-playfield-bg.webp',
+  import.meta.url,
+).href;
+const cityPizza = new URL('./assets/themes/city/city-pizza.webp', import.meta.url).href;
+const cityCoffee = new URL('./assets/themes/city/city-coffee.webp', import.meta.url).href;
+const cityCone = new URL('./assets/themes/city/city-cone.webp', import.meta.url).href;
+
 /** @type {Record<string, HoleThemeConfig>} */
 const THEMES = {
   default: createTheme({
     id: 'default',
-    sphereColor: DEFAULT_SPHERE_COLOR,
     fieldDecorColors: DEFAULT_FIELD_DECOR_COLORS,
   }),
   space: createTheme({
     id: 'space',
-    sphereColor: 0x7fffd4,
     fieldDecorColors: [0xF69837, 0x4f41ff],
     assetReplacements: {
       '1': alienShip,
@@ -243,6 +291,30 @@ const THEMES = {
       planar: sun,
       trump: alienShip,
       poop: planet,
+    },
+  }),
+  /** Город сверху: пицца, кофе, конусы; контрастные спрайты для читаемости на карте. */
+  city: createTheme({
+    id: 'city',
+    fieldDecorColors: [0x94a3b8, 0xf59e0b],
+    assetReplacements: {
+      '1': cityPizza,
+      '2': cityCoffee,
+      '3': cityCone,
+    },
+    playfieldTheme: {
+      backgroundColor: 0x1e1433,
+      backgroundImage: cityPlayfieldBg,
+      decorColor: 0x4c4658,
+      starColor: 0xffe066,
+      starAlpha: 0.5,
+      starCount: 100,
+      starSize: 1.35,
+    },
+    hudIcons: {
+      planar: cityCoffee,
+      trump: cityPizza,
+      poop: cityCone,
     },
   }),
 };

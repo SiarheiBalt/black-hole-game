@@ -6,6 +6,7 @@
   "scripts": {
     "build": "vite build",
     "build:space": "cross-env VITE_THEME=space vite build",
+    "build:city": "cross-env VITE_THEME=city vite build",
     "dev": "vite"
   },
   "keywords": [],

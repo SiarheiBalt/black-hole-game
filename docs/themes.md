@@ -9,17 +9,19 @@
 
 | Параметр | Что значит |
 |----------|-----------|
-| `sphereColor` | Цвет всех шарообразных коллектаблов |
+| `sphereColor` | Один цвет для **всех** шаров, если задан явно; иначе берётся первый цвет из палитры пончиков |
+| `sphereColors` | Необязательный массив hex — цвета по кругу для каждого из `COLLECTIBLE_SPHERE_COUNT` шаров; если не задан и нет `sphereColor`, используется яркая палитра «пончиков» в `themes.js` |
 | `fieldDecorColors` | Массив длины `FIELD_DECOR_CUBE_COUNT + FIELD_DECOR_TRIANGLE_COUNT`, цвета для полевых кубов и треугольников на поле |
-| `planarAssets` | Замена `money.png` / `trump.png` / `poop.png` (пути относительно `src/assets/`) |
+| `planarAssets` | Замена `money.webp` / `trump.webp` / `poop.webp` (пути относительно `src/assets/`) |
 | `slotOverrides` | Переопределения по позиции: можно указать `kind` и/или `asset` для отдельного слота `c-<N>`; тема работает только с планарными слотами, но ты сам выбираешь номера без привязки к названию типа |
-| `assetReplacements` | Карта `<имя_файла> → <путь>` **или** `<номер>` → `<путь>`; число `1` → `trump.png`, `2` → `money.png`, `3` → `poop.png`; слоты, у которых по умолчанию эти файлы, получат новый `asset` из этой карты |
+| `assetReplacements` | Карта `<имя_файла> → <путь>` **или** `<номер>` → `<путь>`; число `1` → `trump.webp`, `2` → `money.webp`, `3` → `poop.webp`; слоты, у которых по умолчанию эти файлы, получат новый `asset` из этой карты |
 | `hudIcons` | Перезаписывают HUD-иконки (`planar`, `trump`, `poop`) — указывай путь внутри `src/assets/` |
+| `playfieldTheme.backgroundImage` | Необязательный полный URL изображения для фона поля (Pixi): PNG / JPEG / **WebP**; см. тему `city` |
 
 `createHoleView` читает тему через `getThemeConfig(import.meta.env.VITE_THEME)` (см. `src/app/bootstrap.js`) и передаёт результат в `createHoleView`. Поэтому:
 
 1. Добавь тему в `src/themes.js`, добавив новую запись `space: createTheme({ ... })`.
-2. В теме укажи `planarAssets`, если нужно заменить стандартные PNG, `assetReplacements`, чтобы переопределить все слоты, которые используют конкретный файл (или прямо `c-<N>` по ключу), и/или `slotOverrides`, чтобы привязать новый ассет к отдельной позиции. Пример:
+2. В теме укажи `planarAssets`, если нужно заменить стандартные WebP-спрайты, `assetReplacements`, чтобы переопределить все слоты, которые используют конкретный файл (или прямо `c-<N>` по ключу), и/или `slotOverrides`, чтобы привязать новый ассет к отдельной позиции. Пример:
 
 ```js
 slotOverrides: [
@@ -31,9 +33,9 @@ slotOverrides: [
 ],
 ```
 
-3. Пути в `asset` — относительно `src/assets/`, то есть `themes/space/alien-ship.svg` загружает `src/assets/themes/space/alien-ship.svg`. Можно использовать SVG, PNG и т.п.
+3. Пути в `asset` — относительно `src/assets/`, то есть `themes/space/alien-ship.svg` загружает `src/assets/themes/space/alien-ship.svg`. Можно использовать SVG, PNG, WebP и т.п.
 
-4. В той же теме настраивай `sphereColor` и `fieldDecorColors`, чтобы задать атмосферу (например, тёмный фон и холодные квадраты).
+4. Настраивай цвета шаров: **`sphereColors`** (несколько ярких оттенков) или один **`sphereColor`**, и **`fieldDecorColors`** для декора поля.
 
 5. Убедись, что новые ассеты лежат рядом с остальными в `src/assets/...`, чтобы Vite их паковал.
 
@@ -41,12 +43,18 @@ slotOverrides: [
 
 В `themes.js` уже описана тема `space`. Она:
 
-- меняет цвет сфер и `field decor` на холодные оттенки;
-- заменяет все слоты, у которых по умолчанию `trump.png`, `money.png` и `poop.png`, на `src/assets/themes/space/alien-ship.svg`, `src/assets/themes/space/sun.svg` и `src/assets/themes/space/planet.svg`;
+- по умолчанию даёт шарам **яркую «пончиковую» палитру** (если не задать свой `sphereColor` / `sphereColors`), а `field decor` — тёплые акценты под космос;
+- заменяет все слоты, у которых по умолчанию `trump.webp`, `money.webp` и `poop.webp`, на `src/assets/themes/space/alien-ship.svg`, `src/assets/themes/space/sun.svg` и `src/assets/themes/space/planet.svg`;
 - задаёт космический фон: тёмный градиент, тёмно-синие блоки и плотные мелкие звёзды (`playfieldTheme`).
 - обновляет HUD-иконки (`planar`, `trump`, `poop`) чтобы они соответствовали космической теме.
 
 Если хочешь добавить другие `space`-ассеты, просто добавь новые `slotOverrides`, цвета и/или `playfieldTheme` в тему.
+
+### Тема `city`
+
+Тема **город** (`city`): чёрная дыра засасывает куски пиццы (`trump`), стаканчики кофе (`money`) и дорожные конусы (`poop`). Растровые ассеты темы — сжатый **WebP** (`themes/city/*.webp`), см. `scripts/optimize-images.py`. Фон поля — WebP-панорама квартала сверху (`playfieldTheme.backgroundImage`), подложка — `backgroundColor`, поверх — лёгкие «огоньки» (`starCount` / `starColor`). Сборка: `npm run build:city` при `VITE_THEME=city`.
+
+Опциональное поле **`backgroundImage`** в `playfieldTheme`: строка-URL (как у `new URL(...).href` в `themes.js`), подхватывается Pixi-слоем поля перед звёздами и декором.
 
 ### Нумерация слотов
 

@@ -23,7 +23,7 @@ import {
 
 /**
  * @typedef {'sphere' | 'box' | 'planar' | 'trump' | 'poop'} CollectibleKind
- * — `planar`: [`money.png`](../assets/money.png); `trump` / `poop`: свои PNG; плоский рендер и падение как у `planar`.
+ * — `planar`: [`money.webp`](../assets/money.webp); `trump` / `poop`: свои WebP; плоский рендер и падение как у `planar`.
  * `box` зарезервирован.
  */
 
@@ -84,9 +84,9 @@ if (_layoutSlotTotal !== COLLECTIBLE_COUNT) {
  * @type {Readonly<Record<'planar' | 'trump' | 'poop', string>>}
  */
 export const COLLECTIBLE_PLANAR_SPRITE_FILES = Object.freeze({
-  planar: 'money.png',
-  trump: 'trump.png',
-  poop: 'poop.png',
+  planar: 'money.webp',
+  trump: 'trump.webp',
+  poop: 'poop.webp',
 });
 
 for (const ring of COLLECTIBLE_RING_LAYOUT) {

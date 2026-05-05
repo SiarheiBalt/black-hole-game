@@ -118,6 +118,7 @@ async function main() {
   const holeTheme = getThemeConfig(import.meta.env.VITE_THEME);
   const playfieldTheme = holeTheme.playfieldTheme ?? DEFAULT_PLAYFIELD_THEME;
   const playfield = createPlayfield(app, playfieldTheme);
+  await playfield.loadThemeAssets();
   playfield.resize(layout);
 
   const holeView = await createHoleView(gameScene, {
