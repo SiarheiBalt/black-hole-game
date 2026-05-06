@@ -2,17 +2,13 @@ import './holeJoystick.css';
 
 /** Диаметр ручки / диаметр базы (как на референсе ~35–40%). */
 const KNOB_DIAMETER_FRAC_OF_BASE = 0.38;
-/** Доля радиуса ручки, на которую она может «вылезти» за край базы (остальное — сдвиг базы к ручке). */
+/**
+ * Доля радиуса ручки: центр ручки может сместиться за окружность базы настолько,
+ * сохраняя визуально «держим край», пока база остаётся в точке клика.
+ */
 const KNOB_MAX_PROTRUSION_FRAC_OF_RADIUS = 0.75;
-/** Минимальный шаг указателя (px), чтобы считать направление движения. */
-const POINTER_MOVE_MIN_PX_FRAC_MIN_SIDE = 0.008;
 /** Фиксированный визуальный размер базы джойстика для overlay. */
 const JOYSTICK_VISUAL_BASE_RADIUS_FRAC = 0.13;
-/**
- * Если скалярное произведение единичного смещения курсора с предыдущим кадром ниже этого — резкий разворот:
- * внешний круг замирает до согласования (курсор в пределах maxKnobDist от текущей базы).
- */
-const POINTER_FLIP_DOT_THRESHOLD = -0.22;
 
 /**
  * Оверлей виртуального джойстика: база в `controlCenter`, ручка по вектору к указателю.
@@ -37,28 +33,9 @@ export function createHoleJoystick(container) {
   root.append(anchor);
   container.appendChild(root);
 
-  /** @type {number | null} */
-  let visAnchorNx = null;
-  /** @type {number | null} */
-  let visAnchorNy = null;
-  /** @type {number | null} */
-  let prevPtrNx = null;
-  /** @type {number | null} */
-  let prevPtrNy = null;
-  let lastMoveUx = 0;
-  let lastMoveUy = 0;
-  let hasLastMove = false;
-  let baseFrozen = false;
-
   function sync(state, layout) {
     if (!state.dragging) {
       root.hidden = true;
-      visAnchorNx = null;
-      visAnchorNy = null;
-      prevPtrNx = null;
-      prevPtrNy = null;
-      hasLastMove = false;
-      baseFrozen = false;
       return;
     }
 
@@ -73,32 +50,6 @@ export function createHoleJoystick(container) {
     const knobRadiusPx = knobSizePx / 2;
     const maxKnobDistPx =
       baseRadiusPx - knobRadiusPx + KNOB_MAX_PROTRUSION_FRAC_OF_RADIUS * knobRadiusPx;
-    const moveMinPx = POINTER_MOVE_MIN_PX_FRAC_MIN_SIDE * minCss;
-
-    if (visAnchorNx == null || visAnchorNy == null) {
-      visAnchorNx = state.controlCenterNx;
-      visAnchorNy = state.controlCenterNy;
-      prevPtrNx = state.pointerTargetNx;
-      prevPtrNy = state.pointerTargetNy;
-      hasLastMove = false;
-      baseFrozen = false;
-    }
-
-    const ddx = (state.pointerTargetNx - prevPtrNx) * vw;
-    const ddy = (state.pointerTargetNy - prevPtrNy) * vh;
-    const dLen = Math.hypot(ddx, ddy);
-    if (dLen >= moveMinPx) {
-      const mux = ddx / dLen;
-      const muy = ddy / dLen;
-      if (hasLastMove && mux * lastMoveUx + muy * lastMoveUy < POINTER_FLIP_DOT_THRESHOLD) {
-        baseFrozen = true;
-      }
-      lastMoveUx = mux;
-      lastMoveUy = muy;
-      hasLastMove = true;
-    }
-    prevPtrNx = state.pointerTargetNx;
-    prevPtrNy = state.pointerTargetNy;
 
     const ccPx = state.controlCenterNx * vw;
     const ccPy = state.controlCenterNy * vh;
@@ -108,56 +59,17 @@ export function createHoleJoystick(container) {
     const dy = ptPy - ccPy;
     const d0 = Math.hypot(dx, dy);
 
-    let idealNx = state.controlCenterNx;
-    let idealNy = state.controlCenterNy;
-    let idealKx = dx;
-    let idealKy = dy;
-
+    let kx = dx;
+    let ky = dy;
     if (d0 > maxKnobDistPx && d0 > 1e-6) {
       const ux = dx / d0;
       const uy = dy / d0;
-      idealKx = ux * maxKnobDistPx;
-      idealKy = uy * maxKnobDistPx;
-      idealNx = (ptPx - idealKx) / vw;
-      idealNy = (ptPy - idealKy) / vh;
+      kx = ux * maxKnobDistPx;
+      ky = uy * maxKnobDistPx;
     }
 
-    const dPtrVisPx = Math.hypot(
-      (state.pointerTargetNx - visAnchorNx) * vw,
-      (state.pointerTargetNy - visAnchorNy) * vh,
-    );
-
-    let anchorNx;
-    let anchorNy;
-    let kx;
-    let ky;
-
-    if (baseFrozen) {
-      if (dPtrVisPx <= maxKnobDistPx) {
-        baseFrozen = false;
-        visAnchorNx = idealNx;
-        visAnchorNy = idealNy;
-        anchorNx = idealNx;
-        anchorNy = idealNy;
-        kx = idealKx;
-        ky = idealKy;
-      } else {
-        anchorNx = visAnchorNx;
-        anchorNy = visAnchorNy;
-        kx = (state.pointerTargetNx - visAnchorNx) * vw;
-        ky = (state.pointerTargetNy - visAnchorNy) * vh;
-      }
-    } else {
-      visAnchorNx = idealNx;
-      visAnchorNy = idealNy;
-      anchorNx = idealNx;
-      anchorNy = idealNy;
-      kx = idealKx;
-      ky = idealKy;
-    }
-
-    root.style.setProperty('--j-cx', `${anchorNx * 100}%`);
-    root.style.setProperty('--j-cy', `${anchorNy * 100}%`);
+    root.style.setProperty('--j-cx', `${state.controlCenterNx * 100}%`);
+    root.style.setProperty('--j-cy', `${state.controlCenterNy * 100}%`);
     root.style.setProperty('--j-size', `${baseSizePx}px`);
     root.style.setProperty('--j-knob', `${knobSizePx}px`);
     root.style.setProperty('--j-kx', `${kx}px`);
