@@ -8,7 +8,7 @@ import { DEFAULT_HUD_ICONS } from '../themes.js';
  */
 /**
  * @typedef {Object} CollectibleStatsHudOptions
- * @property {{ planar: string, trump: string, poop: string }} [icons]
+ * @property {{ planar: string, trump: string, poop: string, sphere?: string, decorCube?: string, decorTriangle?: string }} [icons]
  */
 
 /**
@@ -25,13 +25,30 @@ export function createCollectibleStatsHud(container, options = {}) {
   const rowsWrap = document.createElement('div');
   rowsWrap.className = 'collectible-stats__rows';
 
+  // Prefer real theme images when the active theme provides them; fall back
+  // to CSS shape icons only when a theme has not supplied a sprite for that
+  // collectible kind.
+  const sphereSrc = typeof icons.sphere === 'string' && icons.sphere ? icons.sphere : null;
+  const cubeSrc =
+    typeof icons.decorCube === 'string' && icons.decorCube ? icons.decorCube : null;
+  const triSrc =
+    typeof icons.decorTriangle === 'string' && icons.decorTriangle
+      ? icons.decorTriangle
+      : null;
+
   const rows = [
-    { key: 'sphere', iconKind: 'sphere' },
+    sphereSrc
+      ? { key: 'sphere', iconKind: 'img', src: sphereSrc, alt: '' }
+      : { key: 'sphere', iconKind: 'sphere' },
     { key: 'planar', iconKind: 'img', src: icons.planar, alt: '' },
     { key: 'trump', iconKind: 'img', src: icons.trump, alt: '' },
     { key: 'poop', iconKind: 'img', src: icons.poop, alt: '' },
-    { key: 'triangle', iconKind: 'triangle' },
-    { key: 'box', iconKind: 'box' },
+    triSrc
+      ? { key: 'triangle', iconKind: 'img', src: triSrc, alt: '' }
+      : { key: 'triangle', iconKind: 'triangle' },
+    cubeSrc
+      ? { key: 'box', iconKind: 'img', src: cubeSrc, alt: '' }
+      : { key: 'box', iconKind: 'box' },
   ];
 
   /** @type {{ key: string, el: HTMLElement }[]} */
@@ -186,9 +203,16 @@ export function createCollectibleStatsHud(container, options = {}) {
             return img;
           })()
         : (() => {
+            // CSS shape fallback — mirror the row's shape (sphere/box/triangle)
+            // so the flying icon actually matches the destination row.
+            const shape =
+              kind === 'box'
+                ? 'collectible-stats__icon--box'
+                : kind === 'triangle'
+                  ? 'collectible-stats__icon--triangle'
+                  : 'collectible-stats__icon--sphere';
             const m = document.createElement('div');
-            m.className =
-              'collectible-stats__fly-icon collectible-stats__icon collectible-stats__icon--sphere';
+            m.className = `collectible-stats__fly-icon collectible-stats__icon ${shape}`;
             return m;
           })();
 

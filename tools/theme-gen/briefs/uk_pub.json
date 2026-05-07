@@ -1,0 +1,54 @@
+{
+  "id": "uk_pub",
+  "displayName": "UK + IE 18-30 — pub culture",
+  "audience": "UK and Ireland Gen Z and Millennials (18-30), pub culture, quirky British aesthetic",
+  "icons": {
+    "sphere": {
+      "concept": "tiny 3D enamel pub badge shaped like a crown and pint foam, not a ball, not a geometric shape",
+      "styleNotes": "glossy enamel red, cream, and gold, strong bright outline, transparent background, high contrast against brick red bg"
+    },
+    "trump": {
+      "concept": "pint glass of dark stout beer with a creamy foam head",
+      "styleNotes": "3D rendered glass with realistic refraction, deep brown liquid, white foam, high contrast against brick red bg"
+    },
+    "money": {
+      "concept": "open cardboard basket of golden fish and chips with a wedge of lemon",
+      "styleNotes": "3D rendered food, crispy golden batter, food photography lighting, high contrast against brick red bg"
+    },
+    "poop": {
+      "concept": "miniature classic British red telephone box, full standing model",
+      "styleNotes": "3D rendered, glossy red paint, gold trim, isolated subject, high contrast against brick red bg"
+    }
+  },
+  "decor": {
+    "cube": {
+      "concept": "miniature classic London double-decker red bus",
+      "styleNotes": "3D rendered, glossy red and black, isolated centered, transparent background"
+    },
+    "triangle": {
+      "concept": "single triangular Union Jack pennant with red, white, and blue British flag",
+      "styleNotes": "3D rendered fabric, isolated centered, transparent background"
+    }
+  },
+  "background": {
+    "concept": "top-down view of rainy cobblestone street with brick pavers and faint puddle reflections, no people",
+    "styleNotes": "moody painterly, warm brick and cream tones, gentle wet sheen",
+    "paletteHint": "brick red, warm cream, slate"
+  },
+  "backgroundSvg": {
+    "kind": "brick_warm",
+    "palette": {
+      "primary": "#3b1410",
+      "secondary": "#7a2f24",
+      "accent": "#e6cf9c"
+    }
+  },
+  "playfield": {
+    "starColor": 16770440,
+    "starCount": 30,
+    "starAlpha": 0.22,
+    "starSize": 1.2,
+    "decorDensity": 0.3,
+    "decorAlpha": 0.45
+  }
+}

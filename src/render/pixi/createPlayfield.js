@@ -20,8 +20,9 @@ function seededRandom(seed) {
   };
 }
 
-function rebuildDecor(decorLayer, w, h, count, color) {
+function rebuildDecor(decorLayer, w, h, count, color, alphaScale = 1) {
   decorLayer.removeChildren().forEach((c) => c.destroy({ children: true }));
+  if (count <= 0 || alphaScale <= 0) return;
   const rand = seededRandom(DECOR_SEED);
   for (let i = 0; i < count; i++) {
     const g = new Graphics();
@@ -31,7 +32,10 @@ function rebuildDecor(decorLayer, w, h, count, color) {
     const y = rand() * h;
     const r = 3 + rand() * 8;
     g.roundRect(-rw / 2, -rh / 2, rw, rh, r);
-    g.fill({ color: color ?? DECOR_COLOR, alpha: 0.22 + rand() * 0.25 });
+    g.fill({
+      color: color ?? DECOR_COLOR,
+      alpha: (0.22 + rand() * 0.25) * alphaScale,
+    });
     g.position.set(x, y);
     g.rotation = rand() * Math.PI * 2;
     g.scale.set(0.85 + rand() * 0.5);
@@ -119,12 +123,20 @@ export function createPlayfield(app, theme = DEFAULT_PLAYFIELD_THEME) {
     const m = WORLD_MAP_VIEW_MULTIPLIER;
     const worldW = vw * m;
     const worldH = vh * m;
-    const decorCount = Math.round(DECOR_COUNT * m * m);
+    const densityScale =
+      typeof resolvedTheme.decorDensity === 'number' && Number.isFinite(resolvedTheme.decorDensity)
+        ? Math.max(0, resolvedTheme.decorDensity)
+        : 1;
+    const alphaScale =
+      typeof resolvedTheme.decorAlpha === 'number' && Number.isFinite(resolvedTheme.decorAlpha)
+        ? Math.max(0, Math.min(1, resolvedTheme.decorAlpha))
+        : 1;
+    const decorCount = Math.round(DECOR_COUNT * m * m * densityScale);
 
     drawPlayfieldBackground(bgFill, worldW, worldH, resolvedTheme);
     layoutBackgroundCover(bgImage, worldW, worldH);
     rebuildStars(starGraphics, worldW, worldH, resolvedTheme);
-    rebuildDecor(decorLayer, worldW, worldH, decorCount, resolvedTheme.decorColor);
+    rebuildDecor(decorLayer, worldW, worldH, decorCount, resolvedTheme.decorColor, alphaScale);
 
     worldRoot.scale.set(1);
   }

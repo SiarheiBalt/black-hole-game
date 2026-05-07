@@ -9,6 +9,13 @@
 export function attachPointerDrag(target, onMove, onDragStart, onDragEnd) {
   let dragging = false;
 
+  function isInteractiveTarget(eventTarget) {
+    return (
+      eventTarget instanceof Element &&
+      Boolean(eventTarget.closest('button, a, input, select, textarea, .tap-target'))
+    );
+  }
+
   function toNorm(clientX, clientY) {
     const r = target.getBoundingClientRect();
     const nx = r.width > 0 ? (clientX - r.left) / r.width : 0.5;
@@ -21,6 +28,7 @@ export function attachPointerDrag(target, onMove, onDragStart, onDragEnd) {
 
   function onPointerDown(e) {
     if (e.button !== 0) return;
+    if (isInteractiveTarget(e.target)) return;
     dragging = true;
     target.setPointerCapture(e.pointerId);
     const { nx, ny } = toNorm(e.clientX, e.clientY);

@@ -3,9 +3,9 @@
  * См. PLAYABLE_AD_REQUIREMENTS_CLAUDE_OPTIMIZED.md
  */
 
-window.clickTag =
-  window.clickTag ||
-  'https://play.google.com/store/apps/details?id=com.example.app';
+export const APP_STORE_URL = 'https://apps.apple.com/app/id6747028173';
+
+window.clickTag = window.clickTag || APP_STORE_URL;
 window.clickTag1 = window.clickTag1 || window.clickTag;
 
 window.gameStart = window.gameStart || function () {};
@@ -61,7 +61,8 @@ export function fireGameEnd() {
  * @param {string} [url]
  */
 export function openClickout(url) {
-  const targetUrl = String(url || window.clickTag1 || window.clickTag || '');
+  const hasExplicitUrl = typeof url === 'string' && url.trim().length > 0;
+  const targetUrl = String(hasExplicitUrl ? url : window.clickTag1 || window.clickTag || '');
   markGameClosed();
 
   if (window.mraid && typeof mraid.open === 'function') {
@@ -69,8 +70,8 @@ export function openClickout(url) {
     return;
   }
 
-  if (typeof window.install === 'function') {
-    window.install();
+  if (!hasExplicitUrl && typeof window.install === 'function') {
+    window.install(targetUrl);
     return;
   }
 

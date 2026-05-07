@@ -48,6 +48,7 @@ import { createHoleProgressBar } from '../ui/holeProgressBar.js';
 import { createHolePopScore } from '../ui/holePopScore.js';
 import { createCollectibleStatsHud } from '../ui/collectibleStatsHud.js';
 import { createGameOverOverlay } from '../ui/gameOverOverlay.js';
+import { createBrandInstallCta } from '../ui/brandInstallCta.js';
 import { createSwipeGuide } from '../ui/swipeGuide.js';
 import {
   attachPlayableApp,
@@ -58,7 +59,8 @@ import {
   markGameClosed,
 } from './playableAdapter.js';
 import { createGameAudio, SOUND_IDS } from '../audio/gameAudio.js';
-import { getThemeConfig, DEFAULT_PLAYFIELD_THEME } from '../themes.js';
+import { initThemes, getThemeConfig, DEFAULT_PLAYFIELD_THEME } from '../themes.js';
+import { resolveThemeIdFromUrl } from './resolveThemeFromUrl.js';
 
 function centerPointerNorm() {
   return { nx: 0.5, ny: 0.5 };
@@ -67,6 +69,8 @@ function centerPointerNorm() {
 async function main() {
   const container = document.getElementById('game-container');
   if (!container) throw new Error('#game-container missing');
+
+  await initThemes();
 
   const run = { gameEnded: false, fatalHandled: false };
   /** @type {import('pixi.js').Application | undefined} */
@@ -115,7 +119,7 @@ async function main() {
     globalThis.__PIXI_APP__ = app;
   }
 
-  const holeTheme = getThemeConfig(import.meta.env.VITE_THEME);
+  const holeTheme = getThemeConfig(resolveThemeIdFromUrl());
   const playfieldTheme = holeTheme.playfieldTheme ?? DEFAULT_PLAYFIELD_THEME;
   const playfield = createPlayfield(app, playfieldTheme);
   await playfield.loadThemeAssets();
@@ -165,8 +169,12 @@ async function main() {
   const collectibleStatsHud = createCollectibleStatsHud(container, {
     icons: holeTheme.hudIcons,
   });
+  const brandInstallCta = createBrandInstallCta(container);
   const swipeGuide = createSwipeGuide(container);
-  const gameAudio = createGameAudio();
+  const gameAudio = createGameAudio({
+    backgroundMusicUrl: holeTheme.musicUrl,
+    backgroundMusicVolume: holeTheme.musicVolume,
+  });
   gameAudio.initPlayableAudioLifecycle();
   let timeLeftSec = ROUND_TIME_SEC;
   /** С первого кадра, где дыра реально движется (ненулевая скорость). */
@@ -442,6 +450,7 @@ async function main() {
     holeProgressBar.destroy();
     holePopScore.destroy();
     collectibleStatsHud.destroy();
+    brandInstallCta.destroy();
     swipeGuide.destroy();
     gameOverOverlay.destroy();
     timeUrgencyVignette.remove();

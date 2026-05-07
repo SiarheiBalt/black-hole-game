@@ -1,0 +1,54 @@
+{
+  "id": "jp_kawaii",
+  "displayName": "JP female 18-34 — kawaii pastel",
+  "audience": "Japanese women 18-34, kawaii / pastel aesthetic, soft and cute",
+  "icons": {
+    "sphere": {
+      "concept": "tiny 3D pink sakura candy charm with a cream ribbon bow, not a ball, not a geometric shape",
+      "styleNotes": "kawaii glossy candy-plastic, bright cream rim, transparent background, high contrast against pastel pink bg"
+    },
+    "trump": {
+      "concept": "fluffy chibi strawberry milk character with a happy face, big sparkly eyes",
+      "styleNotes": "kawaii 3D plush style, pastel pink, glossy, cute, high contrast against pastel pink bg, crisp outline"
+    },
+    "money": {
+      "concept": "matcha latte cup with a cream foam heart on top",
+      "styleNotes": "soft 3D render, pastel green and cream, glossy ceramic mug, high contrast against pastel pink bg"
+    },
+    "poop": {
+      "concept": "pastel mochi rabbit dessert with tiny black eyes",
+      "styleNotes": "soft 3D claymation, pastel pink and white, smooth squishy, high contrast outline so it reads on a pastel bg"
+    }
+  },
+  "decor": {
+    "cube": {
+      "concept": "single 3D sakura cherry blossom flower with five soft pink petals and a yellow stamen center",
+      "styleNotes": "glossy 3D, pastel pink and cream, isolated centered, kawaii, transparent background"
+    },
+    "triangle": {
+      "concept": "tiny three-ball dango skewer in pink, white, and matcha green on a wooden stick",
+      "styleNotes": "3D claymation, pastel cute, isolated centered, transparent background"
+    }
+  },
+  "background": {
+    "concept": "top-down view of a pastel Tokyo back alley with light pink cherry blossom petals scattered on tile pavement, vending machine and lantern silhouettes faintly visible",
+    "styleNotes": "soft daylight, painterly, low contrast, pastel pink and mint accents",
+    "paletteHint": "pastel pink, mint, cream"
+  },
+  "backgroundSvg": {
+    "kind": "kawaii_dots",
+    "palette": {
+      "primary": "#ffb8d4",
+      "secondary": "#ff7aa8",
+      "accent": "#ffd28a"
+    }
+  },
+  "playfield": {
+    "starColor": 16777215,
+    "starCount": 24,
+    "starAlpha": 0.22,
+    "starSize": 1.1,
+    "decorDensity": 0.3,
+    "decorAlpha": 0.45
+  }
+}

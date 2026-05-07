@@ -1,0 +1,77 @@
+.brand-install-cta {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  user-select: none;
+}
+
+.brand-install-cta__logo-button,
+.brand-install-cta__button {
+  pointer-events: auto;
+  touch-action: manipulation;
+  cursor: pointer;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+
+.brand-install-cta__logo-button {
+  display: block;
+  position: absolute;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  right: calc(10px + env(safe-area-inset-right, 0px));
+  width: clamp(112px, 23vmin, 178px);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.55));
+}
+
+.brand-install-cta__logo {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.brand-install-cta__button {
+  position: absolute;
+  left: 50%;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  min-height: 38px;
+  min-width: min(78vw, 280px);
+  padding: 0.6rem 1.25rem;
+  border: 2px solid rgba(0, 0, 0, 0.35);
+  border-radius: 999px;
+  color: #0a1820;
+  background: linear-gradient(180deg, #fffef6 0%, #ffe066 40%, #f0b020 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 3px 0 rgba(0, 0, 0, 0.22),
+    0 8px 18px rgba(0, 0, 0, 0.32);
+  font-size: clamp(0.78rem, 2.35vmin, 0.98rem);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.brand-install-cta__logo-button:active,
+.brand-install-cta__button:active {
+  translate: 0 2px;
+}
+
+.brand-install-cta__button:active {
+  transform: translateX(-50%);
+}
+
+@media (max-height: 480px) {
+  .brand-install-cta__logo-button {
+    width: clamp(96px, 26vmin, 138px);
+  }
+
+  .brand-install-cta__button {
+    min-height: 32px;
+    min-width: min(72vw, 240px);
+    padding: 0.42rem 0.8rem;
+  }
+}

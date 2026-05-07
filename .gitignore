@@ -3,3 +3,9 @@
 .idea
 
 /dist
+
+/tools/music-gen/.cache/*.json
+/tools/music-gen/**/.raw.wav
+
+/tools/theme-gen/runs/
+/tools/theme-gen/agent-stage/

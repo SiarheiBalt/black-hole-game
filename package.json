@@ -2,12 +2,19 @@
   "name": "black-hole",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
+    "dev": "vite",
     "build": "vite build",
-    "build:space": "cross-env VITE_THEME=space vite build",
+    "theme:gen": "node tools/theme-gen/cli.mjs",
+    "music:gen": "node tools/music-gen/cli.mjs",
     "build:city": "cross-env VITE_THEME=city vite build",
-    "dev": "vite"
+    "build:fr_chic": "cross-env VITE_THEME=fr_chic vite build",
+    "build:global_fiesta": "cross-env VITE_THEME=global_fiesta vite build",
+    "build:jp_kawaii": "cross-env VITE_THEME=jp_kawaii vite build",
+    "build:kr_sea_pop": "cross-env VITE_THEME=kr_sea_pop vite build",
+    "build:space": "cross-env VITE_THEME=space vite build",
+    "build:uk_pub": "cross-env VITE_THEME=uk_pub vite build",
+    "build:zh_urban": "cross-env VITE_THEME=zh_urban vite build"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +27,9 @@
   "devDependencies": {
     "@pixi/devtools": "^2.0.1",
     "cross-env": "^7.0.3",
+    "openai": "^6.36.0",
+    "playwright": "^1.59.1",
+    "sharp": "^0.34.5",
     "vite": "^8.0.3",
     "vite-plugin-singlefile": "^2.3.2"
   }
