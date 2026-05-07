@@ -1,16 +1,27 @@
 # Темы
 
-Вся логика тем находится в `src/themes.js`. По сути там экспортируются:
+**Нормализация** темы делается через `createTheme` в `src/themes/_factory.js` (палитры, слоты, `musicUrl` по умолчанию и т.д.).
 
-- `getThemeConfig(name)` — даёт нормализованную тему по имени, например `space`.
-- `DEFAULT_HOLE_THEME` — тема по-умолчанию, которую использует `createHoleView`, если тема не передана.
+**Реестр** живёт в `src/themes.js`. Оттуда экспортируются:
+
+- `initThemes()` — один раз при старте приложения: в **dev** подмешивает все темы из `src/themes/registry.dev.js`, в **production** подключает только активную через виртуальный модуль `virtual:active-theme` (см. ниже).
+- `getThemeConfig(name)` — нормализованная тема по id (`default`, `jp_kawaii`, …).
+- `DEFAULT_HOLE_THEME`, `DEFAULT_PLAYFIELD_THEME`, `DEFAULT_HUD_ICONS` — из темы `default`, до вызова `initThemes` уже валидны для фолбэков.
+- `createTheme` — для ручных и сгенерированных описаний тем.
+- `listRegisteredThemeIds()` — список ключей `THEMES` (в dev полный, в production обычно только `default` + активная тема).
+
+Где лежат сами темы:
+
+- `default` задаётся прямо в `src/themes.js`.
+- Ручные `space` и `city` — в `src/themes/manual/space.js` и `src/themes/manual/city.js`.
+- Сгенерированные рынки — `src/themes/generated/<id>.js` (вывод `tools/theme-gen`).
 
 Каждая тема описывает:
 
 | Параметр | Что значит |
 |----------|-----------|
 | `sphereColor` | Один цвет для **всех** шаров, если задан явно; иначе берётся первый цвет из палитры пончиков |
-| `sphereColors` | Необязательный массив hex — цвета по кругу для каждого из `COLLECTIBLE_SPHERE_COUNT` шаров; если не задан и нет `sphereColor`, используется яркая палитра «пончиков» в `themes.js` |
+| `sphereColors` | Необязательный массив hex — цвета по кругу для каждого из `COLLECTIBLE_SPHERE_COUNT` шаров; если не задан и нет `sphereColor`, используется яркая палитра «пончиков» в `themes/_factory.js` |
 | `fieldDecorColors` | Массив длины `FIELD_DECOR_CUBE_COUNT + FIELD_DECOR_TRIANGLE_COUNT`, цвета для полевых кубов и треугольников на поле |
 | `planarAssets` | Замена `money.webp` / `trump.webp` / `poop.webp` (пути относительно `src/assets/`) |
 | `slotOverrides` | Переопределения по позиции: можно указать `kind` и/или `asset` для отдельного слота `c-<N>`; тема работает только с планарными слотами, но ты сам выбираешь номера без привязки к названию типа |
@@ -18,9 +29,9 @@
 | `hudIcons` | Перезаписывают HUD-иконки (`planar`, `trump`, `poop`) — указывай путь внутри `src/assets/` |
 | `playfieldTheme.backgroundImage` | Необязательный полный URL изображения для фона поля (Pixi): PNG / JPEG / **WebP**; см. тему `city` |
 
-`createHoleView` читает тему через `getThemeConfig(import.meta.env.VITE_THEME)` (см. `src/app/bootstrap.js`) и передаёт результат в `createHoleView`. Поэтому:
+В `src/app/bootstrap.js` после `await initThemes()` тема берётся так: `getThemeConfig(resolveThemeIdFromUrl())`, а `resolveThemeIdFromUrl` (см. `src/app/resolveThemeFromUrl.js`) выбирает id по `?theme=`, иначе по `import.meta.env.VITE_THEME`, иначе `default`. Эту же тему получает и слой Pixi (поле), и `createHoleView`.
 
-1. Добавь тему в `src/themes.js`, добавив новую запись `space: createTheme({ ... })`.
+1. **Новый рынок через pipeline** — `tools/theme-gen` создаёт `src/themes/generated/<id>.js` и ассеты; отдельно править реестр production не нужно: плагин [`scripts/vite-plugin-active-theme.mjs`](../scripts/vite-plugin-active-theme.mjs) подхватит модуль, если на диске есть `src/themes/generated/<id>.js` (и при необходимости `src/assets/themes/<id>/music.mp3`). **Новая ручная тема** (не из генератора) — отдельный модуль + правка того же плагина (как для `space` / `city`). Редактировать «все темы в одном файле» больше не требуется.
 2. В теме укажи `planarAssets`, если нужно заменить стандартные WebP-спрайты, `assetReplacements`, чтобы переопределить все слоты, которые используют конкретный файл (или прямо `c-<N>` по ключу), и/или `slotOverrides`, чтобы привязать новый ассет к отдельной позиции. Пример:
 
 ```js
@@ -41,20 +52,20 @@ slotOverrides: [
 
 ### Пример темы `space`
 
-В `themes.js` уже описана тема `space`. Она:
+В `src/themes/manual/space.js` задана тема `space`. Она:
 
 - по умолчанию даёт шарам **яркую «пончиковую» палитру** (если не задать свой `sphereColor` / `sphereColors`), а `field decor` — тёплые акценты под космос;
 - заменяет все слоты, у которых по умолчанию `trump.webp`, `money.webp` и `poop.webp`, на `src/assets/themes/space/alien-ship.svg`, `src/assets/themes/space/sun.svg` и `src/assets/themes/space/planet.svg`;
 - задаёт космический фон: тёмный градиент, тёмно-синие блоки и плотные мелкие звёзды (`playfieldTheme`).
 - обновляет HUD-иконки (`planar`, `trump`, `poop`) чтобы они соответствовали космической теме.
 
-Если хочешь добавить другие `space`-ассеты, просто добавь новые `slotOverrides`, цвета и/или `playfieldTheme` в тему.
+Если хочешь добавить другие `space`-ассеты, правь `src/themes/manual/space.js`: новые `slotOverrides`, цвета и/или `playfieldTheme`.
 
 ### Тема `city`
 
 Тема **город** (`city`): чёрная дыра засасывает куски пиццы (`trump`), стаканчики кофе (`money`) и дорожные конусы (`poop`). Растровые ассеты темы — сжатый **WebP** (`themes/city/*.webp`), см. `scripts/optimize-images.py`. Фон поля — WebP-панорама квартала сверху (`playfieldTheme.backgroundImage`), подложка — `backgroundColor`, поверх — лёгкие «огоньки» (`starCount` / `starColor`). Сборка: `npm run build:city` при `VITE_THEME=city`.
 
-Опциональное поле **`backgroundImage`** в `playfieldTheme`: строка-URL (как у `new URL(...).href` в `themes.js`), подхватывается Pixi-слоем поля перед звёздами и декором.
+Опциональное поле **`backgroundImage`** в `playfieldTheme`: строка-URL (как у `new URL(..., import.meta.url).href` в модуле темы), подхватывается Pixi-слоем поля перед звёздами и декором.
 
 ### Нумерация слотов
 
@@ -69,9 +80,10 @@ slotOverrides: [
 
 ### Сборка с темой
 
-1. Добавь `.env.<тема>` (например, `.env.space`) с `VITE_THEME=space`.
-2. В `package.json` заведён скрипт `npm run build:space`. Он запускает сборку с `VITE_THEME=space`.
-3. Можно запускать и `npm run dev` — `getThemeConfig` выбирает `default`, пока ты не задашь `VITE_THEME`.
+1. Добавь `.env.<тема>` (например, `.env.space`) с `VITE_THEME=space` или используй скрипт `npm run build:<id>` из `package.json` (`cross-env VITE_THEME=… vite build`).
+2. **Production:** плагин Vite [`scripts/vite-plugin-active-theme.mjs`](../scripts/vite-plugin-active-theme.mjs) генерирует виртуальный модуль `virtual:active-theme` с **ровно одной** парой импортов: модуль темы (`manual` или `generated`) и при наличии файла — **один** `src/assets/themes/<id>/music.mp3`. В бандл не попадают остальные рынки и их треки. Для `VITE_THEME=default` подмешивается только `default/music.mp3`, если файл есть.
+3. **Dev** (`npm run dev`): все сгенерированные темы и все `*/music.mp3` по-прежнему регистрируются через `import.meta.glob` в [`src/themes/registry.dev.js`](../src/themes/registry.dev.js), чтобы работали `?theme=` и переключение рынков без пересборки.
+4. При старте игры `bootstrap` вызывает `await initThemes()` до первого `getThemeConfig`.
 
 Дополнительная схема слотов и обход `COLLECTIBLE_RING_LAYOUT` описана в [`docs/collectibles.md`](collectibles.md).
 
@@ -105,5 +117,4 @@ node tools/music-gen/cli.mjs jp_kawaii kr_sea_pop    # только указан
 node tools/music-gen/cli.mjs --dry-run               # показать prompt'ы
 ```
 
-Привязка `music.mp3` → теме идёт автоматически через glob в
-`src/themes.js` — никакого ручного импорта не нужно.
+Привязка `music.mp3` к теме: в **dev** — через glob в `src/themes/registry.dev.js`; в **production** — плагин сам импортирует `src/assets/themes/<id>/music.mp3` для текущего `VITE_THEME` (если файл существует). В сгенерированном `generated/<id>.js` `musicUrl` можно не объявлять.

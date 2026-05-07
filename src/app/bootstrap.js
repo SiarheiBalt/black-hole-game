@@ -59,7 +59,7 @@ import {
   markGameClosed,
 } from './playableAdapter.js';
 import { createGameAudio, SOUND_IDS } from '../audio/gameAudio.js';
-import { getThemeConfig, DEFAULT_PLAYFIELD_THEME } from '../themes.js';
+import { initThemes, getThemeConfig, DEFAULT_PLAYFIELD_THEME } from '../themes.js';
 import { resolveThemeIdFromUrl } from './resolveThemeFromUrl.js';
 
 function centerPointerNorm() {
@@ -69,6 +69,8 @@ function centerPointerNorm() {
 async function main() {
   const container = document.getElementById('game-container');
   if (!container) throw new Error('#game-container missing');
+
+  await initThemes();
 
   const run = { gameEnded: false, fatalHandled: false };
   /** @type {import('pixi.js').Application | undefined} */

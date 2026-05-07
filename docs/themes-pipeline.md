@@ -2,7 +2,7 @@
 
 Auto-generates localized themes for the playable ad. One brief (`tools/theme-gen/briefs/<id>.json`) → a complete theme: collectible icons and field decor in `src/assets/themes/<id>/`, a parametric SVG background, `src/themes/generated/<id>.js`, `.env.<id>`, and a `build:<id>` script in `package.json`. The output is a report at `tools/theme-gen/runs/<timestamp>/<id>/report.md` with screenshots and the QA verdict.
 
-Themes are registered through `import.meta.glob` in [`src/themes.js`](../src/themes.js); the manual themes (`default`, `space`, `city`) live in the same file.
+**How themes enter the app:** In **development**, [`src/themes/registry.dev.js`](../src/themes/registry.dev.js) uses `import.meta.glob` to register every `src/themes/generated/*.js` and every `src/assets/themes/*/music.mp3` so `?theme=` works. In **production**, only the theme for `VITE_THEME` is bundled: [`scripts/vite-plugin-active-theme.mjs`](../scripts/vite-plugin-active-theme.mjs) serves a virtual module `virtual:active-theme` with a single theme file + optional `music.mp3` (see [`src/themes.js`](../src/themes.js), `initThemes()`). Hand-authored `space` / `city` live under [`src/themes/manual/`](../src/themes/manual/); `default` remains in `themes.js`.
 
 Per-theme content:
 
@@ -110,7 +110,7 @@ To add a new style, drop `tools/theme-gen/svgBg/<kind>.mjs` (same interface) and
 3. **Optimize** ([`tools/theme-gen/optimize.mjs`](../tools/theme-gen/optimize.mjs)) — `sharp` resizes icons to 320 px on the long edge and encodes WebP with alpha. If the model returned an icon without alpha (it "painted" a checkerboard background), [`ensureTransparentIcon`](../tools/theme-gen/optimize.mjs) runs k-means over the border, masks out the bg by color similarity, and crops to the subject's bounding box.
 4. **SVG bg** — `runSvgBg(brief)` reads `backgroundSvg.kind`/`palette` from the brief and writes `bg.svg` into the run folder.
 5. **Palette** ([`tools/theme-gen/palette.mjs`](../tools/theme-gen/palette.mjs)) — k-means over opaque icon pixels yields `sphereColors` (10, most saturated); the rasterized SVG bg yields `fieldDecorColors` (2). `backgroundColor` is the `dominantHex` returned by the SVG generator.
-6. **Register** ([`tools/theme-gen/register.mjs`](../tools/theme-gen/register.mjs)) — copies WebPs into `src/assets/themes/<id>/`, copies `bg.svg`, writes `src/themes/generated/<id>.js` (with `fieldDecorAssets` and `playfieldTheme.backgroundImage = bg.svg`), `.env.<id>`, and idempotently adds (sorted) `build:<id>` to `package.json`.
+6. **Register** ([`tools/theme-gen/register.mjs`](../tools/theme-gen/register.mjs)) — copies WebPs into `src/assets/themes/<id>/`, copies `bg.svg`, writes `src/themes/generated/<id>.js` (with `fieldDecorAssets` and `playfieldTheme.backgroundImage = bg.svg`), `.env.<id>`, and idempotently adds (sorted) `build:<id>` to `package.json`. Production picks up new ids via `vite-plugin-active-theme` when `generated/<id>.js` exists (no separate registry file).
 7. **QA loop** (see below). On failure the pipeline only attempts the recovery that matches the failing layer:
    - **contrast** layer fail → re-optimize the offending asset with a stronger outline/shadow (no image regeneration).
    - **static** layer fail → re-optimize the asset with default parameters.

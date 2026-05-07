@@ -696,7 +696,7 @@ export async function createHoleView(container, options = {}) {
    * @param {number} rObj
    */
   function idleCenterY(item, rObj) {
-    return usesPlanarCollectibleSprite(item.kind) ? 0.08 * rObj : rObj;
+    return isPlanarCollectibleKind(item.kind) ? 0.08 * rObj : rObj;
   }
 
   function updateGroundScale(layout) {
@@ -836,17 +836,9 @@ export async function createHoleView(container, options = {}) {
       objGroup.scale.setScalar(rObj);
       const ox = (mapNx0 - g.mapNx) * worldW;
       const oz = (mapNy0 - g.mapNy) * worldH;
-      let y0 = idleCenterY(item, rObj);
-      if (isPlanarSprite) {
-        const t = fieldDecorSpinClock.getElapsedTime() + i * 0.73;
-        y0 += Math.sin(t * 1.6) * rObj * 0.08;
-        const tiltX = Math.sin(t * 1.1) * 0.12;
-        const tiltZ = Math.cos(t * 0.9) * 0.08;
-        objGroup.rotation.set(tiltX, 0, tiltZ);
-      } else {
-        objGroup.rotation.set(0, 0, 0);
-      }
+      const y0 = idleCenterY(item, rObj);
       objGroup.position.set(ox, y0, oz);
+      objGroup.rotation.set(0, 0, 0);
     } else if (b.phase === 'falling') {
       if (objGroup.parent !== holePivot) {
         holePivot.attach(objGroup);
@@ -888,14 +880,13 @@ export async function createHoleView(container, options = {}) {
         }
       }
       objGroup.scale.setScalar(rObj * sc);
-      if (isPlanarSprite) {
-        // Token/coin "sucked into hole": spin around Y, tilt forward as it
-        // descends, no spherical wobble. Flip phase amplifies near the end.
-        const spinY = t * Math.PI * 2.4 + i * 0.41;
-        const flip = Math.sin(t * Math.PI) * 0.55;
-        const tiltX = -0.35 * p + flip * 0.5;
-        const rollZ = Math.sin(t * Math.PI * 1.2 + i) * 0.12 * (1 - p);
-        objGroup.rotation.set(tiltX, spinY, rollZ);
+      if (isPlanarCollectibleKind(renderKind)) {
+        if (planarCollectibleFall) {
+          const spin = Math.sin(t * Math.PI) * 0.72;
+          objGroup.rotation.set(0, spin, 0);
+        } else {
+          objGroup.rotation.set(0, 0, 0);
+        }
       } else {
         const wobble = (1 - t) * (1 - t);
         const tiltF = 2.6 * wFunnel * wobble;
@@ -908,6 +899,21 @@ export async function createHoleView(container, options = {}) {
         objGroup.rotation.set(rx, ry, rz);
       }
     }
+  }
+
+  /**
+   * У 3D-декора mesh — прямой потомок `orient`; у планара — orient → aspectWrap → mesh.
+   * @param {import('three').Object3D | undefined} orient
+   * @returns {import('three').Mesh | undefined}
+   */
+  function fieldDecorMeshFromOrient(orient) {
+    const first = orient?.children[0];
+    if (!first) return undefined;
+    if ('isMesh' in first && first.isMesh) return /** @type {import('three').Mesh} */ (first);
+    const nested = first.children[0];
+    if (nested && 'isMesh' in nested && nested.isMesh)
+      return /** @type {import('three').Mesh} */ (nested);
+    return undefined;
   }
 
   /**
@@ -938,11 +944,7 @@ export async function createHoleView(container, options = {}) {
     const mapNy0 = b.effectiveMapNy ?? item.mapNy;
 
     const orient = /** @type {Group | undefined} */ (objGroup.children[0]);
-    /** @type {Mesh | undefined} */
-    const objMesh =
-      orient?.children[0] && 'isMesh' in orient.children[0]
-        ? /** @type {Mesh} */ (orient.children[0])
-        : undefined;
+    const objMesh = fieldDecorMeshFromOrient(orient);
 
     const spinY =
       fieldDecorSpinClock.getElapsedTime() * 0.36 + i * 2.05;
@@ -1021,11 +1023,7 @@ export async function createHoleView(container, options = {}) {
     const mapNy0 = b.effectiveMapNy ?? item.mapNy;
 
     const orient = /** @type {Group | undefined} */ (objGroup.children[0]);
-    /** @type {Mesh | undefined} */
-    const objMesh =
-      orient?.children[0] && 'isMesh' in orient.children[0]
-        ? /** @type {Mesh} */ (orient.children[0])
-        : undefined;
+    const objMesh = fieldDecorMeshFromOrient(orient);
 
     const triangleSpinTime =
       fieldDecorSpinClock.getElapsedTime() * 0.66 + i * 0.8;

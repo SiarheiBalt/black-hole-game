@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import { viteSingleFile } from 'vite-plugin-singlefile';
+import { vitePluginActiveTheme } from './scripts/vite-plugin-active-theme.mjs';
 
 /** Serve the same SPA for `/t/<theme>` (and `/theme/...`) in dev + preview. */
 function themePathSpaFallback() {
@@ -23,7 +24,7 @@ function themePathSpaFallback() {
 const PATH_THEME_RE = /^\/(?:t|theme)\/[\w-]+\/?$/;
 
 export default defineConfig({
-  plugins: [viteSingleFile(), themePathSpaFallback()],
+  plugins: [vitePluginActiveTheme(), viteSingleFile(), themePathSpaFallback()],
   build: {
     target: 'es2022',
     cssCodeSplit: false,
