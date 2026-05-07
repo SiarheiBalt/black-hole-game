@@ -1,7 +1,3 @@
-/** Reference aspect (optional tooling); playfield size follows the viewport. */
-export const REFERENCE_WIDTH = 390;
-export const REFERENCE_HEIGHT = 844;
-
 export const BG_COLOR = 0x88d659;
 /** Lighter green splotches on the field. */
 export const DECOR_COLOR = 0xa8e879;

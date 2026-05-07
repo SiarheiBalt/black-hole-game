@@ -7,8 +7,6 @@
 - `initThemes()` — один раз при старте приложения: в **dev** подмешивает все темы из `src/themes/registry.dev.js`, в **production** подключает только активную через виртуальный модуль `virtual:active-theme` (см. ниже).
 - `getThemeConfig(name)` — нормализованная тема по id (`default`, `jp_kawaii`, …).
 - `DEFAULT_HOLE_THEME`, `DEFAULT_PLAYFIELD_THEME`, `DEFAULT_HUD_ICONS` — из темы `default`, до вызова `initThemes` уже валидны для фолбэков.
-- `createTheme` — для ручных и сгенерированных описаний тем.
-- `listRegisteredThemeIds()` — список ключей `THEMES` (в dev полный, в production обычно только `default` + активная тема).
 
 Где лежат сами темы:
 
