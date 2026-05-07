@@ -40,7 +40,7 @@ import {
  * `HOLE_MAX_SPEED * min(worldW, worldH)` with `worldW/H = designWidth/Height * WORLD_MAP_VIEW_MULTIPLIER`.
  * `holeVnX/Y` are chosen so X/Y pan match that cap (isotropic on screen).
  */
-export const HOLE_MAX_SPEED = 0.16;
+export const HOLE_MAX_SPEED = 0.18;
 /**
  * Cursor offset from click (norm) at which speed reaches HOLE_MAX_SPEED.
  * Closer = slower, farther (up to this) = faster.
