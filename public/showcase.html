@@ -1,0 +1,1882 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Black Hole — Playable ads showcase</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #e8edf6;
+        --bg-elevated: #ffffff;
+        --sidebar-bg: rgba(255, 255, 255, 0.94);
+        --border: rgba(15, 23, 42, 0.09);
+        --border-strong: rgba(15, 23, 42, 0.16);
+        --text: #0f172a;
+        --muted: #64748b;
+        --accent: #4f46e5;
+        --accent-2: #0e7490;
+        --accent-glow: rgba(79, 70, 229, 0.28);
+        --item-active: rgba(79, 70, 229, 0.12);
+        --sidebar-width: 288px;
+        /* Короткая сторона корпуса (viewBox IPhone-17.svg: 72.5×150) */
+        --phone-short-edge: min(352px, 52vw);
+        --phone-aspect-w: 72.5;
+        --phone-aspect-h: 150;
+        /* Внешний корпус: rect layer9 в IPhone-17.svg (clip-path showcase-phone-hull-clip) */
+        /* Запас под drop-shadow у .phone-device-shadow, иначе верх/низ режет overflow:hidden у .device-wrap */
+        --phone-shadow-vpad: 44px;
+        /* Подложка под макет телефона */
+        --device-stage-edge: rgba(15, 23, 42, 0.1);
+        --device-stage-glow: rgba(79, 70, 229, 0.16);
+        --device-stage-glow-soft: rgba(14, 116, 144, 0.12);
+        --network-chip-bg: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.98) 0%,
+          rgba(241, 245, 249, 0.94) 100%
+        );
+        --network-chip-border: rgba(15, 23, 42, 0.1);
+        --network-chip-text: rgba(30, 41, 59, 0.92);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      @keyframes showcase-float {
+        0%,
+        100% {
+          transform: translate(0, 0) scale(1);
+        }
+        50% {
+          transform: translate(2%, -1.5%) scale(1.02);
+        }
+      }
+
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        font-family:
+          'Outfit',
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .layout {
+        display: flex;
+        align-items: stretch;
+        min-height: 100vh;
+        height: 100%;
+      }
+
+      .sidebar {
+        width: var(--sidebar-width);
+        min-width: var(--sidebar-width);
+        height: 100vh;
+        position: sticky;
+        top: 0;
+        display: flex;
+        flex-direction: column;
+        background: var(--sidebar-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-right: 1px solid var(--border);
+        overflow: hidden;
+        box-shadow: 8px 0 36px rgba(15, 23, 42, 0.07);
+      }
+
+      .sidebar-header {
+        flex-shrink: 0;
+        padding: 22px 18px 18px;
+        border-bottom: 1px solid var(--border);
+        background: linear-gradient(
+          165deg,
+          rgba(79, 70, 229, 0.06) 0%,
+          transparent 55%
+        );
+      }
+
+      .showcase-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0 0 12px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--accent-2);
+        background: rgba(14, 116, 144, 0.1);
+        border: 1px solid rgba(14, 116, 144, 0.22);
+      }
+
+      .showcase-eyebrow::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent-2);
+        box-shadow: 0 0 10px rgba(14, 116, 144, 0.45);
+      }
+
+      .sidebar-header h1 {
+        margin: 0 0 12px;
+        font-size: 1.35rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.15;
+        background: linear-gradient(105deg, #0f172a 0%, #334155 42%, #0369a1 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+
+      .sidebar-header .game-name {
+        display: inline;
+      }
+
+      .variant-count-container {
+        margin: 0;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 6px 10px;
+      }
+
+      .variant-count {
+        font-weight: 800;
+        font-size: 1.5rem;
+        line-height: 1;
+        letter-spacing: -0.03em;
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+
+      .sidebar-header .tagline {
+        margin: 0;
+        flex: 1 1 140px;
+        min-width: 0;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .theme-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 14px 12px 20px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(79, 70, 229, 0.35) transparent;
+      }
+
+      .theme-list::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .theme-list::-webkit-scrollbar-thumb {
+        background: rgba(79, 70, 229, 0.35);
+        border-radius: 999px;
+      }
+
+      .theme-item {
+        position: relative;
+        margin-bottom: 8px;
+        padding: 14px 14px 14px 16px;
+        font-size: 0.82rem;
+        cursor: pointer;
+        color: var(--muted);
+        border-radius: 14px;
+        border: 1px solid transparent;
+        background: rgba(15, 23, 42, 0.035);
+        transition:
+          background 0.22s ease,
+          border-color 0.22s ease,
+          color 0.22s ease,
+          transform 0.22s ease,
+          box-shadow 0.22s ease;
+      }
+
+      .theme-item::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 10px;
+        bottom: 10px;
+        width: 3px;
+        border-radius: 0 4px 4px 0;
+        background: linear-gradient(180deg, var(--accent), var(--accent-2));
+        opacity: 0;
+        transform: scaleY(0.6);
+        transition:
+          opacity 0.22s ease,
+          transform 0.22s ease;
+      }
+
+      .theme-item:hover {
+        background: rgba(255, 255, 255, 0.82);
+        border-color: var(--border);
+        color: var(--text);
+        transform: translateX(4px);
+        box-shadow:
+          0 10px 28px rgba(15, 23, 42, 0.08),
+          0 0 0 1px rgba(255, 255, 255, 0.9) inset;
+      }
+
+      .theme-item:hover::before {
+        opacity: 0.55;
+        transform: scaleY(1);
+      }
+
+      .theme-item:focus-visible {
+        outline: none;
+        border-color: rgba(79, 70, 229, 0.45);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.22);
+      }
+
+      .theme-item.active {
+        background: linear-gradient(
+          135deg,
+          rgba(79, 70, 229, 0.12) 0%,
+          rgba(14, 116, 144, 0.06) 100%
+        );
+        border-color: rgba(79, 70, 229, 0.28);
+        color: var(--text);
+        box-shadow:
+          0 14px 36px rgba(15, 23, 42, 0.08),
+          0 0 20px var(--accent-glow),
+          0 0 0 1px rgba(255, 255, 255, 0.85) inset;
+        transform: translateX(4px);
+      }
+
+      .theme-item.active::before {
+        opacity: 1;
+        transform: scaleY(1);
+      }
+
+      .theme-item .line {
+        display: block;
+      }
+
+      .theme-item .head {
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 6px;
+        font-size: 0.9rem;
+        letter-spacing: -0.01em;
+      }
+
+      .theme-item.active .head {
+        color: var(--text);
+      }
+
+      .theme-item .meta {
+        font-size: 0.74rem;
+        line-height: 1.4;
+        opacity: 0.92;
+      }
+
+      .preview-area {
+        flex: 1;
+        min-width: 0;
+        min-height: 0;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(248px, min(320px, 31vw));
+        grid-template-rows: minmax(0, 1fr);
+        gap: 0;
+        height: 100vh;
+        position: relative;
+        background: var(--bg);
+        overflow: hidden;
+      }
+
+      .bottom-section {
+        position: relative;
+        z-index: 1;
+        flex-shrink: 0;
+        min-width: 0;
+        min-height: 0;
+        margin: 0;
+        padding: 18px 16px 20px;
+        border-top: none;
+        border-left: 1px solid var(--border);
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.72) 0%,
+          rgba(248, 250, 252, 0.96) 100%
+        );
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .bottom-section-inner {
+        max-width: none;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: center;
+        gap: 20px;
+      }
+
+      .bottom-section-main {
+        flex: 0 1 auto;
+        min-width: 0;
+        width: 100%;
+        text-align: center;
+      }
+
+      .bottom-section-title {
+        margin: 0 0 10px;
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--accent-2);
+        line-height: 1.4;
+        text-align: center;
+      }
+
+      .bottom-section-networks {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 8px;
+        justify-content: center;
+      }
+
+      .bottom-section-networks li {
+        margin: 0;
+        padding: 6px 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: clamp(11px, 1.1vw, 14px);
+        font-weight: 600;
+        color: var(--network-chip-text);
+        background: var(--network-chip-bg);
+        border: 1px solid var(--network-chip-border);
+        border-radius: 999px;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+        box-shadow:
+          0 4px 14px rgba(15, 23, 42, 0.06),
+          0 0 0 1px rgba(79, 70, 229, 0.06) inset;
+      }
+
+      /* Как на https://files.alconost.com/rVUdrfuYUzclWyCA1wLSd — .badge svg, .badge img */
+      .bottom-section-networks li svg,
+      .bottom-section-networks li img {
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+        display: block;
+        object-fit: contain;
+      }
+
+      .bottom-section-cta {
+        flex: 0 1 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        width: 100%;
+      }
+
+      .bottom-section-cta-lead {
+        margin: 28px 0 0;
+        font-size: 0.95rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--text);
+        text-align: center;
+      }
+
+      .bottom-section-cta-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px 18px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        text-decoration: none;
+        color: #0a0b10;
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 28px var(--accent-glow);
+        transition:
+          transform 0.15s ease,
+          filter 0.15s ease;
+      }
+
+      .bottom-section-cta-link:hover {
+        filter: brightness(1.06);
+        transform: translateY(-1px);
+      }
+
+      .bottom-section-cta-link:focus-visible {
+        outline: 2px solid var(--accent-2);
+        outline-offset: 3px;
+      }
+
+      .preview-area::before {
+        content: '';
+        position: absolute;
+        inset: -20%;
+        background:
+          radial-gradient(ellipse 55% 45% at 18% 22%, rgba(79, 70, 229, 0.14), transparent 55%),
+          radial-gradient(ellipse 50% 40% at 88% 78%, rgba(14, 116, 144, 0.1), transparent 50%),
+          radial-gradient(ellipse 70% 50% at 50% 100%, rgba(99, 102, 241, 0.08), transparent 55%);
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        .preview-area::before {
+          animation: showcase-float 18s ease-in-out infinite;
+        }
+      }
+
+      .preview-area::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+        background-size: 48px 48px;
+        mask-image: radial-gradient(ellipse 75% 70% at 50% 45%, #000 20%, transparent 75%);
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.5;
+      }
+
+      .preview-column {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 12px 8px 14px;
+        gap: 10px;
+        border-right: 1px solid var(--border);
+        min-height: 0;
+        height: 100%;
+        align-self: stretch;
+      }
+      .preview-column:last-child {
+        border-right: none;
+      }
+
+      .preview-hero {
+        flex-shrink: 0;
+        text-align: center;
+        max-width: 420px;
+        margin: 0 auto;
+        padding: 2px 4px 0;
+      }
+
+      .preview-eyebrow {
+        display: inline-block;
+        margin: 0 0 8px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--accent-2);
+        opacity: 0.95;
+      }
+
+      .preview-label {
+        text-align: center;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        color: var(--muted);
+      }
+
+      .preview-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        align-self: center;
+      }
+
+      .btn-reload {
+        font: inherit;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 18px;
+        border-radius: 12px;
+        border: 1px solid transparent;
+        color: var(--text);
+        font-size: 0.82rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        cursor: pointer;
+        min-height: 44px;
+        transition:
+          background 0.2s ease,
+          background-position 0.45s ease,
+          border-color 0.2s ease,
+          color 0.2s ease,
+          transform 0.2s cubic-bezier(0.34, 1.3, 0.64, 1),
+          box-shadow 0.2s ease;
+      }
+
+      .btn-reload:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.28);
+      }
+
+      .btn-reload-action {
+        gap: 8px;
+        background: linear-gradient(120deg, #6366f1 0%, #7c3aed 40%, #0e7490 85%, #22d3ee 100%);
+        background-size: 200% auto;
+        background-position: 0% 50%;
+        box-shadow:
+          0 4px 20px rgba(99, 102, 241, 0.45),
+          0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+      }
+
+      .btn-reload-action .btn-reload-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      .btn-reload-action:hover:not(:disabled) {
+        background-position: 100% 50%;
+        transform: translateY(-2px);
+        box-shadow:
+          0 12px 32px rgba(99, 102, 241, 0.5),
+          0 0 0 1px rgba(255, 255, 255, 0.18) inset;
+      }
+
+      .btn-reload-action:active:not(:disabled) {
+        transform: translateY(0);
+      }
+
+      .btn-reload-icon-svg {
+        display: block;
+        width: 17px;
+        height: 17px;
+      }
+
+      .btn-reload:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .btn-reload:disabled:hover {
+        transform: none;
+      }
+
+      .btn-copy {
+        gap: 8px;
+        border: 1px solid var(--border-strong);
+        background: rgba(255, 255, 255, 0.72);
+        color: var(--text);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
+
+      .btn-copy .btn-copy-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: var(--accent-2);
+      }
+
+      .btn-copy:hover:not(:disabled) {
+        border-color: rgba(14, 116, 144, 0.35);
+        background: rgba(224, 242, 254, 0.65);
+        color: var(--text);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.1);
+      }
+
+      .btn-copy:hover:not(:disabled) .btn-copy-icon {
+        color: #0e7490;
+      }
+
+      .btn-copy:active:not(:disabled) {
+        transform: translateY(0);
+      }
+
+      .btn-copy-icon-svg {
+        display: block;
+        width: 17px;
+        height: 17px;
+      }
+
+      .device-wrap {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+        padding: 8px 6px;
+        border-radius: 22px;
+        overflow: hidden;
+        /* Для cqw/cqh у .phone-device-shadow: вписать телефон в доступную область без ломки aspect */
+        container-type: size;
+        container-name: device-stage;
+        border: 1px solid var(--device-stage-edge);
+        background:
+          radial-gradient(
+            ellipse 90% 75% at 50% 44%,
+            var(--device-stage-glow) 0%,
+            transparent 58%
+          ),
+          radial-gradient(
+            ellipse 130% 85% at 50% -5%,
+            var(--device-stage-glow-soft) 0%,
+            transparent 50%
+          ),
+          linear-gradient(168deg, #fbfcfe 0%, #f4f7fb 42%, #e9eef8 100%);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.95),
+          inset 0 0 0 1px rgba(15, 23, 42, 0.06),
+          inset 0 -10px 28px rgba(15, 23, 42, 0.03),
+          0 4px 22px rgba(15, 23, 42, 0.06);
+      }
+
+      /* Тень снаружи: clip-path на .phone-device обрезал бы box-shadow */
+      .phone-device-shadow {
+        position: relative;
+        flex: 0 0 auto;
+        align-self: center;
+        /*
+         * Если задать фиксированную ширину и max-height: 100%, часть движков даёт
+         * «перекошенный» блок (например 320×631) — хром object-fit:contain уже,
+         * а iframe на всю ширину, игра вылезает за отрисованный корпус.
+         * Ширина = min(желаемая, по ширине сцены, по высоте сцены с сохранением 72.5:150).
+         */
+        width: min(var(--phone-short-edge), 100%);
+        max-width: 100%;
+        aspect-ratio: var(--phone-aspect-w) / var(--phone-aspect-h);
+        height: auto;
+        max-height: 100%;
+        min-height: 0;
+        box-sizing: border-box;
+        filter: drop-shadow(0 14px 28px rgba(15, 23, 42, 0.14))
+          drop-shadow(0 2px 6px rgba(15, 23, 42, 0.08));
+      }
+
+      @supports (width: min(1cqw, 100%)) {
+        .phone-device-shadow {
+          width: min(
+            var(--phone-short-edge),
+            100cqw,
+            calc(
+              max(0px, 100cqh - var(--phone-shadow-vpad)) * var(--phone-aspect-w) /
+                var(--phone-aspect-h)
+            )
+          );
+          max-height: max(0px, calc(100cqh - var(--phone-shadow-vpad)));
+        }
+      }
+
+      /* Телефон: боковые кнопки (IPhone-17-buttons) под iframe, корпус (IPhone-17-frame) над */
+      .phone-device {
+        position: absolute;
+        inset: 0;
+        box-sizing: border-box;
+        isolation: isolate;
+        overflow: hidden;
+        contain: paint;
+        -webkit-clip-path: url(#showcase-phone-hull-clip);
+        clip-path: url(#showcase-phone-hull-clip);
+      }
+
+      .phone-screen {
+        position: absolute;
+        z-index: 1;
+        inset: 0;
+        overflow: hidden;
+        background: #0a0a0c;
+        pointer-events: none;
+        contain: paint;
+        -webkit-clip-path: url(#showcase-phone-screen-clip);
+        clip-path: url(#showcase-phone-screen-clip);
+      }
+
+      .phone-screen iframe {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: #111;
+        pointer-events: auto;
+      }
+
+      .phone-chrome {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        box-sizing: border-box;
+        pointer-events: none;
+        user-select: none;
+      }
+
+      img.phone-chrome {
+        object-fit: contain;
+        object-position: center;
+      }
+
+      .phone-chrome--buttons {
+        z-index: 0;
+      }
+
+      .phone-chrome--frame {
+        z-index: 2;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .theme-item:hover,
+        .theme-item.active {
+          transform: none;
+        }
+
+        .preview-area::before {
+          animation: none;
+        }
+
+        .btn-reload:hover:not(:disabled),
+        .btn-reload:active:not(:disabled),
+        .btn-copy:hover:not(:disabled),
+        .btn-copy:active:not(:disabled) {
+          transform: none;
+        }
+
+        .bottom-section-cta-link:hover {
+          transform: none;
+        }
+      }
+
+      /*
+       * Узкий экран / портрет устройства: этот блок в конце, чтобы перекрыть
+       * .preview-column { height: 100% } и flex-цепочку .device-wrap (иначе высота iframe → 0).
+       */
+      @media (max-width: 700px) {
+        :root {
+          --phone-short-edge: min(322px, 94vw);
+          /* На узкой вёрстке тень сильнее упирается в overflow — чуть больший запас */
+          --phone-shadow-vpad: 60px;
+        }
+
+        .layout {
+          flex-direction: column;
+          align-items: stretch;
+          min-height: 100%;
+          height: auto;
+        }
+
+        .sidebar {
+          width: 100%;
+          min-width: 0;
+          flex: 0 0 auto;
+          height: auto;
+          max-height: none;
+          position: relative;
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+        }
+
+        .theme-list {
+          flex: 0 1 auto;
+          max-height: min(38vh, 240px);
+        }
+
+        .preview-area {
+          display: flex;
+          flex-direction: column;
+          flex: 0 0 auto;
+          width: 100%;
+          min-width: 0;
+          height: auto;
+          min-height: 0;
+        }
+
+        .bottom-section {
+          padding: 18px 16px 20px;
+          border-left: none;
+          border-top: 1px solid var(--border);
+          justify-content: flex-start;
+          overflow-y: visible;
+        }
+
+        .bottom-section-inner {
+          flex-direction: column;
+          align-items: stretch;
+          max-width: 900px;
+          margin: 0 auto;
+          width: 100%;
+        }
+
+        .bottom-section-title {
+          font-size: 0.68rem;
+          letter-spacing: 0.18em;
+          text-align: center;
+        }
+
+        .bottom-section-networks {
+          justify-content: center;
+        }
+
+        .bottom-section-cta {
+          align-items: center;
+        }
+
+        .bottom-section-cta-link {
+          text-align: center;
+          width: auto;
+          align-self: center;
+        }
+
+        .preview-column {
+          flex: 0 0 auto;
+          height: auto;
+          min-height: 0;
+          align-self: stretch;
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+        }
+
+        .preview-column:last-child {
+          border-bottom: none;
+        }
+
+        .preview-hero {
+          padding: 0 4px;
+        }
+
+        .device-wrap {
+          flex: 0 0 auto;
+          /* Явная высота сцены: иначе цепочка height:auto + absolute-ребёнок даёт 0 */
+          min-height: min(72vh, 640px);
+          align-items: center;
+          justify-content: center;
+          margin: 4px 6px;
+          padding: 14px 8px;
+          border-radius: 20px;
+          overflow: visible;
+        }
+
+        /*
+         * Внутри .phone-device — position:absolute → у .phone-device-shadow обязательны
+         * конкретные width и height (не height:auto без ширины).
+         * --w = min(желаемая короткая сторона, сцена по ширине, лимит по высоте viewport).
+         */
+        .phone-device-shadow.phone-portrait {
+          --phone-stage-w: 100%;
+          --phone-cap-h: max(
+            120px,
+            calc(min(72vh, 640px) - var(--phone-shadow-vpad))
+          );
+          --phone-w: min(
+            var(--phone-short-edge),
+            var(--phone-stage-w),
+            calc(var(--phone-cap-h) * var(--phone-aspect-w) / var(--phone-aspect-h))
+          );
+          width: var(--phone-w);
+          height: calc(
+            var(--phone-w) * var(--phone-aspect-h) / var(--phone-aspect-w)
+          );
+          max-width: 100%;
+          max-height: none;
+          aspect-ratio: unset;
+          box-sizing: border-box;
+        }
+
+        @supports (width: min(1cqw, 100%)) {
+          .phone-device-shadow.phone-portrait {
+            --phone-stage-w: 100cqw;
+          }
+        }
+
+      }
+    </style>
+  </head>
+  <body>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="0"
+      height="0"
+      aria-hidden="true"
+      style="position: absolute; overflow: hidden"
+    >
+      <defs>
+        <!-- Внешний корпус: layer9 rect32 (IPhone-17.svg), clipPathUnits относительно .phone-device -->
+        <clipPath id="showcase-phone-hull-clip" clipPathUnits="objectBoundingBox">
+          <rect
+            x="0.006159552"
+            y="0"
+            width="0.988370559"
+            height="1"
+            rx="0.17746225"
+            ry="0.085773153"
+          />
+        </clipPath>
+        <clipPath id="showcase-phone-screen-clip" clipPathUnits="objectBoundingBox">
+          <path
+            transform="scale(0.013793103448275862,0.006666666666666667)"
+            d="m 13.312378,0.97661114 c -6.603655,0 -11.888676,5.28502136 -11.888676,11.88868086 V 137.13471 c 0,6.60365 5.285021,11.88868 11.888676,11.88868 h 45.87524 c 6.60366,0 11.88868,-5.28503 11.88868,-11.88868 V 12.865292 c 0,-6.6036595 -5.28502,-11.88868086 -11.88868,-11.88868086 z"
+          />
+        </clipPath>
+      </defs>
+    </svg>
+    <div class="layout">
+      <aside class="sidebar" aria-label="Themes">
+        <div class="sidebar-header">
+          <p class="showcase-eyebrow">Playable ads</p>
+          <h1>
+            <span class="game-name" id="game-title">Black Hole</span>
+          </h1>
+          <p class="variant-count-container">
+            <span class="variant-count" id="variant-count">3</span>
+            <span class="tagline" id="game-tagline">
+              themed playable builds — drag to swallow the board
+            </span>
+          </p>
+        </div>
+        <div class="theme-list" id="theme-list" role="list"></div>
+      </aside>
+
+      <div class="preview-area">
+        <div class="preview-column" aria-label="Portrait">
+          <div class="preview-hero">
+            <p class="preview-eyebrow">Live device frame</p>
+          </div>
+          <div class="device-wrap">
+            <!-- Инлайн chrome: исходники showcase/IPhone-17-buttons.svg и IPhone-17-frame.svg (id: ph-btn- / ph-frm-). Обновить: node showcase/refresh-inline-phone-chrome.mjs -->
+            <div class="phone-device-shadow phone-portrait">
+              <div class="phone-device">
+                <svg class="phone-chrome phone-chrome--buttons" preserveAspectRatio="xMidYMid meet" width="100%" height="100%" aria-hidden="true" viewBox="0 0 72.499999 150" version="1.1"
+  xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg">
+<defs
+     id="ph-btn-defs1"><linearGradient
+       id="ph-btn-linearGradient31"><stop
+         style="stop-color:#ffffff;stop-opacity:0.02;"
+         offset="0"
+         id="ph-btn-stop31" /><stop
+         style="stop-color:#ffffff;stop-opacity:0.1;"
+         offset="1"
+         id="ph-btn-stop32" /></linearGradient><linearGradient
+       id="ph-btn-linearGradient25"><stop
+         style="stop-color:#b697ff;stop-opacity:1;"
+         offset="0"
+         id="ph-btn-stop26" /><stop
+         style="stop-color:#3600ae;stop-opacity:1;"
+         offset="0.56404012"
+         id="ph-btn-stop28" /><stop
+         style="stop-color:#000000;stop-opacity:0;"
+         offset="1"
+         id="ph-btn-stop27" /></linearGradient><linearGradient
+       id="ph-btn-linearGradient24"><stop
+         style="stop-color:#39394e;stop-opacity:1;"
+         offset="0"
+         id="ph-btn-stop24" /><stop
+         style="stop-color:#1e1e21;stop-opacity:1;"
+         offset="1"
+         id="ph-btn-stop25" /></linearGradient><linearGradient
+       id="ph-btn-linearGradient12"><stop
+         style="stop-color:#686171;stop-opacity:1;"
+         offset="0"
+         id="ph-btn-stop13" /><stop
+         style="stop-color:#575360;stop-opacity:1;"
+         offset="1"
+         id="ph-btn-stop14" /></linearGradient><linearGradient
+       id="ph-btn-linearGradient9"><stop
+         style="stop-color:#867e90;stop-opacity:1;"
+         offset="0"
+         id="ph-btn-stop9" /><stop
+         style="stop-color:#c5c4d1;stop-opacity:1;"
+         offset="0.17473139"
+         id="ph-btn-stop12" /><stop
+         style="stop-color:#8d8698;stop-opacity:1"
+         offset="0.64714581"
+         id="ph-btn-stop11" /><stop
+         style="stop-color:#7a7184;stop-opacity:1;"
+         offset="1"
+         id="ph-btn-stop10" /></linearGradient><clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="ph-btn-clipPath1"><rect
+         style="fill:#9320d4;stroke-width:2.90343;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
+         id="ph-btn-rect2"
+         width="207.90259"
+         height="430.15308"
+         x="66.161987"
+         y="-144.36761" /></clipPath><linearGradient
+       xlink:href="#ph-btn-linearGradient9"
+       id="ph-btn-linearGradient10"
+       x1="-6.8514175"
+       y1="40.490494"
+       x2="-6.8514175"
+       y2="47.087269"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1,0,0,1.0187233,10.528318,-10.430529)" /><linearGradient
+       xlink:href="#ph-btn-linearGradient12"
+       id="ph-btn-linearGradient14"
+       x1="1.7565179"
+       y1="30.852865"
+       x2="1.7565179"
+       y2="37.825279"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(-0.41007042,-0.16084956)" /><linearGradient
+       xlink:href="#ph-btn-linearGradient12"
+       id="ph-btn-linearGradient15"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(-0.16368891,11.918822)"
+       x1="1.7565179"
+       y1="30.852865"
+       x2="1.7565179"
+       y2="37.825279" /><linearGradient
+       xlink:href="#ph-btn-linearGradient9"
+       id="ph-btn-linearGradient16"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1,0,0,1.0187233,10.7747,1.649143)"
+       x1="-6.8514175"
+       y1="40.490494"
+       x2="-6.8514175"
+       y2="47.087269" /><linearGradient
+       xlink:href="#ph-btn-linearGradient12"
+       id="ph-btn-linearGradient17"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(-0.16368891,11.918822)"
+       x1="1.7565179"
+       y1="30.852865"
+       x2="1.7565179"
+       y2="37.825279" /><linearGradient
+       xlink:href="#ph-btn-linearGradient9"
+       id="ph-btn-linearGradient18"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1,0,0,1.0187233,10.7747,1.649143)"
+       x1="-6.8514175"
+       y1="40.490494"
+       x2="-6.8514175"
+       y2="47.087269" /><linearGradient
+       xlink:href="#ph-btn-linearGradient12"
+       id="ph-btn-linearGradient19"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(-0.16368891,11.918822)"
+       x1="1.7565179"
+       y1="30.852865"
+       x2="1.7565179"
+       y2="37.825279" /><linearGradient
+       xlink:href="#ph-btn-linearGradient9"
+       id="ph-btn-linearGradient20"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1,0,0,1.0187233,10.7747,1.649143)"
+       x1="-6.8514175"
+       y1="40.490494"
+       x2="-6.8514175"
+       y2="47.087269" /><radialGradient
+       xlink:href="#ph-btn-linearGradient24"
+       id="ph-btn-radialGradient25"
+       cx="43.681053"
+       cy="7.4308386"
+       fx="43.681053"
+       fy="7.4308386"
+       r="0.92431802"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(1.3383789e-6)" /><radialGradient
+       xlink:href="#ph-btn-linearGradient25"
+       id="ph-btn-radialGradient27"
+       cx="48.734295"
+       cy="7.8165774"
+       fx="48.734295"
+       fy="7.8165774"
+       r="0.68189663"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.99999932,-3.3487284e-7,-2.1771224e-6,1.3555106,-5.200404,-14.350692)" /><radialGradient
+       xlink:href="#ph-btn-linearGradient25"
+       id="ph-btn-radialGradient27-6"
+       cx="48.734295"
+       cy="7.8165774"
+       fx="48.734295"
+       fy="7.8165774"
+       r="0.68189663"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.99999932,-3.3487284e-7,-2.1771224e-6,1.3555106,-93.631878,-14.350692)" /><linearGradient
+       xlink:href="#ph-btn-linearGradient31"
+       id="ph-btn-linearGradient32"
+       x1="36.25"
+       y1="0.97257996"
+       x2="36.25"
+       y2="1.5374033"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(0,0.00403118)" /><filter
+       style="color-interpolation-filters:sRGB"
+       id="ph-btn-filter32"
+       x="-0.006718275"
+       y="-0.0031835449"
+       width="1.0134365"
+       height="1.0063671"><feGaussianBlur
+         stdDeviation="0.19764468"
+         id="ph-btn-feGaussianBlur32" /></filter><filter
+       style="color-interpolation-filters:sRGB"
+       id="ph-btn-filter33"
+       x="-0.0091814284"
+       y="-0.0043248752"
+       width="1.0183629"
+       height="1.0086498"><feGaussianBlur
+         stdDeviation="0.26705965"
+         id="ph-btn-feGaussianBlur33" /></filter><clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="ph-btn-clipPath34"><rect
+         style="display:inline;fill:#716a7b;fill-opacity:1;stroke:none;stroke-width:21.753;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+         id="ph-btn-rect35"
+         width="71.606865"
+         height="150"
+         x="0.44656754"
+         y="1.4210855e-14"
+         ry="12.865973" /></clipPath><mask
+       maskUnits="userSpaceOnUse"
+       maskContentUnits="userSpaceOnUse"
+       id="ph-btn-screen-cutout-mask"><rect
+         style="fill:#ffffff"
+         id="ph-btn-mask-bg"
+         width="72.5"
+         height="150"
+         x="0"
+         y="0" /><path style="fill:#000000"
+         id="ph-btn-mask-hole"
+         d="m 13.312378,0.97661114 c -6.603655,0 -11.888676,5.28502136 -11.888676,11.88868086 V 137.13471 c 0,6.60365 5.285021,11.88868 11.888676,11.88868 h 45.87524 c 6.60366,0 11.88868,-5.28503 11.88868,-11.88868 V 12.865292 c 0,-6.6036595 -5.28502,-11.88868086 -11.88868,-11.88868086 z" /></mask></defs>
+<g
+     id="ph-btn-layer2"
+     style="display:inline"><g
+       id="ph-btn-g14"><rect
+         style="fill:url(#ph-btn-linearGradient14);fill-opacity:1;stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
+         id="ph-btn-rect6"
+         width="7.6419992"
+         height="6.9724154"
+         x="-6.8847655e-10"
+         y="30.692017"
+         ry="0.30878335" /><rect
+         style="fill:url(#ph-btn-linearGradient10);fill-opacity:1;stroke-width:0.190988;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
+         id="ph-btn-rect6-2"
+         width="7.230288"
+         height="6.7202911"
+         x="0.061756074"
+         y="30.818081"
+         ry="0.29761767" /></g><g
+       id="ph-btn-g17"
+       transform="translate(-0.24638151)"><path
+         id="ph-btn-rect6-27"
+         style="fill:url(#ph-btn-linearGradient15);stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
+         d="M 0.55516486,42.77169 H 7.5795974 c 0.171066,0 0.3087834,0.137718 0.3087834,0.308784 v 10.627089 c 0,0.171066 -0.1377174,0.308784 -0.3087834,0.308784 H 0.55516486 c -0.17106598,0 -0.30878335,-0.137718 -0.30878335,-0.308784 V 43.080474 c 0,-0.171066 0.13771737,-0.308784 0.30878335,-0.308784 z" /><path
+         id="ph-btn-rect6-2-9"
+         style="fill:url(#ph-btn-linearGradient16);stroke-width:0.190988;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
+         d="M 0.60575527,42.897755 H 7.240808 c 0.1648801,0 0.2976176,0.132737 0.2976176,0.297617 v 10.397297 c 0,0.16488 -0.1327375,0.297618 -0.2976176,0.297618 H 0.60575527 c -0.16488019,0 -0.29761767,-0.132738 -0.29761767,-0.297618 V 43.195372 c 0,-0.16488 0.13273748,-0.297617 0.29761767,-0.297617 z" /></g><g
+       id="ph-btn-g17-8"
+       transform="matrix(-1,0,0,1,72.745556,3.8223925)"><path
+         id="ph-btn-rect6-27-6"
+         style="fill:url(#ph-btn-linearGradient19);stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
+         d="M 0.55516486,42.77169 H 7.5795974 c 0.171066,0 0.3087834,0.137718 0.3087834,0.308784 v 17.177374 c 0,0.171066 -0.1377174,0.308784 -0.3087834,0.308784 H 0.55516486 c -0.17106598,0 -0.30878335,-0.137718 -0.30878335,-0.308784 V 43.080474 c 0,-0.171066 0.13771737,-0.308784 0.30878335,-0.308784 z" /><path
+         id="ph-btn-rect6-2-9-5"
+         style="fill:url(#ph-btn-linearGradient20);stroke-width:0.190988;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
+         d="M 0.60575527,42.897755 H 7.240808 c 0.1648801,0 0.2976176,0.132737 0.2976176,0.297617 v 16.947582 c 0,0.16488 -0.1327375,0.297618 -0.2976176,0.297618 H 0.60575527 c -0.16488019,0 -0.29761767,-0.132738 -0.29761767,-0.297618 V 43.195372 c 0,-0.16488 0.13273748,-0.297617 0.29761767,-0.297617 z" /></g><g
+       id="ph-btn-g17-1"
+       transform="translate(-0.24638151,14.230005)"><path
+         id="ph-btn-rect6-27-3"
+         style="fill:url(#ph-btn-linearGradient17);stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
+         d="M 0.55516486,42.77169 H 7.5795974 c 0.171066,0 0.3087834,0.137718 0.3087834,0.308784 v 10.627089 c 0,0.171066 -0.1377174,0.308784 -0.3087834,0.308784 H 0.55516486 c -0.17106598,0 -0.30878335,-0.137718 -0.30878335,-0.308784 V 43.080474 c 0,-0.171066 0.13771737,-0.308784 0.30878335,-0.308784 z" /><path
+         id="ph-btn-rect6-2-9-8"
+         style="fill:url(#ph-btn-linearGradient18);stroke-width:0.190988;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
+         d="M 0.60575527,42.897755 H 7.240808 c 0.1648801,0 0.2976176,0.132737 0.2976176,0.297617 v 10.397297 c 0,0.16488 -0.1327375,0.297618 -0.2976176,0.297618 H 0.60575527 c -0.16488019,0 -0.29761767,-0.132738 -0.29761767,-0.297618 V 43.195372 c 0,-0.16488 0.13273748,-0.297617 0.29761767,-0.297617 z" /></g></g>
+</svg>
+                <div class="phone-screen">
+                  <iframe
+                    id="iframe-portrait"
+                    title="Playable portrait"
+                    allow="autoplay; fullscreen"
+                  ></iframe>
+                </div>
+                <svg class="phone-chrome phone-chrome--frame" preserveAspectRatio="xMidYMid meet" width="100%" height="100%" aria-hidden="true" viewBox="0 0 72.499999 150"
+   version="1.1"
+   xml:space="preserve"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+     id="ph-frm-defs1"><linearGradient
+       id="ph-frm-linearGradient31"><stop
+         style="stop-color:#ffffff;stop-opacity:0.02;"
+         offset="0"
+         id="ph-frm-stop31" /><stop
+         style="stop-color:#ffffff;stop-opacity:0.1;"
+         offset="1"
+         id="ph-frm-stop32" /></linearGradient><linearGradient
+       id="ph-frm-linearGradient25"><stop
+         style="stop-color:#b697ff;stop-opacity:1;"
+         offset="0"
+         id="ph-frm-stop26" /><stop
+         style="stop-color:#3600ae;stop-opacity:1;"
+         offset="0.56404012"
+         id="ph-frm-stop28" /><stop
+         style="stop-color:#000000;stop-opacity:0;"
+         offset="1"
+         id="ph-frm-stop27" /></linearGradient><linearGradient
+       id="ph-frm-linearGradient24"><stop
+         style="stop-color:#39394e;stop-opacity:1;"
+         offset="0"
+         id="ph-frm-stop24" /><stop
+         style="stop-color:#1e1e21;stop-opacity:1;"
+         offset="1"
+         id="ph-frm-stop25" /></linearGradient><linearGradient
+       id="ph-frm-linearGradient12"><stop
+         style="stop-color:#686171;stop-opacity:1;"
+         offset="0"
+         id="ph-frm-stop13" /><stop
+         style="stop-color:#575360;stop-opacity:1;"
+         offset="1"
+         id="ph-frm-stop14" /></linearGradient><linearGradient
+       id="ph-frm-linearGradient9"><stop
+         style="stop-color:#867e90;stop-opacity:1;"
+         offset="0"
+         id="ph-frm-stop9" /><stop
+         style="stop-color:#c5c4d1;stop-opacity:1;"
+         offset="0.17473139"
+         id="ph-frm-stop12" /><stop
+         style="stop-color:#8d8698;stop-opacity:1"
+         offset="0.64714581"
+         id="ph-frm-stop11" /><stop
+         style="stop-color:#7a7184;stop-opacity:1;"
+         offset="1"
+         id="ph-frm-stop10" /></linearGradient><clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="ph-frm-clipPath1"><rect
+         style="fill:#9320d4;stroke-width:2.90343;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
+         id="ph-frm-rect2"
+         width="207.90259"
+         height="430.15308"
+         x="66.161987"
+         y="-144.36761" /></clipPath><linearGradient
+       xlink:href="#ph-frm-linearGradient9"
+       id="ph-frm-linearGradient10"
+       x1="-6.8514175"
+       y1="40.490494"
+       x2="-6.8514175"
+       y2="47.087269"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1,0,0,1.0187233,10.528318,-10.430529)" /><linearGradient
+       xlink:href="#ph-frm-linearGradient12"
+       id="ph-frm-linearGradient14"
+       x1="1.7565179"
+       y1="30.852865"
+       x2="1.7565179"
+       y2="37.825279"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(-0.41007042,-0.16084956)" /><linearGradient
+       xlink:href="#ph-frm-linearGradient12"
+       id="ph-frm-linearGradient15"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(-0.16368891,11.918822)"
+       x1="1.7565179"
+       y1="30.852865"
+       x2="1.7565179"
+       y2="37.825279" /><linearGradient
+       xlink:href="#ph-frm-linearGradient9"
+       id="ph-frm-linearGradient16"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1,0,0,1.0187233,10.7747,1.649143)"
+       x1="-6.8514175"
+       y1="40.490494"
+       x2="-6.8514175"
+       y2="47.087269" /><linearGradient
+       xlink:href="#ph-frm-linearGradient12"
+       id="ph-frm-linearGradient17"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(-0.16368891,11.918822)"
+       x1="1.7565179"
+       y1="30.852865"
+       x2="1.7565179"
+       y2="37.825279" /><linearGradient
+       xlink:href="#ph-frm-linearGradient9"
+       id="ph-frm-linearGradient18"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1,0,0,1.0187233,10.7747,1.649143)"
+       x1="-6.8514175"
+       y1="40.490494"
+       x2="-6.8514175"
+       y2="47.087269" /><linearGradient
+       xlink:href="#ph-frm-linearGradient12"
+       id="ph-frm-linearGradient19"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(-0.16368891,11.918822)"
+       x1="1.7565179"
+       y1="30.852865"
+       x2="1.7565179"
+       y2="37.825279" /><linearGradient
+       xlink:href="#ph-frm-linearGradient9"
+       id="ph-frm-linearGradient20"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1,0,0,1.0187233,10.7747,1.649143)"
+       x1="-6.8514175"
+       y1="40.490494"
+       x2="-6.8514175"
+       y2="47.087269" /><radialGradient
+       xlink:href="#ph-frm-linearGradient24"
+       id="ph-frm-radialGradient25"
+       cx="43.681053"
+       cy="7.4308386"
+       fx="43.681053"
+       fy="7.4308386"
+       r="0.92431802"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(1.3383789e-6)" /><radialGradient
+       xlink:href="#ph-frm-linearGradient25"
+       id="ph-frm-radialGradient27"
+       cx="48.734295"
+       cy="7.8165774"
+       fx="48.734295"
+       fy="7.8165774"
+       r="0.68189663"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.99999932,-3.3487284e-7,-2.1771224e-6,1.3555106,-5.200404,-14.350692)" /><radialGradient
+       xlink:href="#ph-frm-linearGradient25"
+       id="ph-frm-radialGradient27-6"
+       cx="48.734295"
+       cy="7.8165774"
+       fx="48.734295"
+       fy="7.8165774"
+       r="0.68189663"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.99999932,-3.3487284e-7,-2.1771224e-6,1.3555106,-93.631878,-14.350692)" /><linearGradient
+       xlink:href="#ph-frm-linearGradient31"
+       id="ph-frm-linearGradient32"
+       x1="36.25"
+       y1="0.97257996"
+       x2="36.25"
+       y2="1.5374033"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(0,0.00403118)" /><filter
+       style="color-interpolation-filters:sRGB"
+       id="ph-frm-filter32"
+       x="-0.006718275"
+       y="-0.0031835449"
+       width="1.0134365"
+       height="1.0063671"><feGaussianBlur
+         stdDeviation="0.19764468"
+         id="ph-frm-feGaussianBlur32" /></filter><filter
+       style="color-interpolation-filters:sRGB"
+       id="ph-frm-filter33"
+       x="-0.0091814284"
+       y="-0.0043248752"
+       width="1.0183629"
+       height="1.0086498"><feGaussianBlur
+         stdDeviation="0.26705965"
+         id="ph-frm-feGaussianBlur33" /></filter><clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="ph-frm-clipPath34"><rect
+         style="display:inline;fill:#716a7b;fill-opacity:1;stroke:none;stroke-width:21.753;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+         id="ph-frm-rect35"
+         width="71.606865"
+         height="150"
+         x="0.44656754"
+         y="1.4210855e-14"
+         ry="12.865973" /></clipPath><mask
+       maskUnits="userSpaceOnUse"
+       maskContentUnits="userSpaceOnUse"
+       id="ph-frm-screen-cutout-mask"><rect
+         style="fill:#ffffff"
+         id="ph-frm-mask-bg"
+         width="72.5"
+         height="150"
+         x="0"
+         y="0" /><path style="fill:#000000"
+         id="ph-frm-mask-hole"
+         d="m 13.312378,0.97661114 c -6.603655,0 -11.888676,5.28502136 -11.888676,11.88868086 V 137.13471 c 0,6.60365 5.285021,11.88868 11.888676,11.88868 h 45.87524 c 6.60366,0 11.88868,-5.28503 11.88868,-11.88868 V 12.865292 c 0,-6.6036595 -5.28502,-11.88868086 -11.88868,-11.88868086 z" /></mask></defs><g
+     id="ph-frm-layer2"
+     style="display:none"><g
+       id="ph-frm-g14"><rect
+         style="fill:url(#ph-frm-linearGradient14);fill-opacity:1;stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
+         id="ph-frm-rect6"
+         width="7.6419992"
+         height="6.9724154"
+         x="-6.8847655e-10"
+         y="30.692017"
+         ry="0.30878335" /><rect
+         style="fill:url(#ph-frm-linearGradient10);fill-opacity:1;stroke-width:0.190988;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
+         id="ph-frm-rect6-2"
+         width="7.230288"
+         height="6.7202911"
+         x="0.061756074"
+         y="30.818081"
+         ry="0.29761767" /></g><g
+       id="ph-frm-g17"
+       transform="translate(-0.24638151)"><path
+         id="ph-frm-rect6-27"
+         style="fill:url(#ph-frm-linearGradient15);stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
+         d="M 0.55516486,42.77169 H 7.5795974 c 0.171066,0 0.3087834,0.137718 0.3087834,0.308784 v 10.627089 c 0,0.171066 -0.1377174,0.308784 -0.3087834,0.308784 H 0.55516486 c -0.17106598,0 -0.30878335,-0.137718 -0.30878335,-0.308784 V 43.080474 c 0,-0.171066 0.13771737,-0.308784 0.30878335,-0.308784 z" /><path
+         id="ph-frm-rect6-2-9"
+         style="fill:url(#ph-frm-linearGradient16);stroke-width:0.190988;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
+         d="M 0.60575527,42.897755 H 7.240808 c 0.1648801,0 0.2976176,0.132737 0.2976176,0.297617 v 10.397297 c 0,0.16488 -0.1327375,0.297618 -0.2976176,0.297618 H 0.60575527 c -0.16488019,0 -0.29761767,-0.132738 -0.29761767,-0.297618 V 43.195372 c 0,-0.16488 0.13273748,-0.297617 0.29761767,-0.297617 z" /></g><g
+       id="ph-frm-g17-8"
+       transform="matrix(-1,0,0,1,72.745556,3.8223925)"><path
+         id="ph-frm-rect6-27-6"
+         style="fill:url(#ph-frm-linearGradient19);stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
+         d="M 0.55516486,42.77169 H 7.5795974 c 0.171066,0 0.3087834,0.137718 0.3087834,0.308784 v 17.177374 c 0,0.171066 -0.1377174,0.308784 -0.3087834,0.308784 H 0.55516486 c -0.17106598,0 -0.30878335,-0.137718 -0.30878335,-0.308784 V 43.080474 c 0,-0.171066 0.13771737,-0.308784 0.30878335,-0.308784 z" /><path
+         id="ph-frm-rect6-2-9-5"
+         style="fill:url(#ph-frm-linearGradient20);stroke-width:0.190988;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
+         d="M 0.60575527,42.897755 H 7.240808 c 0.1648801,0 0.2976176,0.132737 0.2976176,0.297617 v 16.947582 c 0,0.16488 -0.1327375,0.297618 -0.2976176,0.297618 H 0.60575527 c -0.16488019,0 -0.29761767,-0.132738 -0.29761767,-0.297618 V 43.195372 c 0,-0.16488 0.13273748,-0.297617 0.29761767,-0.297617 z" /></g><g
+       id="ph-frm-g17-1"
+       transform="translate(-0.24638151,14.230005)"><path
+         id="ph-frm-rect6-27-3"
+         style="fill:url(#ph-frm-linearGradient17);stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
+         d="M 0.55516486,42.77169 H 7.5795974 c 0.171066,0 0.3087834,0.137718 0.3087834,0.308784 v 10.627089 c 0,0.171066 -0.1377174,0.308784 -0.3087834,0.308784 H 0.55516486 c -0.17106598,0 -0.30878335,-0.137718 -0.30878335,-0.308784 V 43.080474 c 0,-0.171066 0.13771737,-0.308784 0.30878335,-0.308784 z" /><path
+         id="ph-frm-rect6-2-9-8"
+         style="fill:url(#ph-frm-linearGradient18);stroke-width:0.190988;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
+         d="M 0.60575527,42.897755 H 7.240808 c 0.1648801,0 0.2976176,0.132737 0.2976176,0.297617 v 10.397297 c 0,0.16488 -0.1327375,0.297618 -0.2976176,0.297618 H 0.60575527 c -0.16488019,0 -0.29761767,-0.132738 -0.29761767,-0.297618 V 43.195372 c 0,-0.16488 0.13273748,-0.297617 0.29761767,-0.297617 z" /></g></g><g
+     id="ph-frm-layer9"
+     style="display:inline"
+     mask="url(#ph-frm-screen-cutout-mask)"><rect
+       style="display:inline;fill:#716a7b;fill-opacity:1;stroke:none;stroke-width:21.753;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+       id="ph-frm-rect32"
+       width="71.606865"
+       height="150"
+       x="0.44656754"
+       y="1.4210855e-14"
+       ry="12.865973" /></g><g
+     id="ph-frm-layer7"
+     style="display:inline"
+     mask="url(#ph-frm-screen-cutout-mask)"><g
+       id="ph-frm-g34"
+       clip-path="url(#ph-frm-clipPath34)"><path
+         id="ph-frm-rect32-7"
+         style="display:inline;mix-blend-mode:normal;fill:#9486a7;fill-opacity:1;stroke:none;stroke-width:21.753;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers;filter:url(#ph-frm-filter32)"
+         d="m 13.312381,0.50015231 c -6.8593976,0 -12.3651366,5.50573999 -12.3651366,12.36513969 V 137.13471 c 0,6.85939 5.505739,12.36514 12.3651366,12.36514 h 45.875234 c 6.8594,0 12.36514,-5.50575 12.36514,-12.36514 V 12.865292 c 0,-6.8593997 -5.50574,-12.36513969 -12.36514,-12.36513969 z" /><path
+         id="ph-frm-rect32-4"
+         style="display:inline;mix-blend-mode:normal;fill:#f1eef4;fill-opacity:1;stroke:none;stroke-width:21.753;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers;filter:url(#ph-frm-filter33)"
+         d="m 13.312383,0.90038112 c -6.6447174,0 -11.9667114,5.32043998 -11.9667114,11.96515988 V 137.13495 c 0,6.64471 5.321994,11.96466 11.9667114,11.96466 h 45.875234 c 6.64472,0 11.96671,-5.31995 11.96671,-11.96466 V 12.865541 c 0,-6.6447199 -5.32199,-11.96515988 -11.96671,-11.96515988 z" /></g></g><g
+     id="ph-frm-layer8"
+     style="display:inline"
+     mask="url(#ph-frm-screen-cutout-mask)"><path
+       id="ph-frm-rect34"
+       style="fill:#e7e3ec;fill-opacity:1;stroke:none;stroke-width:13.7539;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:0.465686;paint-order:stroke fill markers"
+       d="M 56.059111,0 V 15.527734 H 0.44648437 v 1.055233 H 72.053483 V 15.527734 H 57.114343 V 0 Z M 0.44648437,133.41718 v 1.05523 H 15.385624 v 15.52774 h 1.055233 v -15.52774 h 55.612626 v -1.05523 z" /></g><g
+     id="ph-frm-layer6"
+     style="display:inline"><path
+       id="ph-frm-rect32-73"
+       style="display:inline;fill:#000000;fill-opacity:0;stroke:none;stroke-width:21.753;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+       d="m 13.312378,0.97661114 c -6.603655,0 -11.888676,5.28502136 -11.888676,11.88868086 V 137.13471 c 0,6.60365 5.285021,11.88868 11.888676,11.88868 h 45.87524 c 6.60366,0 11.88868,-5.28503 11.88868,-11.88868 V 12.865292 c 0,-6.6036595 -5.28502,-11.88868086 -11.88868,-11.88868086 z" /><path
+       id="ph-frm-path31"
+       style="fill:url(#ph-frm-linearGradient32);fill-opacity:0;stroke:none;stroke-width:1.784;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+       d="m 29.068268,0.97661114 c 0.09826,0 0.286648,0.56482346 0.400492,0.56482346 h 13.56248 c 0.113844,0 0.302237,-0.56482346 0.400492,-0.56482346 z" /></g><g
+     id="ph-frm-layer4"
+     style="display:inline"><path
+       id="ph-frm-rect32-2"
+       style="display:inline;fill:#333333;fill-opacity:0;stroke:none;stroke-width:21.753;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+       d="m 13.312882,2.4648914 c -5.8047685,0 -10.4003983,4.5956227 -10.4003983,10.4003996 V 137.13471 c 0,5.80477 4.5956298,10.4004 10.4003983,10.4004 h 45.87472 c 5.80478,0 10.400398,-4.59563 10.400398,-10.4004 V 12.865291 C 69.588,7.0605141 64.992382,2.4648914 59.187602,2.4648914 Z M 28.818913,4.80325 h 14.862142 c 1.66928,0 3.013252,1.343978 3.013252,3.0132527 0,1.6692748 -1.343972,3.0132533 -3.013252,3.0132533 H 28.818913 c -1.66927,0 -3.012736,-1.3439785 -3.012736,-3.0132533 0,-1.6692747 1.343466,-3.0132527 3.012736,-3.0132527 z" /></g><!-- <g
+     id="ph-frm-layer5-island-bg"
+     style="display:inline"><rect
+       style="fill:#000000;fill-opacity:1;stroke:none"
+       id="ph-frm-rect-island-unified"
+       x="26.65"
+       y="4.80325"
+       width="19.05"
+       height="6.0265054"
+       rx="3.05"
+       ry="3.0132527" /></g><g
+     id="ph-frm-layer5"
+     style="display:inline"><path
+       id="ph-frm-path21"
+       style="fill:#050505;fill-opacity:1;stroke:none;stroke-width:0.184059;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1;paint-order:stroke fill markers"
+       d="m 43.681055,5.0436198 a 2.7730749,2.7730756 0 0 0 -2.772958,2.7729573 2.7730749,2.7730756 0 0 0 2.772958,2.7729579 2.7730749,2.7730756 0 0 0 2.772957,-2.7729579 2.7730749,2.7730756 0 0 0 -2.772957,-2.7729573 z m 0,1.0407633 a 1.7323073,1.7323078 0 0 1 1.732194,1.732194 1.7323073,1.7323078 0 0 1 -1.732194,1.7321941 1.7323073,1.7323078 0 0 1 -1.732194,-1.7321941 1.7323073,1.7323078 0 0 1 1.732194,-1.732194 z" /><path
+       id="ph-frm-path21-0"
+       style="fill:#050505;fill-opacity:1;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+       d="m -28.818913,5.0436198 a 2.7730749,2.7730756 0 0 1 2.772958,2.7729573 2.7730749,2.7730756 0 0 1 -2.772958,2.7729579 h -7.292578 a 2.7730749,2.7730756 0 0 1 -2.772957,-2.7729579 2.7730749,2.7730756 0 0 1 2.772957,-2.7729573 z m 5.17e-4,0.8919352 h -7.293095 c -1.049389,4.46e-5 -1.880461,0.8316326 -1.880505,1.8810221 4.4e-5,1.0493897 0.831116,1.8804608 1.880505,1.8805054 h 7.293095 c 1.049389,-4.42e-5 1.880977,-0.8311154 1.881022,-1.8805054 -4.5e-5,-1.0493897 -0.831633,-1.8809779 -1.881022,-1.8810221 z"
+       transform="scale(-1,1)" /><circle
+       style="fill:#050505;fill-opacity:1;stroke:none;stroke-width:0.241269;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1;paint-order:stroke fill markers"
+       id="ph-frm-path22"
+       cx="43.681053"
+       cy="7.8165774"
+       r="1.5452632" /><circle
+       style="fill:url(#ph-frm-radialGradient25);fill-opacity:1;stroke:none;stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1;paint-order:stroke fill markers"
+       id="ph-frm-path23"
+       cx="43.681053"
+       cy="7.8165774"
+       r="0.92431802" /><circle
+       style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1;paint-order:stroke fill markers"
+       id="ph-frm-path24-4"
+       cx="44.215736"
+       cy="-3.755255"
+       r="0.68189663"
+       transform="rotate(15)" /><circle
+       style="fill:url(#ph-frm-radialGradient27);fill-opacity:0.522059;stroke:none;stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1;paint-order:stroke fill markers"
+       id="ph-frm-path24"
+       cx="44.215736"
+       cy="-3.755255"
+       r="0.68189663"
+       transform="rotate(15)" /><circle
+       style="fill:url(#ph-frm-radialGradient27-6);fill-opacity:0.522059;stroke:none;stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1;paint-order:stroke fill markers"
+       id="ph-frm-path24-42"
+       cx="-44.215736"
+       cy="-3.755255"
+       r="0.68189663"
+       transform="matrix(-0.96592583,-0.25881905,-0.25881905,0.96592583,0,0)" /></g> --></svg>
+                </div>
+            </div>
+          </div>
+          <div class="preview-actions">
+            <button type="button" class="btn-reload btn-reload-action" id="btn-reload-portrait">
+              <span class="btn-reload-icon" aria-hidden="true">
+                <svg
+                  class="btn-reload-icon-svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M21 3v5h-5"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M3 21v-5h5"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
+              <span class="btn-reload-label">Reload</span>
+            </button>
+            <button type="button" class="btn-reload btn-copy" id="btn-copy-build-link">
+              <span class="btn-copy-icon" aria-hidden="true">
+                <svg
+                  class="btn-copy-icon-svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M8 4v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7.242a2 2 0 0 0-.602-1.43L16.083 2.598A2 2 0 0 0 14.685 2H10a2 2 0 0 0-2 2Z"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M16 18v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
+              <span class="btn-copy-label">Copy link</span>
+            </button>
+          </div>
+        </div>
+        <section
+          class="bottom-section"
+          aria-labelledby="bottom-section-heading"
+        >
+          <div class="bottom-section-inner">
+            <div class="bottom-section-main">
+              <h2 class="bottom-section-title" id="bottom-section-heading">
+                Cross-Platform Compatibility
+              </h2>
+              <ul class="bottom-section-networks" role="list">
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M4 20L12 4l8 16"
+                      stroke="#FF6B00"
+                      stroke-width="2.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M8 12h8"
+                      stroke="#FF6B00"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                  Vungle
+                </li>
+                <li>
+                  <img
+                    src="https://files.alconost.com/z_swJiQoFYSSVsd_7ByC9"
+                    alt=""
+                    width="16"
+                    height="16"
+                    draggable="false"
+                  />
+                  AppLovin
+                </li>
+                <li>
+                  <img
+                    src="https://files.alconost.com/xaBMuMvN1wjNKHiwbX6I_"
+                    alt=""
+                    width="16"
+                    height="16"
+                    draggable="false"
+                  />
+                  Unity Ads
+                </li>
+                <li>
+                  <img
+                    src="https://files.alconost.com/fM6p-BvjlzJxioJNd653V"
+                    alt=""
+                    width="16"
+                    height="16"
+                    draggable="false"
+                  />
+                  Google Ads
+                </li>
+                <li>Mintegral</li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="7" cy="12" r="4" fill="#6C3FE0" />
+                    <circle cx="17" cy="12" r="4" fill="#6C3FE0" />
+                    <path d="M11 12a5 5 0 0 1 2 0" fill="#6C3FE0" />
+                  </svg>
+                  Moloco
+                </li>
+                <li>
+                  <img
+                    src="https://files.alconost.com/wypUq5Fq-8E8QqKju88k5"
+                    alt=""
+                    width="16"
+                    height="16"
+                    draggable="false"
+                  />
+                  ironSource
+                </li>
+                <li>
+                  <img
+                    src="https://files.alconost.com/vSBDBx4zErhd6LLIW48yL"
+                    alt=""
+                    width="16"
+                    height="16"
+                    draggable="false"
+                  />
+                  Meta
+                </li>
+              </ul>
+            </div>
+            <div class="bottom-section-cta">
+              <p class="bottom-section-cta-lead">Get your playable ad</p>
+              <a
+                class="bottom-section-cta-link"
+                href="https://alconost.com/en/order"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Request a quote
+              </a>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        function formatBundleBytes(n) {
+          if (typeof n !== 'number' || !isFinite(n) || n < 0) {
+            return '';
+          }
+          if (n < 1024) {
+            return n + ' B';
+          }
+          if (n < 1048576) {
+            return (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB';
+          }
+          return (n / 1048576).toFixed(n < 10485760 ? 1 : 0) + ' MB';
+        }
+
+        let SHOWCASE = {
+          gameTitle: 'Black Hole',
+          variantCount: 3,
+          tagline: 'themed playable builds — drag to swallow the board',
+          themes: [
+            {
+              id: 'default',
+              head: '\u2699\uFE0F Default',
+              meta:
+                'Base theme \u00B7 Classic palette \u00B7 Theme music',
+              /** После новой выкладки: HEAD по `url` и при желании bundleBytes для строки размера в списке. */
+              url: 'https://files.alconost.com/IaRy1OOCRzZz75Qb8kyCi',
+            },
+            {
+              id: 'space',
+              head: '\uD83D\uDE80 Space',
+              meta:
+                'Cosmic props \u00B7 Starfield \u00B7 Theme music',
+              url: 'https://files.alconost.com/1O0aM0OURGN3cM1J3_akq',
+            },
+            {
+              id: 'city',
+              head: '\uD83C\uDFD9\uFE0F City',
+              meta:
+                'Urban skyline \u00B7 Pizza \u00B7 coffee \u00B7 cones',
+              url: 'https://files.alconost.com/Hfp26Uh4hYgXhoxJwauEr',
+            },
+          ],
+        };
+
+        let listEl = document.getElementById('theme-list');
+        let iframePortrait = document.getElementById('iframe-portrait');
+        let btnCopyBuild = document.getElementById('btn-copy-build-link');
+        let copyLabelEl = btnCopyBuild.querySelector('.btn-copy-label');
+        let activeEl = null;
+        let activeBuildUrl = '';
+
+        document.getElementById('game-title').textContent = SHOWCASE.gameTitle;
+        document.getElementById('variant-count').textContent = String(SHOWCASE.variantCount);
+        document.getElementById('game-tagline').textContent = SHOWCASE.tagline;
+
+        function updateCopyButtonState() {
+          let usable = activeBuildUrl && activeBuildUrl !== '#';
+          btnCopyBuild.disabled = !usable;
+        }
+
+        function selectTheme(row, url) {
+          if (activeEl) activeEl.classList.remove('active');
+          row.classList.add('active');
+          activeEl = row;
+          activeBuildUrl = url;
+          iframePortrait.src = url;
+          updateCopyButtonState();
+        }
+
+        SHOWCASE.themes.forEach(function (t, i) {
+          let row = document.createElement('div');
+          row.className = 'theme-item' + (i === 0 ? ' active' : '');
+          row.setAttribute('role', 'listitem');
+          row.setAttribute('tabindex', '0');
+
+          let head = document.createElement('span');
+          head.className = 'head line';
+          head.textContent = t.head;
+
+          let meta = document.createElement('span');
+          meta.className = 'meta line';
+          let sizePart = formatBundleBytes(t.bundleBytes);
+          meta.textContent = sizePart ? t.meta + ' ' + sizePart : t.meta;
+
+          row.appendChild(head);
+          row.appendChild(meta);
+
+          function activate() {
+            selectTheme(row, t.url);
+          }
+
+          row.addEventListener('click', activate);
+          row.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              activate();
+            }
+          });
+
+          listEl.appendChild(row);
+
+          if (i === 0) {
+            selectTheme(row, t.url);
+          }
+        });
+
+        document.getElementById('btn-reload-portrait').addEventListener('click', function () {
+          iframePortrait.src = iframePortrait.src;
+        });
+
+        btnCopyBuild.addEventListener('click', function () {
+          if (!activeBuildUrl || activeBuildUrl === '#') return;
+          function flashCopied() {
+            let prev = copyLabelEl.textContent;
+            copyLabelEl.textContent = 'Copied!';
+            setTimeout(function () {
+              copyLabelEl.textContent = prev;
+            }, 1600);
+          }
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(activeBuildUrl).then(flashCopied).catch(function () {
+              fallbackCopy();
+            });
+          } else {
+            fallbackCopy();
+          }
+          function fallbackCopy() {
+            let ta = document.createElement('textarea');
+            ta.value = activeBuildUrl;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+              document.execCommand('copy');
+              flashCopied();
+            } finally {
+              document.body.removeChild(ta);
+            }
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>
