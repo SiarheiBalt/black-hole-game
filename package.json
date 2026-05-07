@@ -2,11 +2,9 @@
   "name": "black-hole",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:all-themes": "node scripts/build-all-themes.mjs",
     "theme:gen": "node tools/theme-gen/cli.mjs",
     "music:gen": "node tools/music-gen/cli.mjs",
     "build:city": "cross-env VITE_THEME=city vite build",

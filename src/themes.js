@@ -32,10 +32,3 @@ export const DEFAULT_HUD_ICONS = THEMES.default.hudIcons;
 export function getThemeConfig(name = 'default') {
   return THEMES[name] ?? DEFAULT_HOLE_THEME;
 }
-
-/** @returns {readonly string[]} */
-export function listRegisteredThemeIds() {
-  return Object.keys(THEMES).slice().sort();
-}
-
-export { createTheme };

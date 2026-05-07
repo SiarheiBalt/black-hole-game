@@ -7,8 +7,22 @@
 - `initThemes()` — один раз при старте приложения: в **dev** подмешивает все темы из `src/themes/registry.dev.js`, в **production** подключает только активную через виртуальный модуль `virtual:active-theme` (см. ниже).
 - `getThemeConfig(name)` — нормализованная тема по id (`default`, `jp_kawaii`, …).
 - `DEFAULT_HOLE_THEME`, `DEFAULT_PLAYFIELD_THEME`, `DEFAULT_HUD_ICONS` — из темы `default`, до вызова `initThemes` уже валидны для фолбэков.
-- `createTheme` — для ручных и сгенерированных описаний тем.
-- `listRegisteredThemeIds()` — список ключей `THEMES` (в dev полный, в production обычно только `default` + активная тема).
+
+### Список тем
+
+Идентификатор в первой колонке — это значение для `?theme=` и `VITE_THEME`. У рынков из **pipeline** человекочитаемое имя берётся из поля `displayName` в [`tools/theme-gen/briefs/<id>.json`](../tools/theme-gen/briefs/) (схема — [`docs/themes-pipeline.md`](themes-pipeline.md)). После добавления новой сгенерированной темы имеет смысл дополнить таблицу и бриф.
+
+| ID | Название | Где задаётся |
+|----|----------|--------------|
+| `default` | Базовая тема | [`src/themes.js`](../src/themes.js) |
+| `space` | Космос | [`src/themes/manual/space.js`](../src/themes/manual/space.js) |
+| `city` | Город (пицца, кофе, дорожные конусы) | [`src/themes/manual/city.js`](../src/themes/manual/city.js) |
+| `fr_chic` | FR + BE + QC — French chic | generated · [`fr_chic.json`](../tools/theme-gen/briefs/fr_chic.json) |
+| `global_fiesta` | Global en + LATAM — vibrant fiesta | generated · [`global_fiesta.json`](../tools/theme-gen/briefs/global_fiesta.json) |
+| `jp_kawaii` | JP female 18-34 — kawaii pastel | generated · [`jp_kawaii.json`](../tools/theme-gen/briefs/jp_kawaii.json) |
+| `kr_sea_pop` | KR + SEA 16-30 — K-pop / boba | generated · [`kr_sea_pop.json`](../tools/theme-gen/briefs/kr_sea_pop.json) |
+| `uk_pub` | UK + IE 18-30 — pub culture | generated · [`uk_pub.json`](../tools/theme-gen/briefs/uk_pub.json) |
+| `zh_urban` | zh-CN urban 18-35 — modern festive | generated · [`zh_urban.json`](../tools/theme-gen/briefs/zh_urban.json) |
 
 Где лежат сами темы:
 
