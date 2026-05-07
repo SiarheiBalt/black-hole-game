@@ -4,7 +4,7 @@ import holeZoomUrl from '../assets/sounds/hole-zoom.mp3';
 import backUrl from '../assets/sounds/back.mp3';
 
 /**
- * Идентификаторы звуков. Новые треки: добавить ключ сюда и запись в {@link SOUND_MANIFEST}.
+ * Идентификаторы звуков. Новые треки: добавить ключ сюда и запись в {@link DEFAULT_SOUND_MANIFEST}.
  * @readonly
  */
 export const SOUND_IDS = Object.freeze({
@@ -22,7 +22,7 @@ export const SOUND_IDS = Object.freeze({
  */
 
 /** @type {Readonly<Record<string, SoundSpec>>} */
-const SOUND_MANIFEST = Object.freeze({
+const DEFAULT_SOUND_MANIFEST = Object.freeze({
   [SOUND_IDS.suction]: { src: [suctionUrl], volume: 0.75 },
   [SOUND_IDS.holeZoom]: { src: [holeZoomUrl], volume: 0.7 },
   [SOUND_IDS.background]: {
@@ -41,6 +41,11 @@ function resumeAudioContext() {
 }
 
 /**
+ * @param {{
+ *   backgroundMusicUrl?: string,
+ *   backgroundMusicVolume?: number,
+ * }} [options]
+ *
  * @returns {{
  *   initPlayableAudioLifecycle: () => void,
  *   play: (id: string) => void,
@@ -48,7 +53,23 @@ function resumeAudioContext() {
  *   dispose: () => void,
  * }}
  */
-export function createGameAudio() {
+export function createGameAudio(options = {}) {
+  /** @type {Record<string, SoundSpec>} */
+  const SOUND_MANIFEST = { ...DEFAULT_SOUND_MANIFEST };
+  const { backgroundMusicUrl, backgroundMusicVolume } = options;
+  if (typeof backgroundMusicUrl === 'string' && backgroundMusicUrl) {
+    SOUND_MANIFEST[SOUND_IDS.background] = {
+      ...SOUND_MANIFEST[SOUND_IDS.background],
+      src: [backgroundMusicUrl],
+      volume:
+        typeof backgroundMusicVolume === 'number'
+          ? backgroundMusicVolume
+          : SOUND_MANIFEST[SOUND_IDS.background].volume,
+      // Per-theme tracks are short loopables — Web Audio gives gapless looping.
+      // Keep HTML5 only for the legacy default `back.mp3`.
+      html5: false,
+    };
+  }
   /** @type {Record<string, import('howler').Howl>} */
   const howls = {};
   let audioUnlocked = false;

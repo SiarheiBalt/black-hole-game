@@ -60,6 +60,8 @@ import { DEFAULT_HOLE_THEME } from '../../themes.js';
  */
 
 const DEFAULT_FIELD_DECOR_COLORS = [0x5eead4, 0xff7eb3];
+const DEFAULT_COLLECTIBLE_SCALE = { sphere: 1, planar: 1, trump: 1, poop: 1 };
+const DEFAULT_FIELD_DECOR_SCALE = { cube: 1, triangle: 1 };
 
 /**
  * @typedef {Object} CreateHoleViewOptions
@@ -128,6 +130,37 @@ export async function createHoleView(container, options = {}) {
 
   const fieldDecorCubeGeom = new BoxGeometry(1, 1, 1);
   const fieldDecorTriangleGeom = new ConeGeometry(1, 1.6, 3);
+  const fieldDecorPlanarGeom = new PlaneGeometry(1, 1);
+
+  /**
+   * Themed planar декор: плоский PNG/WebP с прозрачным фоном вместо 3D-геометрии.
+   * Спин остаётся (вокруг Y → визуально как «плавающий значок»), вращение и масштаб
+   * задаются снаружи. Aspect сохраняется через X-scale, чтобы предмет не сплющивался.
+   *
+   * @param {{ aspect: number, mat: MeshBasicMaterial }} sprite
+   * @param {number} yaw
+   */
+  function createFieldDecorPlanarGroup(sprite, yaw = 0) {
+    const g = new Group();
+    const orient = new Group();
+    const aspectWrap = new Group();
+    aspectWrap.scale.set(sprite.aspect, 1, 1);
+    const mesh = new Mesh(fieldDecorPlanarGeom, sprite.mat);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.frustumCulled = false;
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
+    aspectWrap.add(mesh);
+    orient.add(aspectWrap);
+    const twist = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), yaw);
+    orient.quaternion.copy(twist);
+    g.add(orient);
+    g.renderOrder = 1;
+    orient.traverse((o) => {
+      if ('isMesh' in o && o.isMesh) o.renderOrder = 1;
+    });
+    return { group: g, mat: sprite.mat, isPlanar: true };
+  }
 
   /**
    * Куб стоит на одной вершине: диагональ (1,1,1) → вниз, затем скрутка yaw вокруг Y; выравнивание по нижней точке через Box3.
@@ -162,7 +195,7 @@ export async function createHoleView(container, options = {}) {
     orient.traverse((o) => {
       if ('isMesh' in o && o.isMesh) o.renderOrder = 1;
     });
-    return { group: g, mat };
+    return { group: g, mat, isPlanar: false };
   }
 
   function createFieldDecorTriangleGroup(color, yaw = 0) {
@@ -190,11 +223,13 @@ export async function createHoleView(container, options = {}) {
     orient.traverse((o) => {
       if ('isMesh' in o && o.isMesh) o.renderOrder = 1;
     });
-    return { group: g, mat };
+    return { group: g, mat, isPlanar: false };
   }
 
   const fieldDecor = new Group();
   mapLayer.add(fieldDecor);
+  const fieldDecorTriangles = new Group();
+  mapLayer.add(fieldDecorTriangles);
 
   const decorColors =
     Array.isArray(holeTheme.fieldDecorColors) &&
@@ -203,25 +238,7 @@ export async function createHoleView(container, options = {}) {
       : DEFAULT_FIELD_DECOR_COLORS;
   const [decorColor12 = DEFAULT_FIELD_DECOR_COLORS[0], decorColor6 = DEFAULT_FIELD_DECOR_COLORS[1]] =
     decorColors;
-  const decorCube12 = createFieldDecorCubeGroup(decorColor12, 0);
-  const decorCube6 = createFieldDecorCubeGroup(decorColor6, 0.63);
-  fieldDecor.add(decorCube12.group);
-  fieldDecor.add(decorCube6.group);
-  const decorCubePivots = [decorCube12.group, decorCube6.group];
-  const fieldDecorTriangles = new Group();
-  mapLayer.add(fieldDecorTriangles);
   const triangleYaws = [0.2, 1.05, 2.15, 3.1];
-  const triangleInfos = Array.from(
-    { length: FIELD_DECOR_TRIANGLE_COUNT },
-    (_, index) => {
-      const yaw = triangleYaws[index % triangleYaws.length];
-      const color = decorColors[index % decorColors.length];
-      const info = createFieldDecorTriangleGroup(color, yaw);
-      fieldDecorTriangles.add(info.group);
-      return info;
-    },
-  );
-  const decorTrianglePivots = triangleInfos.map((info) => info.group);
 
   const sphereSeg = 24;
   const sphereGeom = new SphereGeometry(1, sphereSeg, sphereSeg);
@@ -247,6 +264,8 @@ export async function createHoleView(container, options = {}) {
   /** @type {Map<number, { aspect: number, mat: MeshBasicMaterial, tex: import('three').Texture }>} */
   const slotPlanarSpriteBySlot = new Map();
   const textureLoader = new TextureLoader();
+  /** @type {{ aspect: number, mat: MeshBasicMaterial, tex: import('three').Texture } | null} */
+  let sphereCollectibleSprite = null;
 
   /**
    * @param {string} url
@@ -278,6 +297,44 @@ export async function createHoleView(container, options = {}) {
   }
 
   const assetPromises = [];
+  /** @type {{ aspect: number, mat: MeshBasicMaterial, tex: import('three').Texture } | null} */
+  let fieldDecorCubeSprite = null;
+  /** @type {{ aspect: number, mat: MeshBasicMaterial, tex: import('three').Texture } | null} */
+  let fieldDecorTriangleSprite = null;
+  const fieldDecorAssets = holeTheme.fieldDecorAssets ?? {};
+  if (typeof holeTheme.sphereAsset === 'string' && holeTheme.sphereAsset) {
+    assetPromises.push(
+      loadPlanarSpriteByUrl(holeTheme.sphereAsset)
+        .then((sprite) => {
+          sphereCollectibleSprite = sprite;
+        })
+        .catch(() => {
+          sphereCollectibleSprite = null;
+        }),
+    );
+  }
+  if (typeof fieldDecorAssets.cube === 'string' && fieldDecorAssets.cube) {
+    assetPromises.push(
+      loadPlanarSpriteByUrl(fieldDecorAssets.cube)
+        .then((sprite) => {
+          fieldDecorCubeSprite = sprite;
+        })
+        .catch(() => {
+          fieldDecorCubeSprite = null;
+        }),
+    );
+  }
+  if (typeof fieldDecorAssets.triangle === 'string' && fieldDecorAssets.triangle) {
+    assetPromises.push(
+      loadPlanarSpriteByUrl(fieldDecorAssets.triangle)
+        .then((sprite) => {
+          fieldDecorTriangleSprite = sprite;
+        })
+        .catch(() => {
+          fieldDecorTriangleSprite = null;
+        }),
+    );
+  }
   const planarAssets = holeTheme.planarAssets;
   for (const [kind, file] of Object.entries(planarAssets)) {
     assetPromises.push(
@@ -314,6 +371,29 @@ export async function createHoleView(container, options = {}) {
   }
   await Promise.all(assetPromises);
 
+  const decorCube12 = fieldDecorCubeSprite
+    ? createFieldDecorPlanarGroup(fieldDecorCubeSprite, 0)
+    : createFieldDecorCubeGroup(decorColor12, 0);
+  const decorCube6 = fieldDecorCubeSprite
+    ? createFieldDecorPlanarGroup(fieldDecorCubeSprite, 0.63)
+    : createFieldDecorCubeGroup(decorColor6, 0.63);
+  fieldDecor.add(decorCube12.group);
+  fieldDecor.add(decorCube6.group);
+  const decorCubePivots = [decorCube12.group, decorCube6.group];
+  const triangleInfos = Array.from(
+    { length: FIELD_DECOR_TRIANGLE_COUNT },
+    (_, index) => {
+      const yaw = triangleYaws[index % triangleYaws.length];
+      const color = decorColors[index % decorColors.length];
+      const info = fieldDecorTriangleSprite
+        ? createFieldDecorPlanarGroup(fieldDecorTriangleSprite, yaw)
+        : createFieldDecorTriangleGroup(color, yaw);
+      fieldDecorTriangles.add(info.group);
+      return info;
+    },
+  );
+  const decorTrianglePivots = triangleInfos.map((info) => info.group);
+
   const planarSpriteGeom = new PlaneGeometry(1, 1);
 
   /**
@@ -348,7 +428,12 @@ export async function createHoleView(container, options = {}) {
       const slotSprite = slotPlanarSpriteBySlot.get(slotIndex);
       if (slotSprite) return slotSprite.aspect;
     }
+    if (kind === 'sphere') return sphereCollectibleSprite?.aspect ?? 1;
     return planarSpriteByKind.get(kind)?.aspect ?? 1;
+  }
+
+  function usesPlanarCollectibleSprite(kind) {
+    return isPlanarCollectibleKind(kind) || (kind === 'sphere' && !!sphereCollectibleSprite);
   }
 
   /**
@@ -356,7 +441,11 @@ export async function createHoleView(container, options = {}) {
    */
   function makeObjectMesh(slotIndex) {
     const kind = slotRenderKinds[slotIndex] ?? 'sphere';
-    if (kind === 'sphere') return makeSphereCollectibleMesh(slotIndex);
+    if (kind === 'sphere') {
+      return sphereCollectibleSprite
+        ? makePlanarSpriteMesh(sphereCollectibleSprite)
+        : makeSphereCollectibleMesh(slotIndex);
+    }
     const sprite =
       slotPlanarSpriteBySlot.get(slotIndex) ?? planarSpriteByKind.get(kind);
     if (sprite) return makePlanarSpriteMesh(sprite);
@@ -558,13 +647,47 @@ export async function createHoleView(container, options = {}) {
     syncSunShadowToLayout(layoutCache);
   }
 
+  const collectibleScaleByKind = {
+    ...DEFAULT_COLLECTIBLE_SCALE,
+    ...(holeTheme.collectibleScaleByKind ?? {}),
+  };
+  const fieldDecorScaleByKind = {
+    ...DEFAULT_FIELD_DECOR_SCALE,
+    ...(holeTheme.fieldDecorScaleByKind ?? {}),
+  };
+
+  /**
+   * @param {import('../../core/collectibleState.js').CollectibleKind} kind
+   */
+  function collectibleKindScale(kind) {
+    const s = collectibleScaleByKind[kind];
+    return typeof s === 'number' && Number.isFinite(s) && s > 0 ? s : 1;
+  }
+
   /**
    * @param {NonNullable<typeof layoutCache>} layout
    * @param {import('../../core/collectibleState.js').CollectibleItem} item
    */
   function objectWorldR(layout, item) {
     const r01 = item.radius01 ?? COLLECTIBLE_RADIUS_01;
-    return r01 * Math.min(layout.designWidth, layout.designHeight);
+    const baseR = r01 * Math.min(layout.designWidth, layout.designHeight);
+    return baseR * collectibleKindScale(item.kind);
+  }
+
+  /**
+   * Field decor uses `kind: 'sphere'` in items, but its visual size lives on
+   * `fieldDecorScaleByKind`, not `collectibleScaleByKind`. Pull the raw
+   * radius and apply the matching decor scale.
+   * @param {NonNullable<typeof layoutCache>} layout
+   * @param {import('../../core/collectibleState.js').CollectibleItem} item
+   * @param {'cube' | 'triangle'} decorKind
+   */
+  function fieldDecorWorldR(layout, item, decorKind) {
+    const r01 = item.radius01 ?? COLLECTIBLE_RADIUS_01;
+    const baseR = r01 * Math.min(layout.designWidth, layout.designHeight);
+    const s = fieldDecorScaleByKind[decorKind];
+    const m = typeof s === 'number' && Number.isFinite(s) && s > 0 ? s : 1;
+    return baseR * m;
   }
 
   /**
@@ -573,7 +696,7 @@ export async function createHoleView(container, options = {}) {
    * @param {number} rObj
    */
   function idleCenterY(item, rObj) {
-    return isPlanarCollectibleKind(item.kind) ? 0.08 * rObj : rObj;
+    return usesPlanarCollectibleSprite(item.kind) ? 0.08 * rObj : rObj;
   }
 
   function updateGroundScale(layout) {
@@ -698,13 +821,14 @@ export async function createHoleView(container, options = {}) {
     /** @type {Mesh | undefined} */
     const objMesh = /** @type {Mesh | undefined} */ (objGroup.children[0]);
     const renderKind = slotRenderKinds[i] ?? 'sphere';
+    const isPlanarSprite = usesPlanarCollectibleSprite(renderKind);
 
     if (b.phase === 'idle') {
       if (objGroup.parent !== mapLayer) {
         mapLayer.add(objGroup);
       }
       setCollectibleMeshRenderOrder(objGroup, COLLECTIBLE_RENDER_ORDER_IDLE);
-      if (objMesh && isPlanarCollectibleKind(renderKind)) {
+      if (objMesh && isPlanarSprite) {
         objMesh.scale.set(planarSpriteAspect(renderKind, i), 1, 1);
       } else if (objMesh) {
         objMesh.scale.set(1, 1, 1);
@@ -712,9 +836,17 @@ export async function createHoleView(container, options = {}) {
       objGroup.scale.setScalar(rObj);
       const ox = (mapNx0 - g.mapNx) * worldW;
       const oz = (mapNy0 - g.mapNy) * worldH;
-      const y0 = idleCenterY(item, rObj);
+      let y0 = idleCenterY(item, rObj);
+      if (isPlanarSprite) {
+        const t = fieldDecorSpinClock.getElapsedTime() + i * 0.73;
+        y0 += Math.sin(t * 1.6) * rObj * 0.08;
+        const tiltX = Math.sin(t * 1.1) * 0.12;
+        const tiltZ = Math.cos(t * 0.9) * 0.08;
+        objGroup.rotation.set(tiltX, 0, tiltZ);
+      } else {
+        objGroup.rotation.set(0, 0, 0);
+      }
       objGroup.position.set(ox, y0, oz);
-      objGroup.rotation.set(0, 0, 0);
     } else if (b.phase === 'falling') {
       if (objGroup.parent !== holePivot) {
         holePivot.attach(objGroup);
@@ -749,20 +881,21 @@ export async function createHoleView(container, options = {}) {
       const fsz = fallStartZ[i];
       objGroup.position.set(fsx * pull + sideX, y, fsz * pull + sideZ);
       if (objMesh) {
-        if (isPlanarCollectibleKind(renderKind)) {
+        if (isPlanarSprite) {
           objMesh.scale.set(planarSpriteAspect(renderKind, i), 1, 1);
         } else {
           objMesh.scale.set(1, 1, 1);
         }
       }
       objGroup.scale.setScalar(rObj * sc);
-      if (isPlanarCollectibleKind(renderKind)) {
-        if (planarCollectibleFall) {
-          const spin = Math.sin(t * Math.PI) * 0.72;
-          objGroup.rotation.set(0, spin, 0);
-        } else {
-          objGroup.rotation.set(0, 0, 0);
-        }
+      if (isPlanarSprite) {
+        // Token/coin "sucked into hole": spin around Y, tilt forward as it
+        // descends, no spherical wobble. Flip phase amplifies near the end.
+        const spinY = t * Math.PI * 2.4 + i * 0.41;
+        const flip = Math.sin(t * Math.PI) * 0.55;
+        const tiltX = -0.35 * p + flip * 0.5;
+        const rollZ = Math.sin(t * Math.PI * 1.2 + i) * 0.12 * (1 - p);
+        objGroup.rotation.set(tiltX, spinY, rollZ);
       } else {
         const wobble = (1 - t) * (1 - t);
         const tiltF = 2.6 * wFunnel * wobble;
@@ -794,7 +927,7 @@ export async function createHoleView(container, options = {}) {
 
     const { worldW, worldH } = layoutWorldSize(layout);
     const base = Math.min(layout.designWidth, layout.designHeight);
-    const rObj = objectWorldR(layout, item);
+    const rObj = fieldDecorWorldR(layout, item, 'cube');
     const sHole = g.holeRadius01 * base;
     /** Опора на вершине: pivot у пола (y=0), не у центра шара. */
     const y0 = 0;
@@ -878,7 +1011,7 @@ export async function createHoleView(container, options = {}) {
 
     const { worldW, worldH } = layoutWorldSize(layout);
     const base = Math.min(layout.designWidth, layout.designHeight);
-    const rObj = objectWorldR(layout, item);
+    const rObj = fieldDecorWorldR(layout, item, 'triangle');
     const sHole = g.holeRadius01 * base;
     const y0 = 0;
 
@@ -1162,6 +1295,10 @@ export async function createHoleView(container, options = {}) {
         mat.dispose();
         tex.dispose();
       }
+      if (sphereCollectibleSprite) {
+        sphereCollectibleSprite.mat.dispose();
+        sphereCollectibleSprite.tex.dispose();
+      }
       renderer.dispose();
       coreGeom.dispose();
       rimGeom.dispose();
@@ -1175,11 +1312,20 @@ export async function createHoleView(container, options = {}) {
       arrowOutlineMat.dispose();
       arrowFillMat.dispose();
       fieldDecorCubeGeom.dispose();
-      decorCube12.mat.dispose();
-      decorCube6.mat.dispose();
       fieldDecorTriangleGeom.dispose();
+      fieldDecorPlanarGeom.dispose();
+      if (!decorCube12.isPlanar) decorCube12.mat.dispose();
+      if (!decorCube6.isPlanar) decorCube6.mat.dispose();
       for (const info of triangleInfos) {
-        info.mat.dispose();
+        if (!info.isPlanar) info.mat.dispose();
+      }
+      if (fieldDecorCubeSprite) {
+        fieldDecorCubeSprite.mat.dispose();
+        fieldDecorCubeSprite.tex.dispose();
+      }
+      if (fieldDecorTriangleSprite) {
+        fieldDecorTriangleSprite.mat.dispose();
+        fieldDecorTriangleSprite.tex.dispose();
       }
       renderer.domElement.remove();
     },

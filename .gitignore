@@ -3,3 +3,6 @@
 .idea
 
 /dist
+
+/tools/music-gen/.cache/*.json
+/tools/music-gen/**/.raw.wav

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Black hole — themes</title>
+  <style>
+    :root {
+      --bg: #0b0d14;
+      --surface: #141824;
+      --border: #252a3d;
+      --text: #e8eaf3;
+      --muted: #8b93ab;
+      --accent: #5eead4;
+      --accent-dim: rgba(94, 234, 212, 0.15);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: radial-gradient(ellipse 120% 80% at 50% -20%, #1a2035 0%, var(--bg) 55%);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 2rem 1.25rem 3rem;
+    }
+    .wrap {
+      max-width: 40rem;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin: 0 0 0.35rem;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin: 0 0 2rem;
+    }
+    section { margin-bottom: 2rem; }
+    h2 {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin: 0 0 0.75rem;
+    }
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--surface);
+    }
+    li + li { border-top: 1px solid var(--border); }
+    a.row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.9rem 1rem;
+      color: inherit;
+      text-decoration: none;
+      transition: background 0.12s ease;
+    }
+    a.row:hover { background: var(--accent-dim); }
+    .id {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+      font-size: 0.82rem;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    .label { font-size: 0.95rem; }
+    footer {
+      margin-top: 2.25rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    footer code {
+      font-size: 0.78em;
+      background: var(--surface);
+      padding: 0.12em 0.4em;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Black hole — themes</h1>
+    <p class="sub">Open the playable with a theme query or path. Use <code style="color:var(--accent)">?theme=&lt;id&gt;</code> or <code style="color:var(--accent)">/t/&lt;id&gt;</code> (dev / preview).</p>
+
+    <section>
+      <h2>Built-in</h2>
+      <ul>
+        <li><a class="row" href="./index.html?theme=default"><span class="label">Default</span><span class="id">default</span></a></li>
+        <li><a class="row" href="./index.html?theme=space"><span class="label">Space</span><span class="id">space</span></a></li>
+        <li><a class="row" href="./index.html?theme=city"><span class="label">City</span><span class="id">city</span></a></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Market (generated)</h2>
+      <ul>
+        <li><a class="row" href="./index.html?theme=jp_kawaii"><span class="label">JP female 18–34 — kawaii pastel</span><span class="id">jp_kawaii</span></a></li>
+        <li><a class="row" href="./index.html?theme=kr_sea_pop"><span class="label">KR + SEA 16–30 — K-pop / boba</span><span class="id">kr_sea_pop</span></a></li>
+        <li><a class="row" href="./index.html?theme=zh_urban"><span class="label">zh-CN urban 18–35 — modern festive</span><span class="id">zh_urban</span></a></li>
+        <li><a class="row" href="./index.html?theme=fr_chic"><span class="label">FR + BE + QC — French chic</span><span class="id">fr_chic</span></a></li>
+        <li><a class="row" href="./index.html?theme=uk_pub"><span class="label">UK + IE 18–30 — pub culture</span><span class="id">uk_pub</span></a></li>
+        <li><a class="row" href="./index.html?theme=global_fiesta"><span class="label">Global en + LATAM — vibrant fiesta</span><span class="id">global_fiesta</span></a></li>
+      </ul>
+    </section>
+
+    <footer>
+      In dev: <code>npm run dev</code> then open <code>/themes.html</code>. Per-theme single-file builds use <code>VITE_THEME</code>; the link table is for the multi-theme dev bundle.
+    </footer>
+  </div>
+</body>
+</html>

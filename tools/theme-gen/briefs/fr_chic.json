@@ -1,0 +1,54 @@
+{
+  "id": "fr_chic",
+  "displayName": "FR + BE + QC — French chic",
+  "audience": "French-speaking adults (FR, BE, QC), café culture, chic and elegant aesthetic",
+  "icons": {
+    "sphere": {
+      "concept": "tiny 3D cream-and-gold fleur-de-lis pastry charm, not a ball, not a geometric shape",
+      "styleNotes": "French chic glossy patisserie style, pale cream with gold edges, transparent background, high contrast against deep navy bg"
+    },
+    "trump": {
+      "concept": "buttery flaky French croissant on its own, fresh from the oven",
+      "styleNotes": "3D rendered pastry, golden buttery crust, soft daylight, high contrast against deep navy / cobble bg"
+    },
+    "money": {
+      "concept": "tiny espresso cup on a saucer with a perfect crema and a sugar cube on the side",
+      "styleNotes": "3D rendered porcelain, glossy crema, warm cafe lighting, high contrast against deep navy bg"
+    },
+    "poop": {
+      "concept": "stack of three pastel macarons in pink, mint, and lemon",
+      "styleNotes": "3D rendered patisserie, soft pastel shells, delicate filling, high contrast against deep navy bg"
+    }
+  },
+  "decor": {
+    "cube": {
+      "concept": "single slice of fresh French baguette with golden crust and butter",
+      "styleNotes": "3D food render, isolated centered, transparent background"
+    },
+    "triangle": {
+      "concept": "miniature 3D Eiffel Tower in polished bronze metallic finish",
+      "styleNotes": "isolated centered, French chic, transparent background"
+    }
+  },
+  "background": {
+    "concept": "top-down view of a Parisian café terrace cobblestone floor with a faint shadow of a striped awning and a few fallen leaves",
+    "styleNotes": "warm painterly, cream and bordeaux palette, soft afternoon light",
+    "paletteHint": "cream, bordeaux, deep navy"
+  },
+  "backgroundSvg": {
+    "kind": "cafe_cobble",
+    "palette": {
+      "primary": "#1c2238",
+      "secondary": "#2c3450",
+      "accent": "#e8d5a8"
+    }
+  },
+  "playfield": {
+    "starColor": 16775408,
+    "starCount": 28,
+    "starAlpha": 0.22,
+    "starSize": 1.2,
+    "decorDensity": 0.3,
+    "decorAlpha": 0.45
+  }
+}

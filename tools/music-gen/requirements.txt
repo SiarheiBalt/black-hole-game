@@ -1,0 +1,9 @@
+# Local MusicGen generator (`tools/music-gen/musicgen.py`).
+# Install with: pip install -r tools/music-gen/requirements.txt
+#
+# On Apple Silicon, torch picks up MPS automatically (~10x faster than CPU).
+# First run downloads the model (~1.5 GB) into ~/.cache/huggingface/hub.
+torch>=2.1
+transformers>=4.31
+scipy>=1.10
+numpy>=1.24

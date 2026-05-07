@@ -1,257 +1,4 @@
-import {
-  BG_COLOR,
-  COLLECTIBLE_COUNT,
-  COLLECTIBLE_MONEY_COUNT,
-  COLLECTIBLE_SPHERE_COUNT,
-  COLLECTIBLE_TRUMP_COUNT,
-  DECOR_COLOR,
-} from './core/constants.js';
-import {
-  FIELD_DECOR_CUBE_COUNT,
-  FIELD_DECOR_TRIANGLE_COUNT,
-  COLLECTIBLE_PLANAR_SPRITE_FILES,
-  getCollectibleSlotKind,
-  isPlanarCollectibleKind,
-} from './core/collectibleState.js';
-
-const DONUT_SPHERE_PALETTE = [
-  0xff3d9a,
-  0xff6fae,
-  0xffb326,
-  0xffea54,
-  0xff6b81,
-  0xe067ff,
-  0xff8f62,
-  0x58ffe8,
-  0xff9edb,
-  0xa78bff,
-];
-
-/**
- * @param {{ sphereColor?: number, sphereColors?: number[] }} config
- * @returns {number[]}
- */
-function normalizeSphereColors(config) {
-  const len = COLLECTIBLE_SPHERE_COUNT;
-  const custom = Array.isArray(config.sphereColors)
-    ? config.sphereColors.filter((c) => typeof c === 'number')
-    : [];
-  if (custom.length > 0) {
-    return Array.from({ length: len }, (_, i) => custom[i % custom.length]);
-  }
-  if (typeof config.sphereColor === 'number') {
-    return Array.from({ length: len }, () => config.sphereColor);
-  }
-  return Array.from({ length: len }, (_, i) => DONUT_SPHERE_PALETTE[i % DONUT_SPHERE_PALETTE.length]);
-}
-const DEFAULT_FIELD_DECOR_COLORS = [0x5eead4, 0xff7eb3];
-const BASE_PLAYFIELD_THEME = {
-  backgroundColor: BG_COLOR,
-  /** @type {string | undefined} полный URL текстуры фона (Pixi `Assets.load`), опционально */
-  backgroundImage: undefined,
-  decorColor: DECOR_COLOR,
-  starColor: 0xffffff,
-  starAlpha: 0.45,
-  starCount: 0,
-  starSize: 1.8,
-};
-const DEFAULT_HUD_ICON_PATHS = {
-  planar: new URL('./assets/money.webp', import.meta.url).href,
-  trump: new URL('./assets/trump.webp', import.meta.url).href,
-  poop: new URL('./assets/poop.webp', import.meta.url).href,
-};
-
-const FIELD_DECOR_TOTAL_COUNT =
-  FIELD_DECOR_CUBE_COUNT + FIELD_DECOR_TRIANGLE_COUNT;
-
-function buildFieldDecorColors(candidate) {
-  if (
-    Array.isArray(candidate) &&
-    candidate.length >= FIELD_DECOR_TOTAL_COUNT &&
-    FIELD_DECOR_TOTAL_COUNT > 0
-  ) {
-    return candidate.slice(0, FIELD_DECOR_TOTAL_COUNT);
-  }
-  if (FIELD_DECOR_TOTAL_COUNT === 0) return [];
-  return Array.from(
-    { length: FIELD_DECOR_TOTAL_COUNT },
-    (_, index) => DEFAULT_FIELD_DECOR_COLORS[index % DEFAULT_FIELD_DECOR_COLORS.length],
-  );
-}
-
-function buildSlotRenderKinds(overrides = []) {
-  const slotKinds = Array.from({ length: COLLECTIBLE_COUNT }, (_, index) =>
-    getCollectibleSlotKind(index),
-  );
-  for (const override of overrides) {
-    if (
-      !override ||
-      !Number.isInteger(override.position) ||
-      override.position < 0 ||
-      override.position >= COLLECTIBLE_COUNT
-    ) {
-      continue;
-    }
-    if (!override.kind || !isPlanarCollectibleKind(override.kind)) continue;
-    const baseKind = slotKinds[override.position];
-    if (!isPlanarCollectibleKind(baseKind)) continue;
-    slotKinds[override.position] = override.kind;
-  }
-  return slotKinds;
-}
-
-function normalizePlayfieldTheme(theme = {}) {
-  const backgroundImageRaw = theme.backgroundImage;
-  const backgroundImage =
-    typeof backgroundImageRaw === 'string' && backgroundImageRaw.trim()
-      ? backgroundImageRaw.trim()
-      : BASE_PLAYFIELD_THEME.backgroundImage;
-  return {
-    backgroundColor:
-      typeof theme.backgroundColor === 'number'
-        ? theme.backgroundColor
-        : BASE_PLAYFIELD_THEME.backgroundColor,
-    backgroundImage,
-    decorColor:
-      typeof theme.decorColor === 'number'
-        ? theme.decorColor
-        : BASE_PLAYFIELD_THEME.decorColor,
-    starColor:
-      typeof theme.starColor === 'number'
-        ? theme.starColor
-        : BASE_PLAYFIELD_THEME.starColor,
-    starAlpha:
-      typeof theme.starAlpha === 'number'
-        ? theme.starAlpha
-        : BASE_PLAYFIELD_THEME.starAlpha,
-    starCount:
-      typeof theme.starCount === 'number'
-        ? Math.max(0, Math.floor(theme.starCount))
-        : BASE_PLAYFIELD_THEME.starCount,
-    starSize:
-      typeof theme.starSize === 'number'
-        ? Math.max(0.1, theme.starSize)
-        : BASE_PLAYFIELD_THEME.starSize,
-  };
-}
-
-function normalizeHudIcons(icons = {}) {
-  return {
-    ...DEFAULT_HUD_ICON_PATHS,
-    ...icons,
-  };
-}
-
-/**
- * @typedef {Object} ThemeSlotOverride
- * @property {number} position
- * @property {import('./core/collectibleState.js').CollectibleKind} [kind]
- * @property {string} [asset] — путь внутри `src/assets/`, например `themes/space/alien-ship.svg`.
- */
-
-/**
- * @typedef {Object} HoleThemeConfig
- * @property {string} id
- * @property {number} sphereColor — условный «основной» цвет шаров (совместимость); по умолчанию первый цвет из палитры пончиков
- * @property {number[]} sphereColors — цвет каждого шара (`длина = COLLECTIBLE_SPHERE_COUNT`), задаётся в `createTheme`
- * @property {number[]} fieldDecorColors
- * @property {import('./core/collectibleState.js').CollectibleKind[]} slotRenderKinds
- * @property {Record<'planar' | 'trump' | 'poop', string>} planarAssets
- * @property {ThemeSlotOverride[]} slotAssetOverrides
- * @property {PlayfieldThemeOptions} playfieldTheme
- * @property {{ planar: string, trump: string, poop: string }} hudIcons
- */
-
-/**
- * @typedef {Object} PlayfieldThemeOptions
- * @property {number} [backgroundColor]
- * @property {number} [decorColor]
- * @property {number} [starColor]
- * @property {number} [starAlpha]
- * @property {number} [starCount]
- * @property {number} [starSize]
- * @property {string} [backgroundImage] — URL изображения фона поля (PNG / JPEG / WebP); поверх заливается `backgroundColor` как подложка
- */
-
-const PLANAR_ASSET_ORDER = ['trump.webp', 'money.webp', 'poop.webp'];
-
-function createTheme(config) {
-  const slotOverrides = Array.isArray(config.slotOverrides) ? config.slotOverrides : [];
-  const slotRenderKinds = buildSlotRenderKinds(slotOverrides);
-  const slotAssetOverrides = [];
-  const occupiedPositions = new Set();
-  for (const override of slotOverrides) {
-    if (
-      !override ||
-      !Number.isInteger(override.position) ||
-      override.position < 0 ||
-      override.position >= COLLECTIBLE_COUNT
-    ) {
-      continue;
-    }
-    const kind = slotRenderKinds[override.position];
-    if (!isPlanarCollectibleKind(kind)) continue;
-    if (typeof override.asset === 'string' && override.asset.trim()) {
-      occupiedPositions.add(override.position);
-      slotAssetOverrides.push({ position: override.position, asset: override.asset.trim() });
-    }
-  }
-  const replacements = config.assetReplacements ?? {};
-  const fileReplacements = {};
-  if (typeof replacements === 'object' && replacements !== null) {
-    for (const [key, value] of Object.entries(replacements)) {
-      if (typeof value !== 'string' || !value.trim()) continue;
-      const asset = value.trim();
-      const numericKey = Number(key);
-      if (
-        !Number.isNaN(numericKey) &&
-        Number.isInteger(numericKey) &&
-        Number.isFinite(numericKey)
-      ) {
-        const assetIndex = numericKey - 1;
-        const targetFile = PLANAR_ASSET_ORDER[assetIndex];
-        if (typeof targetFile === 'string') {
-          fileReplacements[targetFile] = asset;
-        }
-        continue;
-      }
-      fileReplacements[key] = asset;
-    }
-  }
-  for (let idx = 0; idx < COLLECTIBLE_COUNT; idx += 1) {
-    if (occupiedPositions.has(idx)) continue;
-    const kind = slotRenderKinds[idx];
-    if (!isPlanarCollectibleKind(kind)) continue;
-    const defaultAsset = COLLECTIBLE_PLANAR_SPRITE_FILES[kind];
-    const replacement = fileReplacements[defaultAsset];
-    if (typeof replacement === 'string' && replacement.trim()) {
-      slotAssetOverrides.push({ position: idx, asset: replacement.trim() });
-      occupiedPositions.add(idx);
-    }
-  }
-  const sphereColors = normalizeSphereColors(config);
-  const sphereColor =
-    typeof config.sphereColor === 'number' ? config.sphereColor : sphereColors[0];
-  return {
-    id: config.id ?? 'default',
-    sphereColor,
-    sphereColors,
-    fieldDecorColors: buildFieldDecorColors(config.fieldDecorColors),
-    slotRenderKinds,
-    planarAssets: {
-      ...COLLECTIBLE_PLANAR_SPRITE_FILES,
-      ...(config.planarAssets ?? {}),
-    },
-    slotAssetOverrides,
-    playfieldTheme: normalizePlayfieldTheme(config.playfieldTheme),
-    hudIcons: normalizeHudIcons(config.hudIcons),
-  };
-}
-
-const baseSpacePlanarPositions = Array.from(
-  { length: 3 },
-  (_, index) => COLLECTIBLE_SPHERE_COUNT + index,
-);
+import { createTheme } from './themes/_factory.js';
 
 const alienShip = new URL('./assets/themes/space/alien-ship.svg', import.meta.url).href;
 const sun = new URL('./assets/themes/space/sun.svg', import.meta.url).href;
@@ -265,11 +12,12 @@ const cityPizza = new URL('./assets/themes/city/city-pizza.webp', import.meta.ur
 const cityCoffee = new URL('./assets/themes/city/city-coffee.webp', import.meta.url).href;
 const cityCone = new URL('./assets/themes/city/city-cone.webp', import.meta.url).href;
 
-/** @type {Record<string, HoleThemeConfig>} */
+/** @type {Record<string, import('./themes/_factory.js').HoleThemeConfig>} */
 const THEMES = {
   default: createTheme({
     id: 'default',
-    fieldDecorColors: DEFAULT_FIELD_DECOR_COLORS,
+    fieldDecorColors: [0x5eead4, 0xff7eb3],
+    musicVolume: 0.7,
   }),
   space: createTheme({
     id: 'space',
@@ -292,6 +40,7 @@ const THEMES = {
       trump: alienShip,
       poop: planet,
     },
+    musicVolume: 0.7,
   }),
   /** Город сверху: пицца, кофе, конусы; контрастные спрайты для читаемости на карте. */
   city: createTheme({
@@ -316,8 +65,37 @@ const THEMES = {
       trump: cityPizza,
       poop: cityCone,
     },
+    musicVolume: 0.7,
   }),
 };
+
+// Авто-регистрация сгенерированных тем (`tools/theme-gen` пишет файлы в
+// `src/themes/generated/<id>.js`, каждый — `export default createTheme({...})`).
+// Vite раскрывает glob на этапе сборки, поэтому пустая папка тоже работает.
+const generatedModules = import.meta.glob('./themes/generated/*.js', { eager: true });
+for (const mod of Object.values(generatedModules)) {
+  const t = mod && mod.default;
+  if (t && typeof t === 'object' && typeof t.id === 'string' && t.id) {
+    THEMES[t.id] = t;
+  }
+}
+
+// Авто-привязка музыки темы. `tools/music-gen` кладёт файлы в
+// `src/assets/themes/<id>/music.mp3` — если файл есть, тема его подхватит,
+// даже если не объявляла `musicUrl` явно (тип `default`/`space`/`city`).
+const themeMusicUrls = import.meta.glob('./assets/themes/*/music.mp3', {
+  eager: true,
+  import: 'default',
+});
+for (const [filePath, url] of Object.entries(themeMusicUrls)) {
+  const match = /\/themes\/([^/]+)\/music\.mp3$/.exec(filePath);
+  if (!match) continue;
+  const id = match[1];
+  const theme = THEMES[id];
+  if (theme && typeof url === 'string') {
+    THEMES[id] = { ...theme, musicUrl: url };
+  }
+}
 
 export const DEFAULT_HOLE_THEME = THEMES.default;
 export const DEFAULT_PLAYFIELD_THEME = THEMES.default.playfieldTheme;
@@ -326,3 +104,10 @@ export const DEFAULT_HUD_ICONS = THEMES.default.hudIcons;
 export function getThemeConfig(name = 'default') {
   return THEMES[name] ?? DEFAULT_HOLE_THEME;
 }
+
+/** @returns {readonly string[]} */
+export function listRegisteredThemeIds() {
+  return Object.keys(THEMES).slice().sort();
+}
+
+export { createTheme };

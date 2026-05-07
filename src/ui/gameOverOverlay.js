@@ -1,5 +1,6 @@
 import './gameOverOverlay.css';
-import { openClickout } from '../app/playableAdapter.js';
+import logoUrl from '../assets/brand/hole-stars-logo.png';
+import { APP_STORE_URL, openClickout } from '../app/playableAdapter.js';
 
 /**
  * @param {HTMLElement} container
@@ -9,7 +10,7 @@ import { openClickout } from '../app/playableAdapter.js';
  */
 export function createGameOverOverlay(container, opts = {}) {
   const clickout = opts.openClickout ?? openClickout;
-  const ctaLabel = opts.ctaLabel ?? 'Install';
+  const ctaLabel = opts.ctaLabel ?? 'Install now';
 
   const root = document.createElement('div');
   root.className = 'game-over-overlay';
@@ -30,6 +31,18 @@ export function createGameOverOverlay(container, opts = {}) {
     stars.appendChild(star);
   }
 
+  const logoButton = document.createElement('button');
+  logoButton.type = 'button';
+  logoButton.className = 'game-over-overlay__logo-button tap-target';
+  logoButton.setAttribute('aria-label', 'Install Hole Stars');
+
+  const logo = document.createElement('img');
+  logo.className = 'game-over-overlay__logo';
+  logo.src = logoUrl;
+  logo.alt = 'Hole Stars';
+  logo.decoding = 'async';
+  logo.draggable = false;
+
   const text = document.createElement('p');
   text.className = 'game-over-overlay__message';
 
@@ -37,11 +50,12 @@ export function createGameOverOverlay(container, opts = {}) {
   cta.type = 'button';
   cta.className = 'game-over-overlay__cta tap-target';
   cta.textContent = ctaLabel;
-  cta.addEventListener('click', () => {
-    clickout();
-  });
+  const onClickout = () => clickout(APP_STORE_URL);
+  logoButton.addEventListener('click', onClickout);
+  cta.addEventListener('click', onClickout);
 
-  panel.append(stars, text, cta);
+  logoButton.appendChild(logo);
+  panel.append(logoButton, stars, text, cta);
   root.appendChild(panel);
   container.appendChild(root);
 

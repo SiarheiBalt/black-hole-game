@@ -74,3 +74,36 @@ slotOverrides: [
 3. Можно запускать и `npm run dev` — `getThemeConfig` выбирает `default`, пока ты не задашь `VITE_THEME`.
 
 Дополнительная схема слотов и обход `COLLECTIBLE_RING_LAYOUT` описана в [`docs/collectibles.md`](collectibles.md).
+
+### Музыка темы
+
+Каждая тема имеет свой фоновый трек: `src/assets/themes/<id>/music.mp3`.
+Файлы генерируются локально через `npm run music:gen` (см.
+`tools/music-gen/`), который вызывает Python-скрипт `musicgen.py` с
+[Meta MusicGen-small](https://huggingface.co/facebook/musicgen-small)
+(open-source, бесплатно, никаких ключей). Prompt'ы — в
+`tools/music-gen/themes.mjs`, по культурным брифам из
+`tools/theme-gen/briefs/<id>.json`. После генерации ffmpeg делает
+trim → `acrossfade` → `loudnorm`, чтобы петля была бесшовной.
+
+Установка зависимостей (один раз):
+
+```bash
+pip install -r tools/music-gen/requirements.txt
+```
+
+Первый запуск скачает модель (~1.5 GB) в `~/.cache/huggingface/hub`. На
+Apple Silicon torch автоматически использует MPS. Время на трек ≈ 1–2
+минуты (после загрузки модели).
+
+Полезные команды:
+
+```bash
+npm run music:gen                                    # все темы (skip существующих)
+FORCE=1 npm run music:gen                            # регенерировать все
+node tools/music-gen/cli.mjs jp_kawaii kr_sea_pop    # только указанные
+node tools/music-gen/cli.mjs --dry-run               # показать prompt'ы
+```
+
+Привязка `music.mp3` → теме идёт автоматически через glob в
+`src/themes.js` — никакого ручного импорта не нужно.
