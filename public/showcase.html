@@ -24,13 +24,10 @@
         --accent-glow: rgba(79, 70, 229, 0.28);
         --item-active: rgba(79, 70, 229, 0.12);
         --sidebar-width: 288px;
-        /* Короткая сторона корпуса (viewBox IPhone-17.svg: 72.5×150) */
+        /* Макс. ширина превью портрета (~узкая сторона 9∶16) */
         --phone-short-edge: min(352px, 52vw);
-        --phone-aspect-w: 72.5;
-        --phone-aspect-h: 150;
-        /* Внешний корпус: rect layer9 в IPhone-17.svg (clip-path showcase-phone-hull-clip) */
-        /* Запас под drop-shadow у .phone-device-shadow, иначе верх/низ режет overflow:hidden у .device-wrap */
-        --phone-shadow-vpad: 44px;
+        /* Макс. ширина превью альбома 16∶9 */
+        --phone-long-edge: min(520px, 78vw);
         /* Подложка под макет телефона */
         --device-stage-edge: rgba(15, 23, 42, 0.1);
         --device-stage-glow: rgba(79, 70, 229, 0.16);
@@ -298,14 +295,15 @@
         flex: 1;
         min-width: 0;
         min-height: 0;
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(248px, min(320px, 31vw));
-        grid-template-rows: minmax(0, 1fr);
-        gap: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
         height: 100vh;
         position: relative;
         background: var(--bg);
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
       }
 
       .bottom-section {
@@ -452,7 +450,7 @@
       .preview-area::before {
         content: '';
         position: absolute;
-        inset: -20%;
+        /* inset: -20%; */
         background:
           radial-gradient(ellipse 55% 45% at 18% 22%, rgba(79, 70, 229, 0.14), transparent 55%),
           radial-gradient(ellipse 50% 40% at 88% 78%, rgba(14, 116, 144, 0.1), transparent 50%),
@@ -486,34 +484,17 @@
         z-index: 1;
         display: flex;
         flex-direction: column;
+        flex: 0 1 auto;
+        width: 100%;
+        min-height: 100%;
         padding: 12px 8px 14px;
         gap: 10px;
-        border-right: 1px solid var(--border);
-        min-height: 0;
-        height: 100%;
+        border-right: none;
         align-self: stretch;
+        box-sizing: border-box;
       }
       .preview-column:last-child {
         border-right: none;
-      }
-
-      .preview-hero {
-        flex-shrink: 0;
-        text-align: center;
-        max-width: 420px;
-        margin: 0 auto;
-        padding: 2px 4px 0;
-      }
-
-      .preview-eyebrow {
-        display: inline-block;
-        margin: 0 0 8px;
-        font-size: 0.68rem;
-        font-weight: 700;
-        letter-spacing: 0.2em;
-        text-transform: uppercase;
-        color: var(--accent-2);
-        opacity: 0.95;
       }
 
       .preview-label {
@@ -531,6 +512,8 @@
         justify-content: center;
         gap: 10px;
         align-self: center;
+        flex-shrink: 0;
+        margin-top: 16px;
       }
 
       .btn-reload {
@@ -550,7 +533,6 @@
         min-height: 44px;
         transition:
           background 0.2s ease,
-          background-position 0.45s ease,
           border-color 0.2s ease,
           color 0.2s ease,
           transform 0.2s cubic-bezier(0.34, 1.3, 0.64, 1),
@@ -560,42 +542,6 @@
       .btn-reload:focus-visible {
         outline: none;
         box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.28);
-      }
-
-      .btn-reload-action {
-        gap: 8px;
-        background: linear-gradient(120deg, #6366f1 0%, #7c3aed 40%, #0e7490 85%, #22d3ee 100%);
-        background-size: 200% auto;
-        background-position: 0% 50%;
-        box-shadow:
-          0 4px 20px rgba(99, 102, 241, 0.45),
-          0 0 0 1px rgba(255, 255, 255, 0.12) inset;
-      }
-
-      .btn-reload-action .btn-reload-icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        color: rgba(255, 255, 255, 0.9);
-      }
-
-      .btn-reload-action:hover:not(:disabled) {
-        background-position: 100% 50%;
-        transform: translateY(-2px);
-        box-shadow:
-          0 12px 32px rgba(99, 102, 241, 0.5),
-          0 0 0 1px rgba(255, 255, 255, 0.18) inset;
-      }
-
-      .btn-reload-action:active:not(:disabled) {
-        transform: translateY(0);
-      }
-
-      .btn-reload-icon-svg {
-        display: block;
-        width: 17px;
-        height: 17px;
       }
 
       .btn-reload:disabled {
@@ -648,18 +594,22 @@
         height: 17px;
       }
 
-      .device-wrap {
-        flex: 1;
-        min-height: 0;
+      .device-pair {
+        flex: 0 1 auto;
+        min-height: auto;
         display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
         align-items: center;
         justify-content: center;
+        gap: clamp(16px, 3.5vw, 32px);
+        width: 100%;
+        box-sizing: border-box;
         margin: 0;
-        padding: 8px 6px;
+        padding: 18px 16px;
         border-radius: 22px;
-        overflow: hidden;
-        /* Для cqw/cqh у .phone-device-shadow: вписать телефон в доступную область без ломки aspect */
-        container-type: size;
+        overflow: visible;
+        /* container-type: size; */
         container-name: device-stage;
         border: 1px solid var(--device-stage-edge);
         background:
@@ -681,97 +631,64 @@
           0 4px 22px rgba(15, 23, 42, 0.06);
       }
 
-      /* Тень снаружи: clip-path на .phone-device обрезал бы box-shadow */
-      .phone-device-shadow {
-        position: relative;
+      .device-pair-unit {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        flex: 0 1 auto;
+        min-width: 0;
+      }
+
+      .device-pair-unit .preview-label {
+        margin: 0;
+      }
+
+      /*
+       * Две простые рамки: iframe с реальными пропорциями (Pixi resizeTo → #game-container).
+       */
+      .preview-frame {
         flex: 0 0 auto;
         align-self: center;
-        /*
-         * Если задать фиксированную ширину и max-height: 100%, часть движков даёт
-         * «перекошенный» блок (например 320×631) — хром object-fit:contain уже,
-         * а iframe на всю ширину, игра вылезает за отрисованный корпус.
-         * Ширина = min(желаемая, по ширине сцены, по высоте сцены с сохранением 72.5:150).
-         */
-        width: min(var(--phone-short-edge), 100%);
-        max-width: 100%;
-        aspect-ratio: var(--phone-aspect-w) / var(--phone-aspect-h);
+        box-sizing: border-box;
         height: auto;
-        max-height: 100%;
-        min-height: 0;
-        box-sizing: border-box;
-        filter: drop-shadow(0 14px 28px rgba(15, 23, 42, 0.14))
-          drop-shadow(0 2px 6px rgba(15, 23, 42, 0.08));
-      }
-
-      @supports (width: min(1cqw, 100%)) {
-        .phone-device-shadow {
-          width: min(
-            var(--phone-short-edge),
-            100cqw,
-            calc(
-              max(0px, 100cqh - var(--phone-shadow-vpad)) * var(--phone-aspect-w) /
-                var(--phone-aspect-h)
-            )
-          );
-          max-height: max(0px, calc(100cqh - var(--phone-shadow-vpad)));
-        }
-      }
-
-      /* Телефон: боковые кнопки (IPhone-17-buttons) под iframe, корпус (IPhone-17-frame) над */
-      .phone-device {
-        position: absolute;
-        inset: 0;
-        box-sizing: border-box;
-        isolation: isolate;
         overflow: hidden;
-        contain: paint;
-        -webkit-clip-path: url(#showcase-phone-hull-clip);
-        clip-path: url(#showcase-phone-hull-clip);
+        border-radius: 32px;
+        border: 10px solid #4f4f5a;
+        background: #ffffff;
+        filter: drop-shadow(0 14px 28px rgba(15, 23, 42, 0.16))
+          drop-shadow(0 2px 8px rgba(15, 23, 42, 0.1));
+        box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.07);
       }
 
-      .phone-screen {
-        position: absolute;
-        z-index: 1;
-        inset: 0;
-        overflow: hidden;
-        background: #0a0a0c;
-        pointer-events: none;
-        contain: paint;
-        -webkit-clip-path: url(#showcase-phone-screen-clip);
-        clip-path: url(#showcase-phone-screen-clip);
-      }
-
-      .phone-screen iframe {
+      .preview-frame iframe {
         display: block;
         width: 100%;
         height: 100%;
         border: 0;
         background: #111;
-        pointer-events: auto;
       }
 
-      .phone-chrome {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        display: block;
-        box-sizing: border-box;
-        pointer-events: none;
-        user-select: none;
+      .preview-frame--portrait {
+        width: min(var(--phone-short-edge), 100%);
+        max-width: min(380px, 100%);
+        aspect-ratio: 9 / 16;
       }
 
-      img.phone-chrome {
-        object-fit: contain;
-        object-position: center;
+      .preview-frame--landscape {
+        width: min(var(--phone-long-edge), 100%);
+        max-width: min(640px, 100%);
+        aspect-ratio: 16 / 9;
       }
 
-      .phone-chrome--buttons {
-        z-index: 0;
-      }
+      @supports (width: min(1cqw, 100%)) {
+        .preview-frame--portrait {
+          width: min(var(--phone-short-edge), min(360px, 94cqw));
+        }
 
-      .phone-chrome--frame {
-        z-index: 2;
+        .preview-frame--landscape {
+          width: min(var(--phone-long-edge), min(620px, 94cqw));
+        }
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -797,14 +714,12 @@
       }
 
       /*
-       * Узкий экран / портрет устройства: этот блок в конце, чтобы перекрыть
-       * .preview-column { height: 100% } и flex-цепочку .device-wrap (иначе высота iframe → 0).
+       * Узкий экран: этот блок в конце, чтобы перекрыть flex-цепочку без обрезки контента при скролле.
        */
       @media (max-width: 700px) {
         :root {
           --phone-short-edge: min(322px, 94vw);
-          /* На узкой вёрстке тень сильнее упирается в overflow — чуть больший запас */
-          --phone-shadow-vpad: 60px;
+          --phone-long-edge: min(560px, 96vw);
         }
 
         .layout {
@@ -838,6 +753,7 @@
           min-width: 0;
           height: auto;
           min-height: 0;
+          overflow: visible;
         }
 
         .bottom-section {
@@ -889,51 +805,29 @@
           border-bottom: none;
         }
 
-        .preview-hero {
-          padding: 0 4px;
-        }
-
-        .device-wrap {
-          flex: 0 0 auto;
-          /* Явная высота сцены: иначе цепочка height:auto + absolute-ребёнок даёт 0 */
-          min-height: min(72vh, 640px);
-          align-items: center;
-          justify-content: center;
-          margin: 4px 6px;
+        .device-pair {
+          flex-direction: column;
+          gap: 20px;
           padding: 14px 8px;
           border-radius: 20px;
-          overflow: visible;
         }
 
-        /*
-         * Внутри .phone-device — position:absolute → у .phone-device-shadow обязательны
-         * конкретные width и height (не height:auto без ширины).
-         * --w = min(желаемая короткая сторона, сцена по ширине, лимит по высоте viewport).
-         */
-        .phone-device-shadow.phone-portrait {
-          --phone-stage-w: 100%;
-          --phone-cap-h: max(
-            120px,
-            calc(min(72vh, 640px) - var(--phone-shadow-vpad))
-          );
-          --phone-w: min(
-            var(--phone-short-edge),
-            var(--phone-stage-w),
-            calc(var(--phone-cap-h) * var(--phone-aspect-w) / var(--phone-aspect-h))
-          );
-          width: var(--phone-w);
-          height: calc(
-            var(--phone-w) * var(--phone-aspect-h) / var(--phone-aspect-w)
-          );
+        .preview-frame {
           max-width: 100%;
-          max-height: none;
-          aspect-ratio: unset;
-          box-sizing: border-box;
+        }
+
+        .preview-frame--portrait,
+        .preview-frame--landscape {
+          width: min(100%, 100vw - 32px);
+        }
+        .preview-frame--portrait {
+          max-width: 400px;
         }
 
         @supports (width: min(1cqw, 100%)) {
-          .phone-device-shadow.phone-portrait {
-            --phone-stage-w: 100cqw;
+          .preview-frame--portrait,
+          .preview-frame--landscape {
+            width: min(100vw, 90vw);
           }
         }
 
@@ -941,33 +835,6 @@
     </style>
   </head>
   <body>
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="0"
-      height="0"
-      aria-hidden="true"
-      style="position: absolute; overflow: hidden"
-    >
-      <defs>
-        <!-- Внешний корпус: layer9 rect32 (IPhone-17.svg), clipPathUnits относительно .phone-device -->
-        <clipPath id="showcase-phone-hull-clip" clipPathUnits="objectBoundingBox">
-          <rect
-            x="0.006159552"
-            y="0"
-            width="0.988370559"
-            height="1"
-            rx="0.17746225"
-            ry="0.085773153"
-          />
-        </clipPath>
-        <clipPath id="showcase-phone-screen-clip" clipPathUnits="objectBoundingBox">
-          <path
-            transform="scale(0.013793103448275862,0.006666666666666667)"
-            d="m 13.312378,0.97661114 c -6.603655,0 -11.888676,5.28502136 -11.888676,11.88868086 V 137.13471 c 0,6.60365 5.285021,11.88868 11.888676,11.88868 h 45.87524 c 6.60366,0 11.88868,-5.28503 11.88868,-11.88868 V 12.865292 c 0,-6.6036595 -5.28502,-11.88868086 -11.88868,-11.88868086 z"
-          />
-        </clipPath>
-      </defs>
-    </svg>
     <div class="layout">
       <aside class="sidebar" aria-label="Themes">
         <div class="sidebar-header">
@@ -986,621 +853,34 @@
       </aside>
 
       <div class="preview-area">
-        <div class="preview-column" aria-label="Portrait">
-          <div class="preview-hero">
-            <p class="preview-eyebrow">Live device frame</p>
-          </div>
-          <div class="device-wrap">
-            <!-- Инлайн chrome: исходники showcase/IPhone-17-buttons.svg и IPhone-17-frame.svg (id: ph-btn- / ph-frm-). Обновить: node showcase/refresh-inline-phone-chrome.mjs -->
-            <div class="phone-device-shadow phone-portrait">
-              <div class="phone-device">
-                <svg class="phone-chrome phone-chrome--buttons" preserveAspectRatio="xMidYMid meet" width="100%" height="100%" aria-hidden="true" viewBox="0 0 72.499999 150" version="1.1"
-  xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg">
-<defs
-     id="ph-btn-defs1"><linearGradient
-       id="ph-btn-linearGradient31"><stop
-         style="stop-color:#ffffff;stop-opacity:0.02;"
-         offset="0"
-         id="ph-btn-stop31" /><stop
-         style="stop-color:#ffffff;stop-opacity:0.1;"
-         offset="1"
-         id="ph-btn-stop32" /></linearGradient><linearGradient
-       id="ph-btn-linearGradient25"><stop
-         style="stop-color:#b697ff;stop-opacity:1;"
-         offset="0"
-         id="ph-btn-stop26" /><stop
-         style="stop-color:#3600ae;stop-opacity:1;"
-         offset="0.56404012"
-         id="ph-btn-stop28" /><stop
-         style="stop-color:#000000;stop-opacity:0;"
-         offset="1"
-         id="ph-btn-stop27" /></linearGradient><linearGradient
-       id="ph-btn-linearGradient24"><stop
-         style="stop-color:#39394e;stop-opacity:1;"
-         offset="0"
-         id="ph-btn-stop24" /><stop
-         style="stop-color:#1e1e21;stop-opacity:1;"
-         offset="1"
-         id="ph-btn-stop25" /></linearGradient><linearGradient
-       id="ph-btn-linearGradient12"><stop
-         style="stop-color:#686171;stop-opacity:1;"
-         offset="0"
-         id="ph-btn-stop13" /><stop
-         style="stop-color:#575360;stop-opacity:1;"
-         offset="1"
-         id="ph-btn-stop14" /></linearGradient><linearGradient
-       id="ph-btn-linearGradient9"><stop
-         style="stop-color:#867e90;stop-opacity:1;"
-         offset="0"
-         id="ph-btn-stop9" /><stop
-         style="stop-color:#c5c4d1;stop-opacity:1;"
-         offset="0.17473139"
-         id="ph-btn-stop12" /><stop
-         style="stop-color:#8d8698;stop-opacity:1"
-         offset="0.64714581"
-         id="ph-btn-stop11" /><stop
-         style="stop-color:#7a7184;stop-opacity:1;"
-         offset="1"
-         id="ph-btn-stop10" /></linearGradient><clipPath
-       clipPathUnits="userSpaceOnUse"
-       id="ph-btn-clipPath1"><rect
-         style="fill:#9320d4;stroke-width:2.90343;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
-         id="ph-btn-rect2"
-         width="207.90259"
-         height="430.15308"
-         x="66.161987"
-         y="-144.36761" /></clipPath><linearGradient
-       xlink:href="#ph-btn-linearGradient9"
-       id="ph-btn-linearGradient10"
-       x1="-6.8514175"
-       y1="40.490494"
-       x2="-6.8514175"
-       y2="47.087269"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(1,0,0,1.0187233,10.528318,-10.430529)" /><linearGradient
-       xlink:href="#ph-btn-linearGradient12"
-       id="ph-btn-linearGradient14"
-       x1="1.7565179"
-       y1="30.852865"
-       x2="1.7565179"
-       y2="37.825279"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="translate(-0.41007042,-0.16084956)" /><linearGradient
-       xlink:href="#ph-btn-linearGradient12"
-       id="ph-btn-linearGradient15"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="translate(-0.16368891,11.918822)"
-       x1="1.7565179"
-       y1="30.852865"
-       x2="1.7565179"
-       y2="37.825279" /><linearGradient
-       xlink:href="#ph-btn-linearGradient9"
-       id="ph-btn-linearGradient16"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(1,0,0,1.0187233,10.7747,1.649143)"
-       x1="-6.8514175"
-       y1="40.490494"
-       x2="-6.8514175"
-       y2="47.087269" /><linearGradient
-       xlink:href="#ph-btn-linearGradient12"
-       id="ph-btn-linearGradient17"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="translate(-0.16368891,11.918822)"
-       x1="1.7565179"
-       y1="30.852865"
-       x2="1.7565179"
-       y2="37.825279" /><linearGradient
-       xlink:href="#ph-btn-linearGradient9"
-       id="ph-btn-linearGradient18"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(1,0,0,1.0187233,10.7747,1.649143)"
-       x1="-6.8514175"
-       y1="40.490494"
-       x2="-6.8514175"
-       y2="47.087269" /><linearGradient
-       xlink:href="#ph-btn-linearGradient12"
-       id="ph-btn-linearGradient19"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="translate(-0.16368891,11.918822)"
-       x1="1.7565179"
-       y1="30.852865"
-       x2="1.7565179"
-       y2="37.825279" /><linearGradient
-       xlink:href="#ph-btn-linearGradient9"
-       id="ph-btn-linearGradient20"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(1,0,0,1.0187233,10.7747,1.649143)"
-       x1="-6.8514175"
-       y1="40.490494"
-       x2="-6.8514175"
-       y2="47.087269" /><radialGradient
-       xlink:href="#ph-btn-linearGradient24"
-       id="ph-btn-radialGradient25"
-       cx="43.681053"
-       cy="7.4308386"
-       fx="43.681053"
-       fy="7.4308386"
-       r="0.92431802"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="translate(1.3383789e-6)" /><radialGradient
-       xlink:href="#ph-btn-linearGradient25"
-       id="ph-btn-radialGradient27"
-       cx="48.734295"
-       cy="7.8165774"
-       fx="48.734295"
-       fy="7.8165774"
-       r="0.68189663"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(0.99999932,-3.3487284e-7,-2.1771224e-6,1.3555106,-5.200404,-14.350692)" /><radialGradient
-       xlink:href="#ph-btn-linearGradient25"
-       id="ph-btn-radialGradient27-6"
-       cx="48.734295"
-       cy="7.8165774"
-       fx="48.734295"
-       fy="7.8165774"
-       r="0.68189663"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(0.99999932,-3.3487284e-7,-2.1771224e-6,1.3555106,-93.631878,-14.350692)" /><linearGradient
-       xlink:href="#ph-btn-linearGradient31"
-       id="ph-btn-linearGradient32"
-       x1="36.25"
-       y1="0.97257996"
-       x2="36.25"
-       y2="1.5374033"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="translate(0,0.00403118)" /><filter
-       style="color-interpolation-filters:sRGB"
-       id="ph-btn-filter32"
-       x="-0.006718275"
-       y="-0.0031835449"
-       width="1.0134365"
-       height="1.0063671"><feGaussianBlur
-         stdDeviation="0.19764468"
-         id="ph-btn-feGaussianBlur32" /></filter><filter
-       style="color-interpolation-filters:sRGB"
-       id="ph-btn-filter33"
-       x="-0.0091814284"
-       y="-0.0043248752"
-       width="1.0183629"
-       height="1.0086498"><feGaussianBlur
-         stdDeviation="0.26705965"
-         id="ph-btn-feGaussianBlur33" /></filter><clipPath
-       clipPathUnits="userSpaceOnUse"
-       id="ph-btn-clipPath34"><rect
-         style="display:inline;fill:#716a7b;fill-opacity:1;stroke:none;stroke-width:21.753;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
-         id="ph-btn-rect35"
-         width="71.606865"
-         height="150"
-         x="0.44656754"
-         y="1.4210855e-14"
-         ry="12.865973" /></clipPath><mask
-       maskUnits="userSpaceOnUse"
-       maskContentUnits="userSpaceOnUse"
-       id="ph-btn-screen-cutout-mask"><rect
-         style="fill:#ffffff"
-         id="ph-btn-mask-bg"
-         width="72.5"
-         height="150"
-         x="0"
-         y="0" /><path style="fill:#000000"
-         id="ph-btn-mask-hole"
-         d="m 13.312378,0.97661114 c -6.603655,0 -11.888676,5.28502136 -11.888676,11.88868086 V 137.13471 c 0,6.60365 5.285021,11.88868 11.888676,11.88868 h 45.87524 c 6.60366,0 11.88868,-5.28503 11.88868,-11.88868 V 12.865292 c 0,-6.6036595 -5.28502,-11.88868086 -11.88868,-11.88868086 z" /></mask></defs>
-<g
-     id="ph-btn-layer2"
-     style="display:inline"><g
-       id="ph-btn-g14"><rect
-         style="fill:url(#ph-btn-linearGradient14);fill-opacity:1;stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
-         id="ph-btn-rect6"
-         width="7.6419992"
-         height="6.9724154"
-         x="-6.8847655e-10"
-         y="30.692017"
-         ry="0.30878335" /><rect
-         style="fill:url(#ph-btn-linearGradient10);fill-opacity:1;stroke-width:0.190988;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
-         id="ph-btn-rect6-2"
-         width="7.230288"
-         height="6.7202911"
-         x="0.061756074"
-         y="30.818081"
-         ry="0.29761767" /></g><g
-       id="ph-btn-g17"
-       transform="translate(-0.24638151)"><path
-         id="ph-btn-rect6-27"
-         style="fill:url(#ph-btn-linearGradient15);stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
-         d="M 0.55516486,42.77169 H 7.5795974 c 0.171066,0 0.3087834,0.137718 0.3087834,0.308784 v 10.627089 c 0,0.171066 -0.1377174,0.308784 -0.3087834,0.308784 H 0.55516486 c -0.17106598,0 -0.30878335,-0.137718 -0.30878335,-0.308784 V 43.080474 c 0,-0.171066 0.13771737,-0.308784 0.30878335,-0.308784 z" /><path
-         id="ph-btn-rect6-2-9"
-         style="fill:url(#ph-btn-linearGradient16);stroke-width:0.190988;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
-         d="M 0.60575527,42.897755 H 7.240808 c 0.1648801,0 0.2976176,0.132737 0.2976176,0.297617 v 10.397297 c 0,0.16488 -0.1327375,0.297618 -0.2976176,0.297618 H 0.60575527 c -0.16488019,0 -0.29761767,-0.132738 -0.29761767,-0.297618 V 43.195372 c 0,-0.16488 0.13273748,-0.297617 0.29761767,-0.297617 z" /></g><g
-       id="ph-btn-g17-8"
-       transform="matrix(-1,0,0,1,72.745556,3.8223925)"><path
-         id="ph-btn-rect6-27-6"
-         style="fill:url(#ph-btn-linearGradient19);stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
-         d="M 0.55516486,42.77169 H 7.5795974 c 0.171066,0 0.3087834,0.137718 0.3087834,0.308784 v 17.177374 c 0,0.171066 -0.1377174,0.308784 -0.3087834,0.308784 H 0.55516486 c -0.17106598,0 -0.30878335,-0.137718 -0.30878335,-0.308784 V 43.080474 c 0,-0.171066 0.13771737,-0.308784 0.30878335,-0.308784 z" /><path
-         id="ph-btn-rect6-2-9-5"
-         style="fill:url(#ph-btn-linearGradient20);stroke-width:0.190988;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
-         d="M 0.60575527,42.897755 H 7.240808 c 0.1648801,0 0.2976176,0.132737 0.2976176,0.297617 v 16.947582 c 0,0.16488 -0.1327375,0.297618 -0.2976176,0.297618 H 0.60575527 c -0.16488019,0 -0.29761767,-0.132738 -0.29761767,-0.297618 V 43.195372 c 0,-0.16488 0.13273748,-0.297617 0.29761767,-0.297617 z" /></g><g
-       id="ph-btn-g17-1"
-       transform="translate(-0.24638151,14.230005)"><path
-         id="ph-btn-rect6-27-3"
-         style="fill:url(#ph-btn-linearGradient17);stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
-         d="M 0.55516486,42.77169 H 7.5795974 c 0.171066,0 0.3087834,0.137718 0.3087834,0.308784 v 10.627089 c 0,0.171066 -0.1377174,0.308784 -0.3087834,0.308784 H 0.55516486 c -0.17106598,0 -0.30878335,-0.137718 -0.30878335,-0.308784 V 43.080474 c 0,-0.171066 0.13771737,-0.308784 0.30878335,-0.308784 z" /><path
-         id="ph-btn-rect6-2-9-8"
-         style="fill:url(#ph-btn-linearGradient18);stroke-width:0.190988;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
-         d="M 0.60575527,42.897755 H 7.240808 c 0.1648801,0 0.2976176,0.132737 0.2976176,0.297617 v 10.397297 c 0,0.16488 -0.1327375,0.297618 -0.2976176,0.297618 H 0.60575527 c -0.16488019,0 -0.29761767,-0.132738 -0.29761767,-0.297618 V 43.195372 c 0,-0.16488 0.13273748,-0.297617 0.29761767,-0.297617 z" /></g></g>
-</svg>
-                <div class="phone-screen">
+        <div class="preview-column" aria-label="Device preview">
+          <div class="device-pair" role="group" aria-label="Portrait and landscape playable previews">
+              <div class="device-pair-unit">
+                <p class="preview-label">Portrait</p>
+                <div class="preview-frame preview-frame--portrait">
                   <iframe
                     id="iframe-portrait"
+                    width="390"
+                    height="844"
                     title="Playable portrait"
                     allow="autoplay; fullscreen"
                   ></iframe>
                 </div>
-                <svg class="phone-chrome phone-chrome--frame" preserveAspectRatio="xMidYMid meet" width="100%" height="100%" aria-hidden="true" viewBox="0 0 72.499999 150"
-   version="1.1"
-   xml:space="preserve"
-   xmlns:xlink="http://www.w3.org/1999/xlink"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:svg="http://www.w3.org/2000/svg"><defs
-     id="ph-frm-defs1"><linearGradient
-       id="ph-frm-linearGradient31"><stop
-         style="stop-color:#ffffff;stop-opacity:0.02;"
-         offset="0"
-         id="ph-frm-stop31" /><stop
-         style="stop-color:#ffffff;stop-opacity:0.1;"
-         offset="1"
-         id="ph-frm-stop32" /></linearGradient><linearGradient
-       id="ph-frm-linearGradient25"><stop
-         style="stop-color:#b697ff;stop-opacity:1;"
-         offset="0"
-         id="ph-frm-stop26" /><stop
-         style="stop-color:#3600ae;stop-opacity:1;"
-         offset="0.56404012"
-         id="ph-frm-stop28" /><stop
-         style="stop-color:#000000;stop-opacity:0;"
-         offset="1"
-         id="ph-frm-stop27" /></linearGradient><linearGradient
-       id="ph-frm-linearGradient24"><stop
-         style="stop-color:#39394e;stop-opacity:1;"
-         offset="0"
-         id="ph-frm-stop24" /><stop
-         style="stop-color:#1e1e21;stop-opacity:1;"
-         offset="1"
-         id="ph-frm-stop25" /></linearGradient><linearGradient
-       id="ph-frm-linearGradient12"><stop
-         style="stop-color:#686171;stop-opacity:1;"
-         offset="0"
-         id="ph-frm-stop13" /><stop
-         style="stop-color:#575360;stop-opacity:1;"
-         offset="1"
-         id="ph-frm-stop14" /></linearGradient><linearGradient
-       id="ph-frm-linearGradient9"><stop
-         style="stop-color:#867e90;stop-opacity:1;"
-         offset="0"
-         id="ph-frm-stop9" /><stop
-         style="stop-color:#c5c4d1;stop-opacity:1;"
-         offset="0.17473139"
-         id="ph-frm-stop12" /><stop
-         style="stop-color:#8d8698;stop-opacity:1"
-         offset="0.64714581"
-         id="ph-frm-stop11" /><stop
-         style="stop-color:#7a7184;stop-opacity:1;"
-         offset="1"
-         id="ph-frm-stop10" /></linearGradient><clipPath
-       clipPathUnits="userSpaceOnUse"
-       id="ph-frm-clipPath1"><rect
-         style="fill:#9320d4;stroke-width:2.90343;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
-         id="ph-frm-rect2"
-         width="207.90259"
-         height="430.15308"
-         x="66.161987"
-         y="-144.36761" /></clipPath><linearGradient
-       xlink:href="#ph-frm-linearGradient9"
-       id="ph-frm-linearGradient10"
-       x1="-6.8514175"
-       y1="40.490494"
-       x2="-6.8514175"
-       y2="47.087269"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(1,0,0,1.0187233,10.528318,-10.430529)" /><linearGradient
-       xlink:href="#ph-frm-linearGradient12"
-       id="ph-frm-linearGradient14"
-       x1="1.7565179"
-       y1="30.852865"
-       x2="1.7565179"
-       y2="37.825279"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="translate(-0.41007042,-0.16084956)" /><linearGradient
-       xlink:href="#ph-frm-linearGradient12"
-       id="ph-frm-linearGradient15"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="translate(-0.16368891,11.918822)"
-       x1="1.7565179"
-       y1="30.852865"
-       x2="1.7565179"
-       y2="37.825279" /><linearGradient
-       xlink:href="#ph-frm-linearGradient9"
-       id="ph-frm-linearGradient16"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(1,0,0,1.0187233,10.7747,1.649143)"
-       x1="-6.8514175"
-       y1="40.490494"
-       x2="-6.8514175"
-       y2="47.087269" /><linearGradient
-       xlink:href="#ph-frm-linearGradient12"
-       id="ph-frm-linearGradient17"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="translate(-0.16368891,11.918822)"
-       x1="1.7565179"
-       y1="30.852865"
-       x2="1.7565179"
-       y2="37.825279" /><linearGradient
-       xlink:href="#ph-frm-linearGradient9"
-       id="ph-frm-linearGradient18"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(1,0,0,1.0187233,10.7747,1.649143)"
-       x1="-6.8514175"
-       y1="40.490494"
-       x2="-6.8514175"
-       y2="47.087269" /><linearGradient
-       xlink:href="#ph-frm-linearGradient12"
-       id="ph-frm-linearGradient19"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="translate(-0.16368891,11.918822)"
-       x1="1.7565179"
-       y1="30.852865"
-       x2="1.7565179"
-       y2="37.825279" /><linearGradient
-       xlink:href="#ph-frm-linearGradient9"
-       id="ph-frm-linearGradient20"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(1,0,0,1.0187233,10.7747,1.649143)"
-       x1="-6.8514175"
-       y1="40.490494"
-       x2="-6.8514175"
-       y2="47.087269" /><radialGradient
-       xlink:href="#ph-frm-linearGradient24"
-       id="ph-frm-radialGradient25"
-       cx="43.681053"
-       cy="7.4308386"
-       fx="43.681053"
-       fy="7.4308386"
-       r="0.92431802"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="translate(1.3383789e-6)" /><radialGradient
-       xlink:href="#ph-frm-linearGradient25"
-       id="ph-frm-radialGradient27"
-       cx="48.734295"
-       cy="7.8165774"
-       fx="48.734295"
-       fy="7.8165774"
-       r="0.68189663"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(0.99999932,-3.3487284e-7,-2.1771224e-6,1.3555106,-5.200404,-14.350692)" /><radialGradient
-       xlink:href="#ph-frm-linearGradient25"
-       id="ph-frm-radialGradient27-6"
-       cx="48.734295"
-       cy="7.8165774"
-       fx="48.734295"
-       fy="7.8165774"
-       r="0.68189663"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(0.99999932,-3.3487284e-7,-2.1771224e-6,1.3555106,-93.631878,-14.350692)" /><linearGradient
-       xlink:href="#ph-frm-linearGradient31"
-       id="ph-frm-linearGradient32"
-       x1="36.25"
-       y1="0.97257996"
-       x2="36.25"
-       y2="1.5374033"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="translate(0,0.00403118)" /><filter
-       style="color-interpolation-filters:sRGB"
-       id="ph-frm-filter32"
-       x="-0.006718275"
-       y="-0.0031835449"
-       width="1.0134365"
-       height="1.0063671"><feGaussianBlur
-         stdDeviation="0.19764468"
-         id="ph-frm-feGaussianBlur32" /></filter><filter
-       style="color-interpolation-filters:sRGB"
-       id="ph-frm-filter33"
-       x="-0.0091814284"
-       y="-0.0043248752"
-       width="1.0183629"
-       height="1.0086498"><feGaussianBlur
-         stdDeviation="0.26705965"
-         id="ph-frm-feGaussianBlur33" /></filter><clipPath
-       clipPathUnits="userSpaceOnUse"
-       id="ph-frm-clipPath34"><rect
-         style="display:inline;fill:#716a7b;fill-opacity:1;stroke:none;stroke-width:21.753;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
-         id="ph-frm-rect35"
-         width="71.606865"
-         height="150"
-         x="0.44656754"
-         y="1.4210855e-14"
-         ry="12.865973" /></clipPath><mask
-       maskUnits="userSpaceOnUse"
-       maskContentUnits="userSpaceOnUse"
-       id="ph-frm-screen-cutout-mask"><rect
-         style="fill:#ffffff"
-         id="ph-frm-mask-bg"
-         width="72.5"
-         height="150"
-         x="0"
-         y="0" /><path style="fill:#000000"
-         id="ph-frm-mask-hole"
-         d="m 13.312378,0.97661114 c -6.603655,0 -11.888676,5.28502136 -11.888676,11.88868086 V 137.13471 c 0,6.60365 5.285021,11.88868 11.888676,11.88868 h 45.87524 c 6.60366,0 11.88868,-5.28503 11.88868,-11.88868 V 12.865292 c 0,-6.6036595 -5.28502,-11.88868086 -11.88868,-11.88868086 z" /></mask></defs><g
-     id="ph-frm-layer2"
-     style="display:none"><g
-       id="ph-frm-g14"><rect
-         style="fill:url(#ph-frm-linearGradient14);fill-opacity:1;stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
-         id="ph-frm-rect6"
-         width="7.6419992"
-         height="6.9724154"
-         x="-6.8847655e-10"
-         y="30.692017"
-         ry="0.30878335" /><rect
-         style="fill:url(#ph-frm-linearGradient10);fill-opacity:1;stroke-width:0.190988;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
-         id="ph-frm-rect6-2"
-         width="7.230288"
-         height="6.7202911"
-         x="0.061756074"
-         y="30.818081"
-         ry="0.29761767" /></g><g
-       id="ph-frm-g17"
-       transform="translate(-0.24638151)"><path
-         id="ph-frm-rect6-27"
-         style="fill:url(#ph-frm-linearGradient15);stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
-         d="M 0.55516486,42.77169 H 7.5795974 c 0.171066,0 0.3087834,0.137718 0.3087834,0.308784 v 10.627089 c 0,0.171066 -0.1377174,0.308784 -0.3087834,0.308784 H 0.55516486 c -0.17106598,0 -0.30878335,-0.137718 -0.30878335,-0.308784 V 43.080474 c 0,-0.171066 0.13771737,-0.308784 0.30878335,-0.308784 z" /><path
-         id="ph-frm-rect6-2-9"
-         style="fill:url(#ph-frm-linearGradient16);stroke-width:0.190988;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
-         d="M 0.60575527,42.897755 H 7.240808 c 0.1648801,0 0.2976176,0.132737 0.2976176,0.297617 v 10.397297 c 0,0.16488 -0.1327375,0.297618 -0.2976176,0.297618 H 0.60575527 c -0.16488019,0 -0.29761767,-0.132738 -0.29761767,-0.297618 V 43.195372 c 0,-0.16488 0.13273748,-0.297617 0.29761767,-0.297617 z" /></g><g
-       id="ph-frm-g17-8"
-       transform="matrix(-1,0,0,1,72.745556,3.8223925)"><path
-         id="ph-frm-rect6-27-6"
-         style="fill:url(#ph-frm-linearGradient19);stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
-         d="M 0.55516486,42.77169 H 7.5795974 c 0.171066,0 0.3087834,0.137718 0.3087834,0.308784 v 17.177374 c 0,0.171066 -0.1377174,0.308784 -0.3087834,0.308784 H 0.55516486 c -0.17106598,0 -0.30878335,-0.137718 -0.30878335,-0.308784 V 43.080474 c 0,-0.171066 0.13771737,-0.308784 0.30878335,-0.308784 z" /><path
-         id="ph-frm-rect6-2-9-5"
-         style="fill:url(#ph-frm-linearGradient20);stroke-width:0.190988;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
-         d="M 0.60575527,42.897755 H 7.240808 c 0.1648801,0 0.2976176,0.132737 0.2976176,0.297617 v 16.947582 c 0,0.16488 -0.1327375,0.297618 -0.2976176,0.297618 H 0.60575527 c -0.16488019,0 -0.29761767,-0.132738 -0.29761767,-0.297618 V 43.195372 c 0,-0.16488 0.13273748,-0.297617 0.29761767,-0.297617 z" /></g><g
-       id="ph-frm-g17-1"
-       transform="translate(-0.24638151,14.230005)"><path
-         id="ph-frm-rect6-27-3"
-         style="fill:url(#ph-frm-linearGradient17);stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
-         d="M 0.55516486,42.77169 H 7.5795974 c 0.171066,0 0.3087834,0.137718 0.3087834,0.308784 v 10.627089 c 0,0.171066 -0.1377174,0.308784 -0.3087834,0.308784 H 0.55516486 c -0.17106598,0 -0.30878335,-0.137718 -0.30878335,-0.308784 V 43.080474 c 0,-0.171066 0.13771737,-0.308784 0.30878335,-0.308784 z" /><path
-         id="ph-frm-rect6-2-9-8"
-         style="fill:url(#ph-frm-linearGradient18);stroke-width:0.190988;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.542522;paint-order:stroke fill markers"
-         d="M 0.60575527,42.897755 H 7.240808 c 0.1648801,0 0.2976176,0.132737 0.2976176,0.297617 v 10.397297 c 0,0.16488 -0.1327375,0.297618 -0.2976176,0.297618 H 0.60575527 c -0.16488019,0 -0.29761767,-0.132738 -0.29761767,-0.297618 V 43.195372 c 0,-0.16488 0.13273748,-0.297617 0.29761767,-0.297617 z" /></g></g><g
-     id="ph-frm-layer9"
-     style="display:inline"
-     mask="url(#ph-frm-screen-cutout-mask)"><rect
-       style="display:inline;fill:#716a7b;fill-opacity:1;stroke:none;stroke-width:21.753;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
-       id="ph-frm-rect32"
-       width="71.606865"
-       height="150"
-       x="0.44656754"
-       y="1.4210855e-14"
-       ry="12.865973" /></g><g
-     id="ph-frm-layer7"
-     style="display:inline"
-     mask="url(#ph-frm-screen-cutout-mask)"><g
-       id="ph-frm-g34"
-       clip-path="url(#ph-frm-clipPath34)"><path
-         id="ph-frm-rect32-7"
-         style="display:inline;mix-blend-mode:normal;fill:#9486a7;fill-opacity:1;stroke:none;stroke-width:21.753;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers;filter:url(#ph-frm-filter32)"
-         d="m 13.312381,0.50015231 c -6.8593976,0 -12.3651366,5.50573999 -12.3651366,12.36513969 V 137.13471 c 0,6.85939 5.505739,12.36514 12.3651366,12.36514 h 45.875234 c 6.8594,0 12.36514,-5.50575 12.36514,-12.36514 V 12.865292 c 0,-6.8593997 -5.50574,-12.36513969 -12.36514,-12.36513969 z" /><path
-         id="ph-frm-rect32-4"
-         style="display:inline;mix-blend-mode:normal;fill:#f1eef4;fill-opacity:1;stroke:none;stroke-width:21.753;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers;filter:url(#ph-frm-filter33)"
-         d="m 13.312383,0.90038112 c -6.6447174,0 -11.9667114,5.32043998 -11.9667114,11.96515988 V 137.13495 c 0,6.64471 5.321994,11.96466 11.9667114,11.96466 h 45.875234 c 6.64472,0 11.96671,-5.31995 11.96671,-11.96466 V 12.865541 c 0,-6.6447199 -5.32199,-11.96515988 -11.96671,-11.96515988 z" /></g></g><g
-     id="ph-frm-layer8"
-     style="display:inline"
-     mask="url(#ph-frm-screen-cutout-mask)"><path
-       id="ph-frm-rect34"
-       style="fill:#e7e3ec;fill-opacity:1;stroke:none;stroke-width:13.7539;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:0.465686;paint-order:stroke fill markers"
-       d="M 56.059111,0 V 15.527734 H 0.44648437 v 1.055233 H 72.053483 V 15.527734 H 57.114343 V 0 Z M 0.44648437,133.41718 v 1.05523 H 15.385624 v 15.52774 h 1.055233 v -15.52774 h 55.612626 v -1.05523 z" /></g><g
-     id="ph-frm-layer6"
-     style="display:inline"><path
-       id="ph-frm-rect32-73"
-       style="display:inline;fill:#000000;fill-opacity:0;stroke:none;stroke-width:21.753;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
-       d="m 13.312378,0.97661114 c -6.603655,0 -11.888676,5.28502136 -11.888676,11.88868086 V 137.13471 c 0,6.60365 5.285021,11.88868 11.888676,11.88868 h 45.87524 c 6.60366,0 11.88868,-5.28503 11.88868,-11.88868 V 12.865292 c 0,-6.6036595 -5.28502,-11.88868086 -11.88868,-11.88868086 z" /><path
-       id="ph-frm-path31"
-       style="fill:url(#ph-frm-linearGradient32);fill-opacity:0;stroke:none;stroke-width:1.784;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
-       d="m 29.068268,0.97661114 c 0.09826,0 0.286648,0.56482346 0.400492,0.56482346 h 13.56248 c 0.113844,0 0.302237,-0.56482346 0.400492,-0.56482346 z" /></g><g
-     id="ph-frm-layer4"
-     style="display:inline"><path
-       id="ph-frm-rect32-2"
-       style="display:inline;fill:#333333;fill-opacity:0;stroke:none;stroke-width:21.753;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
-       d="m 13.312882,2.4648914 c -5.8047685,0 -10.4003983,4.5956227 -10.4003983,10.4003996 V 137.13471 c 0,5.80477 4.5956298,10.4004 10.4003983,10.4004 h 45.87472 c 5.80478,0 10.400398,-4.59563 10.400398,-10.4004 V 12.865291 C 69.588,7.0605141 64.992382,2.4648914 59.187602,2.4648914 Z M 28.818913,4.80325 h 14.862142 c 1.66928,0 3.013252,1.343978 3.013252,3.0132527 0,1.6692748 -1.343972,3.0132533 -3.013252,3.0132533 H 28.818913 c -1.66927,0 -3.012736,-1.3439785 -3.012736,-3.0132533 0,-1.6692747 1.343466,-3.0132527 3.012736,-3.0132527 z" /></g><!-- <g
-     id="ph-frm-layer5-island-bg"
-     style="display:inline"><rect
-       style="fill:#000000;fill-opacity:1;stroke:none"
-       id="ph-frm-rect-island-unified"
-       x="26.65"
-       y="4.80325"
-       width="19.05"
-       height="6.0265054"
-       rx="3.05"
-       ry="3.0132527" /></g><g
-     id="ph-frm-layer5"
-     style="display:inline"><path
-       id="ph-frm-path21"
-       style="fill:#050505;fill-opacity:1;stroke:none;stroke-width:0.184059;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1;paint-order:stroke fill markers"
-       d="m 43.681055,5.0436198 a 2.7730749,2.7730756 0 0 0 -2.772958,2.7729573 2.7730749,2.7730756 0 0 0 2.772958,2.7729579 2.7730749,2.7730756 0 0 0 2.772957,-2.7729579 2.7730749,2.7730756 0 0 0 -2.772957,-2.7729573 z m 0,1.0407633 a 1.7323073,1.7323078 0 0 1 1.732194,1.732194 1.7323073,1.7323078 0 0 1 -1.732194,1.7321941 1.7323073,1.7323078 0 0 1 -1.732194,-1.7321941 1.7323073,1.7323078 0 0 1 1.732194,-1.732194 z" /><path
-       id="ph-frm-path21-0"
-       style="fill:#050505;fill-opacity:1;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
-       d="m -28.818913,5.0436198 a 2.7730749,2.7730756 0 0 1 2.772958,2.7729573 2.7730749,2.7730756 0 0 1 -2.772958,2.7729579 h -7.292578 a 2.7730749,2.7730756 0 0 1 -2.772957,-2.7729579 2.7730749,2.7730756 0 0 1 2.772957,-2.7729573 z m 5.17e-4,0.8919352 h -7.293095 c -1.049389,4.46e-5 -1.880461,0.8316326 -1.880505,1.8810221 4.4e-5,1.0493897 0.831116,1.8804608 1.880505,1.8805054 h 7.293095 c 1.049389,-4.42e-5 1.880977,-0.8311154 1.881022,-1.8805054 -4.5e-5,-1.0493897 -0.831633,-1.8809779 -1.881022,-1.8810221 z"
-       transform="scale(-1,1)" /><circle
-       style="fill:#050505;fill-opacity:1;stroke:none;stroke-width:0.241269;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1;paint-order:stroke fill markers"
-       id="ph-frm-path22"
-       cx="43.681053"
-       cy="7.8165774"
-       r="1.5452632" /><circle
-       style="fill:url(#ph-frm-radialGradient25);fill-opacity:1;stroke:none;stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1;paint-order:stroke fill markers"
-       id="ph-frm-path23"
-       cx="43.681053"
-       cy="7.8165774"
-       r="0.92431802" /><circle
-       style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1;paint-order:stroke fill markers"
-       id="ph-frm-path24-4"
-       cx="44.215736"
-       cy="-3.755255"
-       r="0.68189663"
-       transform="rotate(15)" /><circle
-       style="fill:url(#ph-frm-radialGradient27);fill-opacity:0.522059;stroke:none;stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1;paint-order:stroke fill markers"
-       id="ph-frm-path24"
-       cx="44.215736"
-       cy="-3.755255"
-       r="0.68189663"
-       transform="rotate(15)" /><circle
-       style="fill:url(#ph-frm-radialGradient27-6);fill-opacity:0.522059;stroke:none;stroke-width:0.2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1;paint-order:stroke fill markers"
-       id="ph-frm-path24-42"
-       cx="-44.215736"
-       cy="-3.755255"
-       r="0.68189663"
-       transform="matrix(-0.96592583,-0.25881905,-0.25881905,0.96592583,0,0)" /></g> --></svg>
+              </div>
+              <div class="device-pair-unit">
+                <p class="preview-label">Landscape</p>
+                <div class="preview-frame preview-frame--landscape">
+                  <iframe
+                    id="iframe-landscape"
+                    width="1280"
+                    height="720"
+                    title="Playable landscape"
+                    allow="autoplay; fullscreen"
+                  ></iframe>
                 </div>
-            </div>
+              </div>
           </div>
           <div class="preview-actions">
-            <button type="button" class="btn-reload btn-reload-action" id="btn-reload-portrait">
-              <span class="btn-reload-icon" aria-hidden="true">
-                <svg
-                  class="btn-reload-icon-svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"
-                    stroke="currentColor"
-                    stroke-width="1.75"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M21 3v5h-5"
-                    stroke="currentColor"
-                    stroke-width="1.75"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"
-                    stroke="currentColor"
-                    stroke-width="1.75"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M3 21v-5h5"
-                    stroke="currentColor"
-                    stroke-width="1.75"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </span>
-              <span class="btn-reload-label">Reload</span>
-            </button>
             <button type="button" class="btn-reload btn-copy" id="btn-copy-build-link">
               <span class="btn-copy-icon" aria-hidden="true">
                 <svg
@@ -1628,6 +908,8 @@
             </button>
           </div>
         </div>
+        
+        <!-- Temporarily hidden: cross-platform + CTA (uncomment to restore)
         <section
           class="bottom-section"
           aria-labelledby="bottom-section-heading"
@@ -1730,6 +1012,7 @@
             </div>
           </div>
         </section>
+        -->
       </div>
     </div>
 
@@ -1780,6 +1063,7 @@
 
         let listEl = document.getElementById('theme-list');
         let iframePortrait = document.getElementById('iframe-portrait');
+        let iframeLandscape = document.getElementById('iframe-landscape');
         let btnCopyBuild = document.getElementById('btn-copy-build-link');
         let copyLabelEl = btnCopyBuild.querySelector('.btn-copy-label');
         let activeEl = null;
@@ -1800,6 +1084,7 @@
           activeEl = row;
           activeBuildUrl = url;
           iframePortrait.src = url;
+          iframeLandscape.src = url;
           updateCopyButtonState();
         }
 
@@ -1838,10 +1123,6 @@
           if (i === 0) {
             selectTheme(row, t.url);
           }
-        });
-
-        document.getElementById('btn-reload-portrait').addEventListener('click', function () {
-          iframePortrait.src = iframePortrait.src;
         });
 
         btnCopyBuild.addEventListener('click', function () {
