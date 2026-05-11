@@ -275,8 +275,8 @@
   }
 }
 
-@media (max-height: 699px) {
+@media (max-height: 599px) {
   .game-over-overlay__panel {
-    scale: 0.7;
+    scale: 0.75;
   }
 }
