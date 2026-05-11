@@ -274,3 +274,9 @@
     transform: rotate(0);
   }
 }
+
+@media (max-height: 699px) {
+  .game-over-overlay__panel {
+    scale: 0.7;
+  }
+}
