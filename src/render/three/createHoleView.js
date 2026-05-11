@@ -18,6 +18,8 @@ import {
   DirectionalLight,
   PCFSoftShadowMap,
   SRGBColorSpace,
+  LinearFilter,
+  NearestMipmapLinearFilter,
   TextureLoader,
   Shape,
   ShapeGeometry,
@@ -276,6 +278,10 @@ export async function createHoleView(container, options = {}) {
         url,
         (tex) => {
           tex.colorSpace = SRGBColorSpace;
+          // Чуть мягче минимизация, чем без mips; мягче, чем полный LinearMipmapLinear.
+          tex.generateMipmaps = true;
+          tex.minFilter = NearestMipmapLinearFilter;
+          tex.magFilter = LinearFilter;
           const img = /** @type {HTMLImageElement | undefined} */ (tex.image);
           const aspect =
             img?.naturalWidth && img?.naturalHeight
@@ -1152,7 +1158,7 @@ export async function createHoleView(container, options = {}) {
 
   function updateCamera(layout) {
     applyMainCameraLayout();
-    const pr = Math.min(window.devicePixelRatio || 1, 2);
+    const pr = Math.min(window.devicePixelRatio || 1, 3);
     renderer.setPixelRatio(pr);
     renderer.setSize(layout.cssW, layout.cssH, false);
   }
