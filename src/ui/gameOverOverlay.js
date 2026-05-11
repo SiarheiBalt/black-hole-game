@@ -1,5 +1,5 @@
 import './gameOverOverlay.css';
-import logoUrl from '../assets/brand/hole-stars-logo.png';
+import { brandLogoUrl, brandName } from '../assets/brand/brandLogo.js';
 import { APP_STORE_URL, openClickout } from '../app/playableAdapter.js';
 
 /**
@@ -34,12 +34,12 @@ export function createGameOverOverlay(container, opts = {}) {
   const logoButton = document.createElement('button');
   logoButton.type = 'button';
   logoButton.className = 'game-over-overlay__logo-button tap-target';
-  logoButton.setAttribute('aria-label', 'Install Hole Stars');
+  logoButton.setAttribute('aria-label', `Install ${brandName}`);
 
   const logo = document.createElement('img');
   logo.className = 'game-over-overlay__logo';
-  logo.src = logoUrl;
-  logo.alt = 'Hole Stars';
+  logo.src = brandLogoUrl;
+  logo.alt = brandName;
   logo.decoding = 'async';
   logo.draggable = false;
 

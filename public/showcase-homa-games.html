@@ -1,0 +1,1653 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Playable Ad Roster — Homa Games showcase</title>
+    <link rel="dns-prefetch" href="https://files.alconost.com" />
+    <link rel="preconnect" href="https://files.alconost.com" crossorigin />
+    <!--
+      Start the default Homa-branded theme's playable download as soon as parsing reaches <head>,
+      before any JS runs. mountTheme() later assigns this URL to the portrait iframe and the bytes
+      are already arriving (or fully cached).
+    -->
+    <link
+      rel="preload"
+      as="document"
+      href="https://files.alconost.com/BBkzE6DZx7bFKqJGomNNO"
+      crossorigin
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"
+      defer
+    ></script>
+    <style>
+      :root {
+        --bg: #e8edf6;
+        --bg-elevated: #ffffff;
+        --sidebar-bg: rgba(255, 255, 255, 0.94);
+        --border: rgba(15, 23, 42, 0.09);
+        --border-strong: rgba(15, 23, 42, 0.16);
+        --text: #0f172a;
+        --muted: #64748b;
+        --accent: #4f46e5;
+        --accent-2: #0e7490;
+        --accent-glow: rgba(79, 70, 229, 0.28);
+        --item-active: rgba(79, 70, 229, 0.12);
+        --sidebar-width: 288px;
+        /* Макс. ширина превью портрета (~узкая сторона 9∶16) */
+        --phone-short-edge: min(352px, 52vw);
+        /* Макс. ширина превью альбома 16∶9 */
+        --phone-long-edge: min(520px, 78vw);
+        /* Подложка под макет телефона */
+        --device-stage-edge: rgba(15, 23, 42, 0.1);
+        --device-stage-glow: rgba(79, 70, 229, 0.16);
+        --device-stage-glow-soft: rgba(14, 116, 144, 0.12);
+        --network-chip-bg: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.98) 0%,
+          rgba(241, 245, 249, 0.94) 100%
+        );
+        --network-chip-border: rgba(15, 23, 42, 0.1);
+        --network-chip-text: rgba(30, 41, 59, 0.92);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      @keyframes showcase-float {
+        0%,
+        100% {
+          transform: translate(0, 0) scale(1);
+        }
+        50% {
+          transform: translate(2%, -1.5%) scale(1.02);
+        }
+      }
+
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        font-family:
+          'Outfit',
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .layout {
+        display: flex;
+        align-items: stretch;
+        min-height: 100vh;
+        height: 100%;
+      }
+
+      .sidebar {
+        width: var(--sidebar-width);
+        min-width: var(--sidebar-width);
+        height: 100vh;
+        position: sticky;
+        top: 0;
+        display: flex;
+        flex-direction: column;
+        background: var(--sidebar-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-right: 1px solid var(--border);
+        overflow: hidden;
+        box-shadow: 8px 0 36px rgba(15, 23, 42, 0.07);
+      }
+
+      .sidebar-header {
+        flex-shrink: 0;
+        padding: 22px 18px 18px;
+        border-bottom: 1px solid var(--border);
+        background: linear-gradient(
+          165deg,
+          rgba(79, 70, 229, 0.06) 0%,
+          transparent 55%
+        );
+      }
+
+      .brand-lockup {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin-bottom: 10px;
+      }
+
+      .brand-logo {
+        display: block;
+        height: 44px;
+        width: auto;
+        max-width: min(220px, 100%);
+        object-fit: contain;
+        object-position: left center;
+      }
+
+      .showcase-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0 0 12px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--accent-2);
+        background: rgba(14, 116, 144, 0.1);
+        border: 1px solid rgba(14, 116, 144, 0.22);
+      }
+
+      .showcase-eyebrow::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent-2);
+        box-shadow: 0 0 10px rgba(14, 116, 144, 0.45);
+      }
+
+      .sidebar-header h1 {
+        margin: 0 0 12px;
+        font-size: 1.35rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.15;
+        background: linear-gradient(105deg, #0f172a 0%, #334155 42%, #0369a1 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+
+      .sidebar-header .game-name {
+        display: inline;
+      }
+
+      .theme-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 14px 12px 20px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(79, 70, 229, 0.35) transparent;
+      }
+
+      .theme-list::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .theme-list::-webkit-scrollbar-thumb {
+        background: rgba(79, 70, 229, 0.35);
+        border-radius: 999px;
+      }
+
+      .sidebar-footer {
+        flex-shrink: 0;
+        padding: 12px 18px 16px;
+        border-top: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.6);
+      }
+
+      .sidebar-footer-text {
+        margin: 0;
+        font-size: 0.72rem;
+        font-weight: 500;
+        letter-spacing: 0.02em;
+        line-height: 1.4;
+        color: var(--muted);
+        text-align: left;
+      }
+
+      .sidebar-footer-text a {
+        color: var(--accent-2);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .sidebar-footer-text a:hover,
+      .sidebar-footer-text a:focus-visible {
+        text-decoration: underline;
+      }
+
+      .theme-item {
+        position: relative;
+        margin-bottom: 8px;
+        padding: 14px 14px 14px 16px;
+        font-size: 0.82rem;
+        cursor: pointer;
+        color: var(--muted);
+        border-radius: 14px;
+        border: 1px solid transparent;
+        background: rgba(15, 23, 42, 0.035);
+        transition:
+          background 0.22s ease,
+          border-color 0.22s ease,
+          color 0.22s ease,
+          transform 0.22s ease,
+          box-shadow 0.22s ease;
+      }
+
+      .theme-item::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 10px;
+        bottom: 10px;
+        width: 3px;
+        border-radius: 0 4px 4px 0;
+        background: linear-gradient(180deg, var(--accent), var(--accent-2));
+        opacity: 0;
+        transform: scaleY(0.6);
+        transition:
+          opacity 0.22s ease,
+          transform 0.22s ease;
+      }
+
+      .theme-item:hover {
+        background: rgba(255, 255, 255, 0.82);
+        border-color: var(--border);
+        color: var(--text);
+        transform: translateX(4px);
+        box-shadow:
+          0 10px 28px rgba(15, 23, 42, 0.08),
+          0 0 0 1px rgba(255, 255, 255, 0.9) inset;
+      }
+
+      .theme-item:hover::before {
+        opacity: 0.55;
+        transform: scaleY(1);
+      }
+
+      .theme-item:focus-visible {
+        outline: none;
+        border-color: rgba(79, 70, 229, 0.45);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.22);
+      }
+
+      .theme-item.active {
+        background: linear-gradient(
+          135deg,
+          rgba(79, 70, 229, 0.12) 0%,
+          rgba(14, 116, 144, 0.06) 100%
+        );
+        border-color: rgba(79, 70, 229, 0.28);
+        color: var(--text);
+        box-shadow:
+          0 14px 36px rgba(15, 23, 42, 0.08),
+          0 0 20px var(--accent-glow),
+          0 0 0 1px rgba(255, 255, 255, 0.85) inset;
+        transform: translateX(4px);
+      }
+
+      .theme-item.active::before {
+        opacity: 1;
+        transform: scaleY(1);
+      }
+
+      .theme-item .line {
+        display: block;
+      }
+
+      .theme-item .head {
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 6px;
+        font-size: 0.9rem;
+        letter-spacing: -0.01em;
+      }
+
+      .theme-item.active .head {
+        color: var(--text);
+      }
+
+      .theme-item .meta {
+        font-size: 0.78rem;
+        line-height: 1.5;
+        opacity: 0.92;
+        letter-spacing: 0.01em;
+      }
+
+      .preview-area {
+        flex: 1;
+        min-width: 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        height: 100vh;
+        position: relative;
+        background: var(--bg);
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .bottom-section {
+        position: relative;
+        z-index: 1;
+        flex-shrink: 0;
+        min-width: 0;
+        min-height: 0;
+        margin: 0;
+        padding: 18px 16px 20px;
+        border-top: none;
+        border-left: 1px solid var(--border);
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.72) 0%,
+          rgba(248, 250, 252, 0.96) 100%
+        );
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .bottom-section-inner {
+        max-width: none;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: center;
+        gap: 20px;
+      }
+
+      .bottom-section-main {
+        flex: 0 1 auto;
+        min-width: 0;
+        width: 100%;
+        text-align: center;
+      }
+
+      .bottom-section-title {
+        margin: 0 0 10px;
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--accent-2);
+        line-height: 1.4;
+        text-align: center;
+      }
+
+      .bottom-section-networks {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 8px;
+        justify-content: center;
+      }
+
+      .bottom-section-networks li {
+        margin: 0;
+        padding: 6px 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: clamp(11px, 1.1vw, 14px);
+        font-weight: 600;
+        color: var(--network-chip-text);
+        background: var(--network-chip-bg);
+        border: 1px solid var(--network-chip-border);
+        border-radius: 999px;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+        box-shadow:
+          0 4px 14px rgba(15, 23, 42, 0.06),
+          0 0 0 1px rgba(79, 70, 229, 0.06) inset;
+      }
+
+      /* Как на https://files.alconost.com/rVUdrfuYUzclWyCA1wLSd — .badge svg, .badge img */
+      .bottom-section-networks li svg,
+      .bottom-section-networks li img {
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+        display: block;
+        object-fit: contain;
+      }
+
+      .bottom-section-cta {
+        flex: 0 1 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        width: 100%;
+      }
+
+      .bottom-section-cta-lead {
+        margin: 28px 0 0;
+        font-size: 0.95rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--text);
+        text-align: center;
+      }
+
+      .bottom-section-cta-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px 18px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        text-decoration: none;
+        color: #0a0b10;
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 28px var(--accent-glow);
+        transition:
+          transform 0.15s ease,
+          filter 0.15s ease;
+      }
+
+      .bottom-section-cta-link:hover {
+        filter: brightness(1.06);
+        transform: translateY(-1px);
+      }
+
+      .bottom-section-cta-link:focus-visible {
+        outline: 2px solid var(--accent-2);
+        outline-offset: 3px;
+      }
+
+      .preview-area::before {
+        content: '';
+        position: absolute;
+        /* inset: -20%; */
+        background:
+          radial-gradient(ellipse 55% 45% at 18% 22%, rgba(79, 70, 229, 0.14), transparent 55%),
+          radial-gradient(ellipse 50% 40% at 88% 78%, rgba(14, 116, 144, 0.1), transparent 50%),
+          radial-gradient(ellipse 70% 50% at 50% 100%, rgba(99, 102, 241, 0.08), transparent 55%);
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        .preview-area::before {
+          animation: showcase-float 18s ease-in-out infinite;
+        }
+      }
+
+      .preview-area::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+        background-size: 48px 48px;
+        mask-image: radial-gradient(ellipse 75% 70% at 50% 45%, #000 20%, transparent 75%);
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.5;
+      }
+
+      .preview-column {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        flex: 0 1 auto;
+        width: 100%;
+        min-height: 100%;
+        padding: 12px 8px 14px;
+        gap: 10px;
+        border-right: none;
+        align-self: stretch;
+        box-sizing: border-box;
+      }
+      .preview-column:last-child {
+        border-right: none;
+      }
+
+      .preview-label {
+        text-align: center;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        color: var(--muted);
+      }
+
+      .preview-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        align-self: center;
+        flex-shrink: 0;
+        margin-top: 16px;
+      }
+
+      .qr-block {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .qr-card {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+        border-radius: 16px;
+        border: 1px solid var(--border-strong);
+        background: rgba(255, 255, 255, 0.82);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+      }
+
+      .qr-card-canvas {
+        width: 124px;
+        height: 124px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .qr-card-canvas canvas,
+      .qr-card-canvas img,
+      .qr-card-canvas svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .qr-card-canvas[data-state='loading']::after,
+      .qr-card-canvas[data-state='error']::after {
+        content: attr(data-message);
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+        text-align: center;
+        padding: 0 6px;
+      }
+
+      .qr-card-caption {
+        margin: 0;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      .btn-reload {
+        font: inherit;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 18px;
+        border-radius: 12px;
+        border: 1px solid transparent;
+        color: var(--text);
+        font-size: 0.82rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        cursor: pointer;
+        min-height: 44px;
+        transition:
+          background 0.2s ease,
+          border-color 0.2s ease,
+          color 0.2s ease,
+          transform 0.2s cubic-bezier(0.34, 1.3, 0.64, 1),
+          box-shadow 0.2s ease;
+      }
+
+      .btn-reload:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.28);
+      }
+
+      .btn-reload:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .btn-reload:disabled:hover {
+        transform: none;
+      }
+
+      .btn-copy {
+        gap: 8px;
+        border: 1px solid var(--border-strong);
+        background: rgba(255, 255, 255, 0.72);
+        color: var(--text);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
+
+      .btn-copy .btn-copy-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: var(--accent-2);
+      }
+
+      .btn-copy:hover:not(:disabled) {
+        border-color: rgba(14, 116, 144, 0.35);
+        background: rgba(224, 242, 254, 0.65);
+        color: var(--text);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.1);
+      }
+
+      .btn-copy:hover:not(:disabled) .btn-copy-icon {
+        color: #0e7490;
+      }
+
+      .btn-copy:active:not(:disabled) {
+        transform: translateY(0);
+      }
+
+      .btn-copy-icon-svg {
+        display: block;
+        width: 17px;
+        height: 17px;
+      }
+
+      .device-pair {
+        flex: 0 1 auto;
+        min-height: auto;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: clamp(16px, 3.5vw, 32px);
+        width: 100%;
+        box-sizing: border-box;
+        margin: 0;
+        padding: 18px 16px;
+        border-radius: 22px;
+        overflow: visible;
+        /* container-type: size; */
+        container-name: device-stage;
+        border: 1px solid var(--device-stage-edge);
+        background:
+          radial-gradient(
+            ellipse 90% 75% at 50% 44%,
+            var(--device-stage-glow) 0%,
+            transparent 58%
+          ),
+          radial-gradient(
+            ellipse 130% 85% at 50% -5%,
+            var(--device-stage-glow-soft) 0%,
+            transparent 50%
+          ),
+          linear-gradient(168deg, #fbfcfe 0%, #f4f7fb 42%, #e9eef8 100%);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.95),
+          inset 0 0 0 1px rgba(15, 23, 42, 0.06),
+          inset 0 -10px 28px rgba(15, 23, 42, 0.03),
+          0 4px 22px rgba(15, 23, 42, 0.06);
+      }
+
+      .device-pair-unit {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        flex: 0 1 auto;
+        min-width: 0;
+      }
+
+      .device-pair-unit .preview-label {
+        margin: 0;
+      }
+
+      /*
+       * Две простые рамки: iframe с реальными пропорциями (Pixi resizeTo → #game-container).
+       */
+      .preview-frame {
+        flex: 0 0 auto;
+        align-self: center;
+        box-sizing: border-box;
+        height: auto;
+        overflow: hidden;
+        border-radius: 32px;
+        border: 10px solid #4f4f5a;
+        background: #ffffff;
+        filter: drop-shadow(0 14px 28px rgba(15, 23, 42, 0.16))
+          drop-shadow(0 2px 8px rgba(15, 23, 42, 0.1));
+        box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.07);
+        position: relative;
+      }
+
+      /*
+       * Sticky iframes per theme: every theme owns its own portrait/landscape iframe inside the
+       * preview-frame container. Only the iframe with [data-active] is visible; the rest stay in
+       * the DOM so their playable runtime does not need to re-bootstrap when switched back.
+       */
+      .preview-frame iframe {
+        display: block;
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: #111;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      .preview-frame iframe[data-active],
+      .preview-frame .pending-upload-panel[data-active] {
+        visibility: visible !important;
+        pointer-events: auto;
+        z-index: 1;
+      }
+
+      .preview-frame--portrait {
+        width: min(var(--phone-short-edge), 100%);
+        max-width: min(380px, 100%);
+        aspect-ratio: 9 / 16;
+      }
+
+      .preview-frame--landscape {
+        width: min(var(--phone-long-edge), 100%);
+        max-width: min(640px, 100%);
+        aspect-ratio: 16 / 9;
+      }
+
+      @supports (width: min(1cqw, 100%)) {
+        .preview-frame--portrait {
+          width: min(var(--phone-short-edge), min(360px, 94cqw));
+        }
+
+        .preview-frame--landscape {
+          width: min(var(--phone-long-edge), min(620px, 94cqw));
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .theme-item:hover,
+        .theme-item.active {
+          transform: none;
+        }
+
+        .preview-area::before {
+          animation: none;
+        }
+
+        .btn-reload:hover:not(:disabled),
+        .btn-reload:active:not(:disabled),
+        .btn-copy:hover:not(:disabled),
+        .btn-copy:active:not(:disabled) {
+          transform: none;
+        }
+
+        .bottom-section-cta-link:hover {
+          transform: none;
+        }
+      }
+
+      /*
+       * Узкий экран: этот блок в конце, чтобы перекрыть flex-цепочку без обрезки контента при скролле.
+       */
+      @media (max-width: 700px) {
+        :root {
+          --phone-short-edge: min(322px, 94vw);
+          --phone-long-edge: min(560px, 96vw);
+        }
+
+        .layout {
+          flex-direction: column;
+          align-items: stretch;
+          min-height: 100%;
+          height: auto;
+        }
+
+        .sidebar {
+          width: 100%;
+          min-width: 0;
+          flex: 0 0 auto;
+          height: auto;
+          max-height: none;
+          position: relative;
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+        }
+
+        .theme-list {
+          flex: 0 1 auto;
+          max-height: min(38vh, 240px);
+        }
+
+        .preview-area {
+          display: flex;
+          flex-direction: column;
+          flex: 0 0 auto;
+          width: 100%;
+          min-width: 0;
+          height: auto;
+          min-height: 0;
+          overflow: visible;
+        }
+
+        .bottom-section {
+          padding: 18px 16px 20px;
+          border-left: none;
+          border-top: 1px solid var(--border);
+          justify-content: flex-start;
+          overflow-y: visible;
+        }
+
+        .bottom-section-inner {
+          flex-direction: column;
+          align-items: stretch;
+          max-width: 900px;
+          margin: 0 auto;
+          width: 100%;
+        }
+
+        .bottom-section-title {
+          font-size: 0.68rem;
+          letter-spacing: 0.18em;
+          text-align: center;
+        }
+
+        .bottom-section-networks {
+          justify-content: center;
+        }
+
+        .bottom-section-cta {
+          align-items: center;
+        }
+
+        .bottom-section-cta-link {
+          text-align: center;
+          width: auto;
+          align-self: center;
+        }
+
+        .preview-column {
+          flex: 0 0 auto;
+          height: auto;
+          min-height: 0;
+          align-self: stretch;
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+        }
+
+        .preview-column:last-child {
+          border-bottom: none;
+        }
+
+        .device-pair {
+          flex-direction: column;
+          gap: 20px;
+          padding: 14px 8px;
+          border-radius: 20px;
+        }
+
+        .preview-frame {
+          max-width: 100%;
+        }
+
+        .preview-frame--portrait,
+        .preview-frame--landscape {
+          width: min(100%, 100vw - 32px);
+        }
+        .preview-frame--portrait {
+          max-width: 400px;
+        }
+
+        @supports (width: min(1cqw, 100%)) {
+          .preview-frame--portrait,
+          .preview-frame--landscape {
+            width: min(100vw, 90vw);
+          }
+        }
+
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar" aria-label="Themes">
+        <div class="sidebar-header">
+          <div class="brand-lockup">
+            <img
+              class="brand-logo"
+              src="/Homa_games-logo.png"
+              alt="Homa Games"
+              width="220"
+              height="44"
+              decoding="async"
+            />
+            <div>
+              <p class="showcase-eyebrow">Playable ads</p>
+              <h1>
+                <span class="game-name" id="game-title">Playable Ad Roster</span>
+              </h1>
+            </div>
+          </div>
+        </div>
+        <div class="theme-list" id="theme-list" role="list"></div>
+        <div class="sidebar-footer">
+          <p class="sidebar-footer-text">
+            By
+            <a
+              href="https://alconost.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Alconost</a
+            >
+            · playable ads &amp; localization
+          </p>
+        </div>
+      </aside>
+
+      <div class="preview-area">
+        <div class="preview-column" aria-label="Device preview">
+          <div class="device-pair" role="group" aria-label="Portrait and landscape playable previews">
+              <div class="device-pair-unit">
+                <p class="preview-label">Portrait</p>
+                <div
+                  class="preview-frame preview-frame--portrait"
+                  id="frame-portrait"
+                ></div>
+              </div>
+              <div class="device-pair-unit">
+                <p class="preview-label">Landscape</p>
+                <div
+                  class="preview-frame preview-frame--landscape"
+                  id="frame-landscape"
+                ></div>
+              </div>
+          </div>
+          <div class="preview-actions">
+            <div class="qr-block">
+              <div class="qr-card" id="qr-card">
+                <div
+                  class="qr-card-canvas"
+                  id="qr-card-canvas"
+                  aria-hidden="true"
+                  data-state="loading"
+                  data-message="Loading…"
+                ></div>
+              </div>
+              <p class="qr-card-caption">Scan to play on your phone</p>
+            </div>
+            <button type="button" class="btn-reload btn-copy" id="btn-open-build-link">
+              <span class="btn-copy-icon" aria-hidden="true">
+                <svg
+                  class="btn-copy-icon-svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M14 4h6v6"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M20 4 11 13"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
+              <span class="btn-copy-label">Open game in new tab</span>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Temporarily hidden: cross-platform + CTA (uncomment to restore)
+        <section
+          class="bottom-section"
+          aria-labelledby="bottom-section-heading"
+        >
+          <div class="bottom-section-inner">
+            <div class="bottom-section-main">
+              <h2 class="bottom-section-title" id="bottom-section-heading">
+                Cross-Platform Compatibility
+              </h2>
+              <ul class="bottom-section-networks" role="list">
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M4 20L12 4l8 16"
+                      stroke="#FF6B00"
+                      stroke-width="2.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M8 12h8"
+                      stroke="#FF6B00"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                  Vungle
+                </li>
+                <li>
+                  <img
+                    src="https://files.alconost.com/z_swJiQoFYSSVsd_7ByC9"
+                    alt=""
+                    width="16"
+                    height="16"
+                    draggable="false"
+                  />
+                  AppLovin
+                </li>
+                <li>
+                  <img
+                    src="https://files.alconost.com/xaBMuMvN1wjNKHiwbX6I_"
+                    alt=""
+                    width="16"
+                    height="16"
+                    draggable="false"
+                  />
+                  Unity Ads
+                </li>
+                <li>
+                  <img
+                    src="https://files.alconost.com/fM6p-BvjlzJxioJNd653V"
+                    alt=""
+                    width="16"
+                    height="16"
+                    draggable="false"
+                  />
+                  Google Ads
+                </li>
+                <li>Mintegral</li>
+                <li>
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="7" cy="12" r="4" fill="#6C3FE0" />
+                    <circle cx="17" cy="12" r="4" fill="#6C3FE0" />
+                    <path d="M11 12a5 5 0 0 1 2 0" fill="#6C3FE0" />
+                  </svg>
+                  Moloco
+                </li>
+                <li>
+                  <img
+                    src="https://files.alconost.com/wypUq5Fq-8E8QqKju88k5"
+                    alt=""
+                    width="16"
+                    height="16"
+                    draggable="false"
+                  />
+                  ironSource
+                </li>
+                <li>
+                  <img
+                    src="https://files.alconost.com/vSBDBx4zErhd6LLIW48yL"
+                    alt=""
+                    width="16"
+                    height="16"
+                    draggable="false"
+                  />
+                  Meta
+                </li>
+              </ul>
+            </div>
+            <div class="bottom-section-cta">
+              <p class="bottom-section-cta-lead">Get your playable ad</p>
+              <a
+                class="bottom-section-cta-link"
+                href="https://alconost.com/en/order"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Request a quote
+              </a>
+            </div>
+          </div>
+        </section>
+        -->
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        function formatBundleBytes(n) {
+          if (typeof n !== 'number' || !isFinite(n) || n < 0) {
+            return '';
+          }
+          if (n < 1024) {
+            return n + ' B';
+          }
+          if (n < 1048576) {
+            return (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB';
+          }
+          return (n / 1048576).toFixed(n < 10485760 ? 1 : 0) + ' MB';
+        }
+
+        /**
+         * Homa Games variant of the showcase. Each playable is the Attack Hole brand build of the
+         * matching theme — produced by `npm run build:<theme>:homa` and uploaded to Stashy by
+         * tools/upload-homa-builds.mjs. To refresh: rerun that script, then sync the URLs below
+         * (they live in tools/homa-build-urls.json after each run).
+         */
+        let SHOWCASE = {
+          gameTitle: 'Playable Ad Roster',
+          themes: [
+            {
+              id: 'default',
+              head: '\u2699\uFE0F Default',
+              meta:
+                'Default build · Theme: classic palette',
+              url: 'https://files.alconost.com/BBkzE6DZx7bFKqJGomNNO',
+            },
+            {
+              id: 'space',
+              head: '\uD83D\uDE80 Space',
+              meta: 'Global · Theme: cosmic props & starfield',
+              url: 'https://files.alconost.com/Z5gnq0lWanb9i7nlDbUxs',
+              hidden: true,
+            },
+            {
+              id: 'city',
+              head: '\uD83C\uDFD9\uFE0F City',
+              meta:
+                'Theme: urban skyline · Props: pizza, coffee, cones',
+              url: 'https://files.alconost.com/hQcB6h5On4P20M9ba7w6i',
+              hidden: true,
+            },
+            {
+              id: 'global_fiesta',
+              head: '\uD83C\uDF89 Global fiesta',
+              meta:
+                'Markets: global English & LATAM · Theme: vibrant fiesta',
+              url: 'https://files.alconost.com/Sb1VGkfDTbpjREw4fpstv',
+            },
+            {
+              id: 'jp_kawaii',
+              head: '\uD83C\uDF38 JP kawaii',
+              meta:
+                'Japanese market · Audience: female 18–34 · Theme: kawaii pastel',
+              url: 'https://files.alconost.com/yc0pVskAUiclu6sEDhyGk',
+            },
+            {
+              id: 'kr_sea_pop',
+              head: '\uD83C\uDFB6 KR sea pop',
+              meta:
+                'Korea & SEA markets · Audience: 16–30 · Theme: K-pop & boba',
+              url: 'https://files.alconost.com/wSXtJUvynJ7k3dk2nYOyP',
+            },
+            {
+              id: 'uk_pub',
+              head: '\uD83C\uDF7B UK pub',
+              meta:
+                'UK & Ireland · Audience: 18–30 · Theme: pub culture',
+              url: 'https://files.alconost.com/-6wso4usHDz62FtMEqM2b',
+            },
+            {
+              id: 'zh_urban',
+              head: '\uD83C\uDFEF Zh urban',
+              meta:
+                'China (zh-CN) · Audience: urban 18–35 · Theme: modern festive',
+              url: 'https://files.alconost.com/l5cGuVF5s-qiLM0I2KsSA',
+            },
+          ],
+        };
+
+        let listEl = document.getElementById('theme-list');
+        let frameContainers = {
+          portrait: document.getElementById('frame-portrait'),
+          landscape: document.getElementById('frame-landscape'),
+        };
+        let btnOpenBuild = document.getElementById('btn-open-build-link');
+        let qrCanvasEl = document.getElementById('qr-card-canvas');
+        let activeEl = null;
+        let activeBuildUrl = '';
+        let activeThemeId = null;
+
+        /**
+         * Sticky iframes per theme. We keep a portrait + landscape iframe per theme alive in the
+         * DOM so switching themes is just a visibility toggle — no network, no playable re-boot.
+         * The active pair carries a [data-active] attribute that the CSS uses to reveal it.
+         */
+        let themeMounts = Object.create(null);
+        let themeLoadStatus = Object.create(null);
+        // URLs already pulled into HTTP cache, either by the background warmer (cache-only fetch)
+        // or by a previous full iframe mount. Used to skip redundant work.
+        let warmedUrls = Object.create(null);
+
+        function buildIframe(t, orientation) {
+          let iframe = document.createElement('iframe');
+          iframe.setAttribute(
+            'title',
+            'Playable ' + orientation + ' \u2014 ' + (t.id || 'theme')
+          );
+          iframe.setAttribute('allow', 'autoplay; fullscreen');
+          iframe.setAttribute('loading', 'eager');
+          iframe.setAttribute('data-theme-id', t.id);
+          if (orientation === 'portrait') {
+            iframe.width = '390';
+            iframe.height = '844';
+          } else {
+            iframe.width = '1280';
+            iframe.height = '720';
+          }
+          return iframe;
+        }
+
+        /**
+         * Mount this theme's portrait+landscape iframes if not yet present. Returns the mount
+         * record. Calls into onLoaded once both iframes have fired their load (or error) event so
+         * the warmer can sequence one theme at a time.
+         */
+        function buildPendingPanel(t, orientation) {
+          let panel = document.createElement('div');
+          panel.className = 'pending-upload-panel';
+          panel.setAttribute('data-theme-id', t.id);
+          panel.setAttribute('data-orientation', orientation);
+          panel.setAttribute('role', 'status');
+          panel.style.cssText =
+            'position:absolute;inset:0;display:flex;flex-direction:column;' +
+            'align-items:center;justify-content:center;gap:8px;padding:24px;' +
+            'background:linear-gradient(180deg,#0f1117,#1a1f2c);color:#cbd5e1;' +
+            'font-family:Outfit,system-ui,sans-serif;text-align:center;' +
+            'border-radius:16px;visibility:hidden;';
+          let title = document.createElement('p');
+          title.textContent = 'Build pending upload';
+          title.style.cssText = 'margin:0;font-weight:600;font-size:14px;color:#f8fafc;';
+          let hint = document.createElement('p');
+          hint.textContent =
+            'Run npm run build:' + t.id + ':homa, upload dist/index.html to Stashy, then paste the URL into showcase-homa-games.html.';
+          hint.style.cssText = 'margin:0;font-size:12px;line-height:1.45;max-width:280px;opacity:0.75;';
+          panel.append(title, hint);
+          return panel;
+        }
+
+        function mountTheme(t, onLoaded) {
+          let existing = themeMounts[t.id];
+          if (existing) {
+            if (typeof onLoaded === 'function') {
+              if (themeLoadStatus[t.id] === 'loaded') {
+                onLoaded();
+              } else {
+                let prev = existing.onLoadedCb;
+                existing.onLoadedCb = function () {
+                  if (typeof prev === 'function') prev();
+                  onLoaded();
+                };
+              }
+            }
+            return existing;
+          }
+
+          // Homa Games variant: when the build hasn't been uploaded yet (url === '#'), avoid
+          // pointing iframe.src at the placeholder (which would just embed the showcase itself
+          // recursively). Instead, mount a static "Build pending upload" panel that follows the
+          // same data-active visibility contract as the real iframes.
+          if (!t.url || t.url === '#') {
+            let portraitPanel = buildPendingPanel(t, 'portrait');
+            let landscapePanel = buildPendingPanel(t, 'landscape');
+            let pendingRecord = {
+              portrait: portraitPanel,
+              landscape: landscapePanel,
+              portraitLoaded: true,
+              landscapeLoaded: true,
+              landscapeStarted: true,
+              onLoadedCb: null,
+            };
+            themeMounts[t.id] = pendingRecord;
+            themeLoadStatus[t.id] = 'loaded';
+            frameContainers.portrait.appendChild(portraitPanel);
+            frameContainers.landscape.appendChild(landscapePanel);
+            if (typeof onLoaded === 'function') onLoaded();
+            return pendingRecord;
+          }
+
+          let portrait = buildIframe(t, 'portrait');
+          let landscape = buildIframe(t, 'landscape');
+          let record = {
+            portrait: portrait,
+            landscape: landscape,
+            portraitLoaded: false,
+            landscapeLoaded: false,
+            landscapeStarted: false,
+            onLoadedCb: typeof onLoaded === 'function' ? onLoaded : null,
+          };
+          themeMounts[t.id] = record;
+          themeLoadStatus[t.id] = 'loading';
+
+          function checkLoaded() {
+            if (record.portraitLoaded && record.landscapeLoaded) {
+              themeLoadStatus[t.id] = 'loaded';
+              warmedUrls[t.url] = true;
+              if (typeof record.onLoadedCb === 'function') {
+                let cb = record.onLoadedCb;
+                record.onLoadedCb = null;
+                cb();
+              }
+            }
+          }
+
+          /**
+           * Sequence portrait then landscape so we hit the network once. Once portrait fires
+           * `load`/`error` (or a safety timeout elapses), the playable HTML is in HTTP cache and
+           * landscape's fetch resolves from cache — and Pixi boot for landscape no longer has to
+           * compete with portrait for CPU.
+           */
+          let landscapeStartTimer = null;
+          function startLandscape() {
+            if (record.landscapeStarted) return;
+            record.landscapeStarted = true;
+            if (landscapeStartTimer) {
+              clearTimeout(landscapeStartTimer);
+              landscapeStartTimer = null;
+            }
+            landscape.src = t.url;
+          }
+
+          portrait.addEventListener('load', function () {
+            record.portraitLoaded = true;
+            startLandscape();
+            checkLoaded();
+          });
+          portrait.addEventListener('error', function () {
+            record.portraitLoaded = true;
+            startLandscape();
+            checkLoaded();
+          });
+          landscape.addEventListener('load', function () {
+            record.landscapeLoaded = true;
+            checkLoaded();
+          });
+          landscape.addEventListener('error', function () {
+            record.landscapeLoaded = true;
+            checkLoaded();
+          });
+
+          frameContainers.portrait.appendChild(portrait);
+          frameContainers.landscape.appendChild(landscape);
+
+          portrait.src = t.url;
+          // Safety net: if portrait never fires load (e.g. very slow response, parsing stalled),
+          // start landscape after 1.5s so we don't block the user-visible second preview forever.
+          landscapeStartTimer = setTimeout(startLandscape, 1500);
+
+          return record;
+        }
+
+        /**
+         * Background warmer: walks every non-hidden theme in order and pulls the playable HTML
+         * into the browser's HTTP cache via fetch(). We deliberately do NOT mount full iframes
+         * here — that would spin up an extra Pixi runtime per theme and steal CPU from the active
+         * preview. When the user later clicks an unvisited theme, the bytes are already cached so
+         * the resulting iframe mount only pays the (single-threaded) Pixi boot cost.
+         *
+         * The warmer pauses while the user-visible active pair is still booting so we don't fight
+         * for bandwidth during the most visible moment.
+         */
+        let warmerPaused = false;
+        let warmerActive = false;
+        let warmerAbort = null;
+
+        function nextThemeToWarm() {
+          for (var i = 0; i < SHOWCASE.themes.length; i++) {
+            var t = SHOWCASE.themes[i];
+            if (t.hidden) continue;
+            if (!t.url || t.url === '#') continue;
+            if (warmedUrls[t.url]) continue;
+            return t;
+          }
+          return null;
+        }
+
+        function warmNext() {
+          if (warmerPaused) {
+            warmerActive = false;
+            return;
+          }
+          var t = nextThemeToWarm();
+          if (!t) {
+            warmerActive = false;
+            return;
+          }
+          warmerActive = true;
+
+          var controller =
+            typeof AbortController === 'function' ? new AbortController() : null;
+          warmerAbort = controller;
+
+          var opts = {
+            mode: 'no-cors',
+            credentials: 'omit',
+            cache: 'default',
+            // Hint browsers (Chromium-based) to use idle-priority for this background fetch.
+            priority: 'low',
+          };
+          if (controller) opts.signal = controller.signal;
+
+          function finish() {
+            if (warmerAbort === controller) warmerAbort = null;
+            warmedUrls[t.url] = true;
+            // Short delay so the browser can decompress/cache the response between requests and
+            // we don't saturate Stashy with back-to-back hits.
+            setTimeout(warmNext, 150);
+          }
+
+          fetch(t.url, opts).then(finish).catch(function () {
+            // Treat aborts as a pause — leave warmedUrls untouched so we retry later.
+            if (warmerPaused) {
+              warmerActive = false;
+              return;
+            }
+            finish();
+          });
+        }
+
+        function pauseWarmer() {
+          warmerPaused = true;
+          if (warmerAbort) {
+            try {
+              warmerAbort.abort();
+            } catch (err) {
+              /* noop */
+            }
+            warmerAbort = null;
+          }
+        }
+
+        function resumeWarmer() {
+          if (!warmerPaused && warmerActive) return;
+          warmerPaused = false;
+          if (!warmerActive) warmNext();
+        }
+
+        document.getElementById('game-title').textContent = SHOWCASE.gameTitle;
+
+        function updateCopyButtonState() {
+          let usable = activeBuildUrl && activeBuildUrl !== '#';
+          btnOpenBuild.disabled = !usable;
+        }
+
+        /**
+         * Render a QR for the given URL into the qr-card-canvas. Falls back gracefully if the
+         * `qrcode-generator` script hasn't finished loading yet (retry on script load).
+         */
+        let qrInstance = null;
+        let qrPendingUrl = null;
+
+        function setQrState(state, message) {
+          if (!qrCanvasEl) return;
+          qrCanvasEl.setAttribute('data-state', state);
+          qrCanvasEl.setAttribute('data-message', message || '');
+        }
+
+        function renderQr(url) {
+          if (!qrCanvasEl) return;
+          if (!url || url === '#') {
+            qrCanvasEl.innerHTML = '';
+            setQrState('error', 'No link');
+            return;
+          }
+          if (typeof window.qrcode !== 'function') {
+            qrPendingUrl = url;
+            setQrState('loading', 'Loading\u2026');
+            return;
+          }
+          try {
+            // typeNumber 0 = auto-pick smallest size that fits, error correction "M" = balanced.
+            let qr = window.qrcode(0, 'M');
+            qr.addData(url);
+            qr.make();
+            // cellSize 4 + margin 2 → ~120px svg that scales to the 124px card.
+            qrCanvasEl.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+            setQrState('ready', '');
+            qrInstance = qr;
+          } catch (err) {
+            qrCanvasEl.innerHTML = '';
+            setQrState('error', 'QR error');
+          }
+        }
+
+        // Some browsers fire DOMContentLoaded before the deferred QR script executes.
+        // Wait for `window.qrcode` if it's not yet available, then redraw any pending URL.
+        if (typeof window.qrcode !== 'function') {
+          let pollStart = Date.now();
+          let pollId = setInterval(function () {
+            if (typeof window.qrcode === 'function') {
+              clearInterval(pollId);
+              if (qrPendingUrl) renderQr(qrPendingUrl);
+            } else if (Date.now() - pollStart > 6000) {
+              clearInterval(pollId);
+              if (qrPendingUrl) setQrState('error', 'QR unavailable');
+            }
+          }, 100);
+        }
+
+        /**
+         * Reveal the requested theme's iframes. Mounts them lazily on first visit so the initial
+         * page paint is not blocked by every playable booting at once. Subsequent visits are
+         * instant — both portrait and landscape iframes stay live in the DOM.
+         */
+        function showTheme(row, t) {
+          if (activeEl) activeEl.classList.remove('active');
+          row.classList.add('active');
+          activeEl = row;
+          activeBuildUrl = t.url;
+          activeThemeId = t.id;
+
+          pauseWarmer();
+
+          // Hide previously-active iframes (or pending-upload panels) across all mounted themes.
+          let prevPortrait = frameContainers.portrait.querySelector('[data-active]');
+          if (prevPortrait) prevPortrait.removeAttribute('data-active');
+          let prevLandscape = frameContainers.landscape.querySelector('[data-active]');
+          if (prevLandscape) prevLandscape.removeAttribute('data-active');
+
+          let mount = mountTheme(t, function () {
+            // Once this theme has finished booting, let the warmer continue in the background.
+            if (activeThemeId === t.id) resumeWarmer();
+          });
+          mount.portrait.setAttribute('data-active', '');
+          mount.landscape.setAttribute('data-active', '');
+
+          // If this theme was already mounted (warmed earlier), unblock the warmer immediately.
+          if (themeLoadStatus[t.id] === 'loaded') {
+            resumeWarmer();
+          }
+
+          renderQr(t.url);
+          updateCopyButtonState();
+        }
+
+        let visibleThemes = SHOWCASE.themes.filter(function (t) {
+          return !t.hidden;
+        });
+
+        visibleThemes.forEach(function (t, i) {
+          let row = document.createElement('div');
+          row.className = 'theme-item' + (i === 0 ? ' active' : '');
+          row.setAttribute('role', 'listitem');
+          row.setAttribute('tabindex', '0');
+
+          let head = document.createElement('span');
+          head.className = 'head line';
+          head.textContent = t.head;
+
+          let meta = document.createElement('span');
+          meta.className = 'meta line';
+          let sizePart = formatBundleBytes(t.bundleBytes);
+          meta.textContent = sizePart ? t.meta + ' ' + sizePart : t.meta;
+
+          row.appendChild(head);
+          row.appendChild(meta);
+
+          function activate() {
+            showTheme(row, t);
+          }
+
+          row.addEventListener('click', activate);
+          row.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              activate();
+            }
+          });
+
+          listEl.appendChild(row);
+
+          if (i === 0) {
+            showTheme(row, t);
+          }
+        });
+
+        btnOpenBuild.addEventListener('click', function () {
+          if (!activeBuildUrl || activeBuildUrl === '#') return;
+          window.open(activeBuildUrl, '_blank', 'noopener,noreferrer');
+        });
+      })();
+    </script>
+  </body>
+</html>

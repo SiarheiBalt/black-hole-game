@@ -1,0 +1,42 @@
+{
+  "default": {
+    "id": "-o-83pqoJTjJbqrvSfgv0",
+    "url": "https://files.alconost.com/-o-83pqoJTjJbqrvSfgv0",
+    "bundleBytes": 2489681
+  },
+  "space": {
+    "id": "btDittO5wP9uQPuHmgXwZ",
+    "url": "https://files.alconost.com/btDittO5wP9uQPuHmgXwZ",
+    "bundleBytes": 2503089
+  },
+  "city": {
+    "id": "RLMasAWoosVrt3JsFc1Vl",
+    "url": "https://files.alconost.com/RLMasAWoosVrt3JsFc1Vl",
+    "bundleBytes": 2605426
+  },
+  "global_fiesta": {
+    "id": "gBT_MvMxCD34SBu211LGc",
+    "url": "https://files.alconost.com/gBT_MvMxCD34SBu211LGc",
+    "bundleBytes": 2714268
+  },
+  "jp_kawaii": {
+    "id": "j76oED0a2KMTXLkrwN5Lw",
+    "url": "https://files.alconost.com/j76oED0a2KMTXLkrwN5Lw",
+    "bundleBytes": 2713905
+  },
+  "kr_sea_pop": {
+    "id": "QeAwvK6-dBN1F3FMGRKPH",
+    "url": "https://files.alconost.com/QeAwvK6-dBN1F3FMGRKPH",
+    "bundleBytes": 2662692
+  },
+  "uk_pub": {
+    "id": "TO5wgbiocoPmMDX7mWYzE",
+    "url": "https://files.alconost.com/TO5wgbiocoPmMDX7mWYzE",
+    "bundleBytes": 2685611
+  },
+  "zh_urban": {
+    "id": "2gE1_lR8UmhpfHlI0vuuk",
+    "url": "https://files.alconost.com/2gE1_lR8UmhpfHlI0vuuk",
+    "bundleBytes": 2732933
+  }
+}
