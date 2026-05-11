@@ -11,3 +11,5 @@
 /tools/theme-gen/agent-stage/
 
 .cursor
+
+.env

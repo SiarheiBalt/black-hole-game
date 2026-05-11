@@ -3,13 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Black Hole — Playable ads showcase</title>
+    <title>Playable Ad Roster — showcase</title>
+    <link rel="dns-prefetch" href="https://files.alconost.com" />
+    <link rel="preconnect" href="https://files.alconost.com" crossorigin />
+    <!--
+      Start the default theme's playable download as soon as parsing reaches <head>, before any
+      JS runs. mountTheme() later assigns this URL to the portrait iframe and the bytes are
+      already arriving (or fully cached).
+    -->
+    <link
+      rel="preload"
+      as="document"
+      href="https://files.alconost.com/IaRy1OOCRzZz75Qb8kyCi"
+      crossorigin
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <script
+      src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"
+      defer
+    ></script>
     <style>
       :root {
         --bg: #e8edf6;
@@ -106,6 +123,22 @@
         );
       }
 
+      .brand-lockup {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin-bottom: 10px;
+      }
+
+      .brand-logo {
+        display: block;
+        height: 44px;
+        width: auto;
+        max-width: min(220px, 100%);
+        object-fit: contain;
+        object-position: left center;
+      }
+
       .showcase-eyebrow {
         display: inline-flex;
         align-items: center;
@@ -147,35 +180,6 @@
         display: inline;
       }
 
-      .variant-count-container {
-        margin: 0;
-        display: flex;
-        flex-wrap: wrap;
-        align-items: baseline;
-        gap: 6px 10px;
-      }
-
-      .variant-count {
-        font-weight: 800;
-        font-size: 1.5rem;
-        line-height: 1;
-        letter-spacing: -0.03em;
-        background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
-      }
-
-      .sidebar-header .tagline {
-        margin: 0;
-        flex: 1 1 140px;
-        min-width: 0;
-        font-size: 0.8rem;
-        font-weight: 500;
-        color: var(--muted);
-        line-height: 1.45;
-      }
-
       .theme-list {
         flex: 1;
         overflow-y: auto;
@@ -192,6 +196,34 @@
       .theme-list::-webkit-scrollbar-thumb {
         background: rgba(79, 70, 229, 0.35);
         border-radius: 999px;
+      }
+
+      .sidebar-footer {
+        flex-shrink: 0;
+        padding: 12px 18px 16px;
+        border-top: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.6);
+      }
+
+      .sidebar-footer-text {
+        margin: 0;
+        font-size: 0.72rem;
+        font-weight: 500;
+        letter-spacing: 0.02em;
+        line-height: 1.4;
+        color: var(--muted);
+        text-align: left;
+      }
+
+      .sidebar-footer-text a {
+        color: var(--accent-2);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .sidebar-footer-text a:hover,
+      .sidebar-footer-text a:focus-visible {
+        text-decoration: underline;
       }
 
       .theme-item {
@@ -286,9 +318,10 @@
       }
 
       .theme-item .meta {
-        font-size: 0.74rem;
-        line-height: 1.4;
+        font-size: 0.78rem;
+        line-height: 1.5;
         opacity: 0.92;
+        letter-spacing: 0.01em;
       }
 
       .preview-area {
@@ -510,10 +543,69 @@
         flex-wrap: wrap;
         align-items: center;
         justify-content: center;
-        gap: 10px;
+        gap: 18px;
         align-self: center;
         flex-shrink: 0;
         margin-top: 16px;
+      }
+
+      .qr-block {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .qr-card {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+        border-radius: 16px;
+        border: 1px solid var(--border-strong);
+        background: rgba(255, 255, 255, 0.82);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+      }
+
+      .qr-card-canvas {
+        width: 124px;
+        height: 124px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .qr-card-canvas canvas,
+      .qr-card-canvas img,
+      .qr-card-canvas svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .qr-card-canvas[data-state='loading']::after,
+      .qr-card-canvas[data-state='error']::after {
+        content: attr(data-message);
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+        text-align: center;
+        padding: 0 6px;
+      }
+
+      .qr-card-caption {
+        margin: 0;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+        text-align: center;
       }
 
       .btn-reload {
@@ -659,14 +751,30 @@
         filter: drop-shadow(0 14px 28px rgba(15, 23, 42, 0.16))
           drop-shadow(0 2px 8px rgba(15, 23, 42, 0.1));
         box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.07);
+        position: relative;
       }
 
+      /*
+       * Sticky iframes per theme: every theme owns its own portrait/landscape iframe inside the
+       * preview-frame container. Only the iframe with [data-active] is visible; the rest stay in
+       * the DOM so their playable runtime does not need to re-bootstrap when switched back.
+       */
       .preview-frame iframe {
         display: block;
+        position: absolute;
+        inset: 0;
         width: 100%;
         height: 100%;
         border: 0;
         background: #111;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      .preview-frame iframe[data-active] {
+        visibility: visible;
+        pointer-events: auto;
+        z-index: 1;
       }
 
       .preview-frame--portrait {
@@ -838,18 +946,36 @@
     <div class="layout">
       <aside class="sidebar" aria-label="Themes">
         <div class="sidebar-header">
-          <p class="showcase-eyebrow">Playable ads</p>
-          <h1>
-            <span class="game-name" id="game-title">Black Hole</span>
-          </h1>
-          <p class="variant-count-container">
-            <span class="variant-count" id="variant-count">8</span>
-            <span class="tagline" id="game-tagline">
-              themed playable builds — drag to swallow the board
-            </span>
-          </p>
+          <div class="brand-lockup">
+            <img
+              class="brand-logo"
+              src="/moon-active-logo.png"
+              alt="Moon Active"
+              width="220"
+              height="44"
+              decoding="async"
+            />
+            <div>
+              <p class="showcase-eyebrow">Playable ads</p>
+              <h1>
+                <span class="game-name" id="game-title">Playable Ad Roster</span>
+              </h1>
+            </div>
+          </div>
         </div>
         <div class="theme-list" id="theme-list" role="list"></div>
+        <div class="sidebar-footer">
+          <p class="sidebar-footer-text">
+            By
+            <a
+              href="https://alconost.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Alconost</a
+            >
+            · playable ads &amp; localization
+          </p>
+        </div>
       </aside>
 
       <div class="preview-area">
@@ -857,31 +983,33 @@
           <div class="device-pair" role="group" aria-label="Portrait and landscape playable previews">
               <div class="device-pair-unit">
                 <p class="preview-label">Portrait</p>
-                <div class="preview-frame preview-frame--portrait">
-                  <iframe
-                    id="iframe-portrait"
-                    width="390"
-                    height="844"
-                    title="Playable portrait"
-                    allow="autoplay; fullscreen"
-                  ></iframe>
-                </div>
+                <div
+                  class="preview-frame preview-frame--portrait"
+                  id="frame-portrait"
+                ></div>
               </div>
               <div class="device-pair-unit">
                 <p class="preview-label">Landscape</p>
-                <div class="preview-frame preview-frame--landscape">
-                  <iframe
-                    id="iframe-landscape"
-                    width="1280"
-                    height="720"
-                    title="Playable landscape"
-                    allow="autoplay; fullscreen"
-                  ></iframe>
-                </div>
+                <div
+                  class="preview-frame preview-frame--landscape"
+                  id="frame-landscape"
+                ></div>
               </div>
           </div>
           <div class="preview-actions">
-            <button type="button" class="btn-reload btn-copy" id="btn-copy-build-link">
+            <div class="qr-block">
+              <div class="qr-card" id="qr-card">
+                <div
+                  class="qr-card-canvas"
+                  id="qr-card-canvas"
+                  aria-hidden="true"
+                  data-state="loading"
+                  data-message="Loading…"
+                ></div>
+              </div>
+              <p class="qr-card-caption">Scan to play on your phone</p>
+            </div>
+            <button type="button" class="btn-reload btn-copy" id="btn-open-build-link">
               <span class="btn-copy-icon" aria-hidden="true">
                 <svg
                   class="btn-copy-icon-svg"
@@ -890,13 +1018,21 @@
                   xmlns="http://www.w3.org/2000/svg"
                 >
                   <path
-                    d="M8 4v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7.242a2 2 0 0 0-.602-1.43L16.083 2.598A2 2 0 0 0 14.685 2H10a2 2 0 0 0-2 2Z"
+                    d="M14 4h6v6"
                     stroke="currentColor"
                     stroke-width="1.75"
+                    stroke-linecap="round"
                     stroke-linejoin="round"
                   />
                   <path
-                    d="M16 18v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2"
+                    d="M20 4 11 13"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"
                     stroke="currentColor"
                     stroke-width="1.75"
                     stroke-linecap="round"
@@ -904,7 +1040,7 @@
                   />
                 </svg>
               </span>
-              <span class="btn-copy-label">Copy link</span>
+              <span class="btn-copy-label">Open game in new tab</span>
             </button>
           </div>
         </div>
@@ -1032,98 +1168,397 @@
         }
 
         let SHOWCASE = {
-          gameTitle: 'Black Hole',
-          variantCount: 8,
-          tagline: 'themed playable builds — drag to swallow the board',
+          gameTitle: 'Playable Ad Roster',
           themes: [
             {
               id: 'default',
               head: '\u2699\uFE0F Default',
               meta:
-                'Base theme \u00B7 Classic palette \u00B7 Theme music',
+                'Default build · Theme: classic palette',
               /** После новой выкладки: HEAD по `url` и при желании bundleBytes для строки размера в списке. */
               url: 'https://files.alconost.com/IaRy1OOCRzZz75Qb8kyCi',
             },
             {
               id: 'space',
               head: '\uD83D\uDE80 Space',
-              meta:
-                'Cosmic props \u00B7 Starfield \u00B7 Theme music',
+              meta: 'Global · Theme: cosmic props & starfield',
               url: 'https://files.alconost.com/1O0aM0OURGN3cM1J3_akq',
+              hidden: true,
             },
             {
               id: 'city',
               head: '\uD83C\uDFD9\uFE0F City',
               meta:
-                'Urban skyline \u00B7 Pizza \u00B7 coffee \u00B7 cones',
+                'Theme: urban skyline · Props: pizza, coffee, cones',
               url: 'https://files.alconost.com/Hfp26Uh4hYgXhoxJwauEr',
+              hidden: true,
             },
             {
               id: 'global_fiesta',
               head: '\uD83C\uDF89 Global fiesta',
               meta:
-                'Global en + LATAM \u00B7 vibrant fiesta \u00B7 Theme music',
+                'Markets: global English & LATAM · Theme: vibrant fiesta',
               url: 'https://files.alconost.com/w-5bg3ef2tf2KdE1R0Gnx',
             },
             {
               id: 'jp_kawaii',
               head: '\uD83C\uDF38 JP kawaii',
               meta:
-                'JP, female 18-34 \u00B7 kawaii pastel \u00B7 Theme music',
+                'Japanese market · Audience: female 18–34 · Theme: kawaii pastel',
               url: 'https://files.alconost.com/js1fyzrIncI9jnDXjTR22',
             },
             {
               id: 'kr_sea_pop',
               head: '\uD83C\uDFB6 KR sea pop',
               meta:
-                'KR + SEA, 16-30 \u00B7 K-pop / boba \u00B7 Theme music',
+                'Korea & SEA markets · Audience: 16–30 · Theme: K-pop & boba',
               url: 'https://files.alconost.com/BFuwUhLAxPRHyeXo9me1E',
             },
             {
               id: 'uk_pub',
               head: '\uD83C\uDF7B UK pub',
               meta:
-                'UK + IE, 18-30 \u00B7 pub culture \u00B7 Theme music',
+                'UK & Ireland · Audience: 18–30 · Theme: pub culture',
               url: 'https://files.alconost.com/uNcjO9WHI-OXkQpU3OOhd',
             },
             {
               id: 'zh_urban',
               head: '\uD83C\uDFEF Zh urban',
               meta:
-                'zh-CN, urban 18-35 \u00B7 modern festive \u00B7 Theme music',
+                'China (zh-CN) · Audience: urban 18–35 · Theme: modern festive',
               url: 'https://files.alconost.com/-DAX1ZqKmK18rA0kyTHLK',
             },
           ],
         };
 
         let listEl = document.getElementById('theme-list');
-        let iframePortrait = document.getElementById('iframe-portrait');
-        let iframeLandscape = document.getElementById('iframe-landscape');
-        let btnCopyBuild = document.getElementById('btn-copy-build-link');
-        let copyLabelEl = btnCopyBuild.querySelector('.btn-copy-label');
+        let frameContainers = {
+          portrait: document.getElementById('frame-portrait'),
+          landscape: document.getElementById('frame-landscape'),
+        };
+        let btnOpenBuild = document.getElementById('btn-open-build-link');
+        let qrCanvasEl = document.getElementById('qr-card-canvas');
         let activeEl = null;
         let activeBuildUrl = '';
+        let activeThemeId = null;
+
+        /**
+         * Sticky iframes per theme. We keep a portrait + landscape iframe per theme alive in the
+         * DOM so switching themes is just a visibility toggle — no network, no playable re-boot.
+         * The active pair carries a [data-active] attribute that the CSS uses to reveal it.
+         */
+        let themeMounts = Object.create(null);
+        let themeLoadStatus = Object.create(null);
+        // URLs already pulled into HTTP cache, either by the background warmer (cache-only fetch)
+        // or by a previous full iframe mount. Used to skip redundant work.
+        let warmedUrls = Object.create(null);
+
+        function buildIframe(t, orientation) {
+          let iframe = document.createElement('iframe');
+          iframe.setAttribute(
+            'title',
+            'Playable ' + orientation + ' \u2014 ' + (t.id || 'theme')
+          );
+          iframe.setAttribute('allow', 'autoplay; fullscreen');
+          iframe.setAttribute('loading', 'eager');
+          iframe.setAttribute('data-theme-id', t.id);
+          if (orientation === 'portrait') {
+            iframe.width = '390';
+            iframe.height = '844';
+          } else {
+            iframe.width = '1280';
+            iframe.height = '720';
+          }
+          return iframe;
+        }
+
+        /**
+         * Mount this theme's portrait+landscape iframes if not yet present. Returns the mount
+         * record. Calls into onLoaded once both iframes have fired their load (or error) event so
+         * the warmer can sequence one theme at a time.
+         */
+        function mountTheme(t, onLoaded) {
+          let existing = themeMounts[t.id];
+          if (existing) {
+            if (typeof onLoaded === 'function') {
+              if (themeLoadStatus[t.id] === 'loaded') {
+                onLoaded();
+              } else {
+                let prev = existing.onLoadedCb;
+                existing.onLoadedCb = function () {
+                  if (typeof prev === 'function') prev();
+                  onLoaded();
+                };
+              }
+            }
+            return existing;
+          }
+
+          let portrait = buildIframe(t, 'portrait');
+          let landscape = buildIframe(t, 'landscape');
+          let record = {
+            portrait: portrait,
+            landscape: landscape,
+            portraitLoaded: false,
+            landscapeLoaded: false,
+            landscapeStarted: false,
+            onLoadedCb: typeof onLoaded === 'function' ? onLoaded : null,
+          };
+          themeMounts[t.id] = record;
+          themeLoadStatus[t.id] = 'loading';
+
+          function checkLoaded() {
+            if (record.portraitLoaded && record.landscapeLoaded) {
+              themeLoadStatus[t.id] = 'loaded';
+              warmedUrls[t.url] = true;
+              if (typeof record.onLoadedCb === 'function') {
+                let cb = record.onLoadedCb;
+                record.onLoadedCb = null;
+                cb();
+              }
+            }
+          }
+
+          /**
+           * Sequence portrait then landscape so we hit the network once. Once portrait fires
+           * `load`/`error` (or a safety timeout elapses), the playable HTML is in HTTP cache and
+           * landscape's fetch resolves from cache — and Pixi boot for landscape no longer has to
+           * compete with portrait for CPU.
+           */
+          let landscapeStartTimer = null;
+          function startLandscape() {
+            if (record.landscapeStarted) return;
+            record.landscapeStarted = true;
+            if (landscapeStartTimer) {
+              clearTimeout(landscapeStartTimer);
+              landscapeStartTimer = null;
+            }
+            landscape.src = t.url;
+          }
+
+          portrait.addEventListener('load', function () {
+            record.portraitLoaded = true;
+            startLandscape();
+            checkLoaded();
+          });
+          portrait.addEventListener('error', function () {
+            record.portraitLoaded = true;
+            startLandscape();
+            checkLoaded();
+          });
+          landscape.addEventListener('load', function () {
+            record.landscapeLoaded = true;
+            checkLoaded();
+          });
+          landscape.addEventListener('error', function () {
+            record.landscapeLoaded = true;
+            checkLoaded();
+          });
+
+          frameContainers.portrait.appendChild(portrait);
+          frameContainers.landscape.appendChild(landscape);
+
+          portrait.src = t.url;
+          // Safety net: if portrait never fires load (e.g. very slow response, parsing stalled),
+          // start landscape after 1.5s so we don't block the user-visible second preview forever.
+          landscapeStartTimer = setTimeout(startLandscape, 1500);
+
+          return record;
+        }
+
+        /**
+         * Background warmer: walks every non-hidden theme in order and pulls the playable HTML
+         * into the browser's HTTP cache via fetch(). We deliberately do NOT mount full iframes
+         * here — that would spin up an extra Pixi runtime per theme and steal CPU from the active
+         * preview. When the user later clicks an unvisited theme, the bytes are already cached so
+         * the resulting iframe mount only pays the (single-threaded) Pixi boot cost.
+         *
+         * The warmer pauses while the user-visible active pair is still booting so we don't fight
+         * for bandwidth during the most visible moment.
+         */
+        let warmerPaused = false;
+        let warmerActive = false;
+        let warmerAbort = null;
+
+        function nextThemeToWarm() {
+          for (var i = 0; i < SHOWCASE.themes.length; i++) {
+            var t = SHOWCASE.themes[i];
+            if (t.hidden) continue;
+            if (!t.url || t.url === '#') continue;
+            if (warmedUrls[t.url]) continue;
+            return t;
+          }
+          return null;
+        }
+
+        function warmNext() {
+          if (warmerPaused) {
+            warmerActive = false;
+            return;
+          }
+          var t = nextThemeToWarm();
+          if (!t) {
+            warmerActive = false;
+            return;
+          }
+          warmerActive = true;
+
+          var controller =
+            typeof AbortController === 'function' ? new AbortController() : null;
+          warmerAbort = controller;
+
+          var opts = {
+            mode: 'no-cors',
+            credentials: 'omit',
+            cache: 'default',
+            // Hint browsers (Chromium-based) to use idle-priority for this background fetch.
+            priority: 'low',
+          };
+          if (controller) opts.signal = controller.signal;
+
+          function finish() {
+            if (warmerAbort === controller) warmerAbort = null;
+            warmedUrls[t.url] = true;
+            // Short delay so the browser can decompress/cache the response between requests and
+            // we don't saturate Stashy with back-to-back hits.
+            setTimeout(warmNext, 150);
+          }
+
+          fetch(t.url, opts).then(finish).catch(function () {
+            // Treat aborts as a pause — leave warmedUrls untouched so we retry later.
+            if (warmerPaused) {
+              warmerActive = false;
+              return;
+            }
+            finish();
+          });
+        }
+
+        function pauseWarmer() {
+          warmerPaused = true;
+          if (warmerAbort) {
+            try {
+              warmerAbort.abort();
+            } catch (err) {
+              /* noop */
+            }
+            warmerAbort = null;
+          }
+        }
+
+        function resumeWarmer() {
+          if (!warmerPaused && warmerActive) return;
+          warmerPaused = false;
+          if (!warmerActive) warmNext();
+        }
 
         document.getElementById('game-title').textContent = SHOWCASE.gameTitle;
-        document.getElementById('variant-count').textContent = String(SHOWCASE.variantCount);
-        document.getElementById('game-tagline').textContent = SHOWCASE.tagline;
 
         function updateCopyButtonState() {
           let usable = activeBuildUrl && activeBuildUrl !== '#';
-          btnCopyBuild.disabled = !usable;
+          btnOpenBuild.disabled = !usable;
         }
 
-        function selectTheme(row, url) {
+        /**
+         * Render a QR for the given URL into the qr-card-canvas. Falls back gracefully if the
+         * `qrcode-generator` script hasn't finished loading yet (retry on script load).
+         */
+        let qrInstance = null;
+        let qrPendingUrl = null;
+
+        function setQrState(state, message) {
+          if (!qrCanvasEl) return;
+          qrCanvasEl.setAttribute('data-state', state);
+          qrCanvasEl.setAttribute('data-message', message || '');
+        }
+
+        function renderQr(url) {
+          if (!qrCanvasEl) return;
+          if (!url || url === '#') {
+            qrCanvasEl.innerHTML = '';
+            setQrState('error', 'No link');
+            return;
+          }
+          if (typeof window.qrcode !== 'function') {
+            qrPendingUrl = url;
+            setQrState('loading', 'Loading\u2026');
+            return;
+          }
+          try {
+            // typeNumber 0 = auto-pick smallest size that fits, error correction "M" = balanced.
+            let qr = window.qrcode(0, 'M');
+            qr.addData(url);
+            qr.make();
+            // cellSize 4 + margin 2 → ~120px svg that scales to the 124px card.
+            qrCanvasEl.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+            setQrState('ready', '');
+            qrInstance = qr;
+          } catch (err) {
+            qrCanvasEl.innerHTML = '';
+            setQrState('error', 'QR error');
+          }
+        }
+
+        // Some browsers fire DOMContentLoaded before the deferred QR script executes.
+        // Wait for `window.qrcode` if it's not yet available, then redraw any pending URL.
+        if (typeof window.qrcode !== 'function') {
+          let pollStart = Date.now();
+          let pollId = setInterval(function () {
+            if (typeof window.qrcode === 'function') {
+              clearInterval(pollId);
+              if (qrPendingUrl) renderQr(qrPendingUrl);
+            } else if (Date.now() - pollStart > 6000) {
+              clearInterval(pollId);
+              if (qrPendingUrl) setQrState('error', 'QR unavailable');
+            }
+          }, 100);
+        }
+
+        /**
+         * Reveal the requested theme's iframes. Mounts them lazily on first visit so the initial
+         * page paint is not blocked by every playable booting at once. Subsequent visits are
+         * instant — both portrait and landscape iframes stay live in the DOM.
+         */
+        function showTheme(row, t) {
           if (activeEl) activeEl.classList.remove('active');
           row.classList.add('active');
           activeEl = row;
-          activeBuildUrl = url;
-          iframePortrait.src = url;
-          iframeLandscape.src = url;
+          activeBuildUrl = t.url;
+          activeThemeId = t.id;
+
+          pauseWarmer();
+
+          // Hide previously-active iframes (across all mounted themes).
+          let prevPortrait = frameContainers.portrait.querySelector(
+            'iframe[data-active]'
+          );
+          if (prevPortrait) prevPortrait.removeAttribute('data-active');
+          let prevLandscape = frameContainers.landscape.querySelector(
+            'iframe[data-active]'
+          );
+          if (prevLandscape) prevLandscape.removeAttribute('data-active');
+
+          let mount = mountTheme(t, function () {
+            // Once this theme has finished booting, let the warmer continue in the background.
+            if (activeThemeId === t.id) resumeWarmer();
+          });
+          mount.portrait.setAttribute('data-active', '');
+          mount.landscape.setAttribute('data-active', '');
+
+          // If this theme was already mounted (warmed earlier), unblock the warmer immediately.
+          if (themeLoadStatus[t.id] === 'loaded') {
+            resumeWarmer();
+          }
+
+          renderQr(t.url);
           updateCopyButtonState();
         }
 
-        SHOWCASE.themes.forEach(function (t, i) {
+        let visibleThemes = SHOWCASE.themes.filter(function (t) {
+          return !t.hidden;
+        });
+
+        visibleThemes.forEach(function (t, i) {
           let row = document.createElement('div');
           row.className = 'theme-item' + (i === 0 ? ' active' : '');
           row.setAttribute('role', 'listitem');
@@ -1142,7 +1577,7 @@
           row.appendChild(meta);
 
           function activate() {
-            selectTheme(row, t.url);
+            showTheme(row, t);
           }
 
           row.addEventListener('click', activate);
@@ -1156,41 +1591,13 @@
           listEl.appendChild(row);
 
           if (i === 0) {
-            selectTheme(row, t.url);
+            showTheme(row, t);
           }
         });
 
-        btnCopyBuild.addEventListener('click', function () {
+        btnOpenBuild.addEventListener('click', function () {
           if (!activeBuildUrl || activeBuildUrl === '#') return;
-          function flashCopied() {
-            let prev = copyLabelEl.textContent;
-            copyLabelEl.textContent = 'Copied!';
-            setTimeout(function () {
-              copyLabelEl.textContent = prev;
-            }, 1600);
-          }
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(activeBuildUrl).then(flashCopied).catch(function () {
-              fallbackCopy();
-            });
-          } else {
-            fallbackCopy();
-          }
-          function fallbackCopy() {
-            let ta = document.createElement('textarea');
-            ta.value = activeBuildUrl;
-            ta.setAttribute('readonly', '');
-            ta.style.position = 'fixed';
-            ta.style.left = '-9999px';
-            document.body.appendChild(ta);
-            ta.select();
-            try {
-              document.execCommand('copy');
-              flashCopied();
-            } finally {
-              document.body.removeChild(ta);
-            }
-          }
+          window.open(activeBuildUrl, '_blank', 'noopener,noreferrer');
         });
       })();
     </script>
