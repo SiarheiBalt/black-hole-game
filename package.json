@@ -14,7 +14,17 @@
     "build:kr_sea_pop": "cross-env VITE_THEME=kr_sea_pop vite build",
     "build:space": "cross-env VITE_THEME=space vite build",
     "build:uk_pub": "cross-env VITE_THEME=uk_pub vite build",
-    "build:zh_urban": "cross-env VITE_THEME=zh_urban vite build"
+    "build:zh_urban": "cross-env VITE_THEME=zh_urban vite build",
+    "build:homa": "cross-env VITE_BRAND=attack_hole vite build",
+    "build:default:homa": "cross-env VITE_BRAND=attack_hole vite build",
+    "build:city:homa": "cross-env VITE_THEME=city VITE_BRAND=attack_hole vite build",
+    "build:fr_chic:homa": "cross-env VITE_THEME=fr_chic VITE_BRAND=attack_hole vite build",
+    "build:global_fiesta:homa": "cross-env VITE_THEME=global_fiesta VITE_BRAND=attack_hole vite build",
+    "build:jp_kawaii:homa": "cross-env VITE_THEME=jp_kawaii VITE_BRAND=attack_hole vite build",
+    "build:kr_sea_pop:homa": "cross-env VITE_THEME=kr_sea_pop VITE_BRAND=attack_hole vite build",
+    "build:space:homa": "cross-env VITE_THEME=space VITE_BRAND=attack_hole vite build",
+    "build:uk_pub:homa": "cross-env VITE_THEME=uk_pub VITE_BRAND=attack_hole vite build",
+    "build:zh_urban:homa": "cross-env VITE_THEME=zh_urban VITE_BRAND=attack_hole vite build"
   },
   "keywords": [],
   "author": "",

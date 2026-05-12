@@ -1,5 +1,5 @@
 import './brandInstallCta.css';
-import logoUrl from '../assets/brand/hole-stars-logo.png';
+import { brandLogoUrl, brandName } from '../assets/brand/brandLogo.js';
 import { APP_STORE_URL, openClickout } from '../app/playableAdapter.js';
 
 /**
@@ -12,17 +12,17 @@ export function createBrandInstallCta(container, opts = {}) {
 
   const root = document.createElement('aside');
   root.className = 'brand-install-cta';
-  root.setAttribute('aria-label', 'Install Hole Stars');
+  root.setAttribute('aria-label', `Install ${brandName}`);
 
   const logoButton = document.createElement('button');
   logoButton.type = 'button';
   logoButton.className = 'brand-install-cta__logo-button tap-target';
-  logoButton.setAttribute('aria-label', 'Install Hole Stars');
+  logoButton.setAttribute('aria-label', `Install ${brandName}`);
 
   const logo = document.createElement('img');
   logo.className = 'brand-install-cta__logo';
-  logo.src = logoUrl;
-  logo.alt = 'Hole Stars';
+  logo.src = brandLogoUrl;
+  logo.alt = brandName;
   logo.decoding = 'async';
   logo.draggable = false;
 
