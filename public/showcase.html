@@ -755,9 +755,8 @@
       }
 
       /*
-       * Sticky iframes per theme: every theme owns its own portrait/landscape iframe inside the
-       * preview-frame container. Only the iframe with [data-active] is visible; the rest stay in
-       * the DOM so their playable runtime does not need to re-bootstrap when switched back.
+       * Up to two themes cached (LRU): portrait/landscape iframe pairs stay mounted for fast toggle.
+       * A third theme evicts the least recently used pair; only [data-active] iframes are visible.
        */
       .preview-frame iframe {
         display: block;
@@ -1243,10 +1242,12 @@
         let activeThemeId = null;
 
         /**
-         * Sticky iframes per theme. We keep a portrait + landscape iframe per theme alive in the
-         * DOM so switching themes is just a visibility toggle — no network, no playable re-boot.
-         * The active pair carries a [data-active] attribute that the CSS uses to reveal it.
+         * At most two themes mounted (LRU): portrait + landscape iframe pair each. Keeps toggling A↔B
+         * instant while bounding simultaneous WebGL runtimes; older mounts drop off when you open a third.
          */
+        let MAX_MOUNTED_THEMES = 2;
+        /** Most recently activated theme id first; tail is LRU eviction candidate. */
+        let mountedThemeLruIds = [];
         let themeMounts = Object.create(null);
         let themeLoadStatus = Object.create(null);
         // URLs already pulled into HTTP cache, either by the background warmer (cache-only fetch)
@@ -1270,6 +1271,39 @@
             iframe.height = '720';
           }
           return iframe;
+        }
+
+        function touchMountedTheme(id) {
+          let ix = mountedThemeLruIds.indexOf(id);
+          if (ix !== -1) mountedThemeLruIds.splice(ix, 1);
+          mountedThemeLruIds.unshift(id);
+        }
+
+        function evictExcessMountedThemes() {
+          while (mountedThemeLruIds.length > MAX_MOUNTED_THEMES) {
+            let victim = mountedThemeLruIds[mountedThemeLruIds.length - 1];
+            unmountTheme(victim);
+          }
+        }
+
+        function unmountTheme(id) {
+          let ix = mountedThemeLruIds.indexOf(id);
+          if (ix !== -1) mountedThemeLruIds.splice(ix, 1);
+          let rec = themeMounts[id];
+          if (!rec || rec.alive === false) return;
+          rec.alive = false;
+          if (rec.landscapeStartTimer) {
+            clearTimeout(rec.landscapeStartTimer);
+            rec.landscapeStartTimer = null;
+          }
+          if (rec.portrait && rec.portrait.parentNode) {
+            rec.portrait.parentNode.removeChild(rec.portrait);
+          }
+          if (rec.landscape && rec.landscape.parentNode) {
+            rec.landscape.parentNode.removeChild(rec.landscape);
+          }
+          delete themeMounts[id];
+          delete themeLoadStatus[id];
         }
 
         /**
@@ -1303,11 +1337,14 @@
             landscapeLoaded: false,
             landscapeStarted: false,
             onLoadedCb: typeof onLoaded === 'function' ? onLoaded : null,
+            alive: true,
+            landscapeStartTimer: null,
           };
           themeMounts[t.id] = record;
           themeLoadStatus[t.id] = 'loading';
 
           function checkLoaded() {
+            if (!record.alive) return;
             if (record.portraitLoaded && record.landscapeLoaded) {
               themeLoadStatus[t.id] = 'loaded';
               warmedUrls[t.url] = true;
@@ -1325,32 +1362,35 @@
            * landscape's fetch resolves from cache — and Pixi boot for landscape no longer has to
            * compete with portrait for CPU.
            */
-          let landscapeStartTimer = null;
           function startLandscape() {
-            if (record.landscapeStarted) return;
+            if (!record.alive || record.landscapeStarted) return;
             record.landscapeStarted = true;
-            if (landscapeStartTimer) {
-              clearTimeout(landscapeStartTimer);
-              landscapeStartTimer = null;
+            if (record.landscapeStartTimer) {
+              clearTimeout(record.landscapeStartTimer);
+              record.landscapeStartTimer = null;
             }
             landscape.src = t.url;
           }
 
           portrait.addEventListener('load', function () {
+            if (!record.alive) return;
             record.portraitLoaded = true;
             startLandscape();
             checkLoaded();
           });
           portrait.addEventListener('error', function () {
+            if (!record.alive) return;
             record.portraitLoaded = true;
             startLandscape();
             checkLoaded();
           });
           landscape.addEventListener('load', function () {
+            if (!record.alive) return;
             record.landscapeLoaded = true;
             checkLoaded();
           });
           landscape.addEventListener('error', function () {
+            if (!record.alive) return;
             record.landscapeLoaded = true;
             checkLoaded();
           });
@@ -1361,7 +1401,7 @@
           portrait.src = t.url;
           // Safety net: if portrait never fires load (e.g. very slow response, parsing stalled),
           // start landscape after 1.5s so we don't block the user-visible second preview forever.
-          landscapeStartTimer = setTimeout(startLandscape, 1500);
+          record.landscapeStartTimer = setTimeout(startLandscape, 1500);
 
           return record;
         }
@@ -1515,9 +1555,7 @@
         }
 
         /**
-         * Reveal the requested theme's iframes. Mounts them lazily on first visit so the initial
-         * page paint is not blocked by every playable booting at once. Subsequent visits are
-         * instant — both portrait and landscape iframes stay live in the DOM.
+         * Reveal the requested theme's previews. LRU-retains two mounted pairs; opening a third evicts LRU.
          */
         function showTheme(row, t) {
           if (activeEl) activeEl.classList.remove('active');
@@ -1528,7 +1566,7 @@
 
           pauseWarmer();
 
-          // Hide previously-active iframes (across all mounted themes).
+          // Hide previously-active iframes (still needed when re-selecting the same theme).
           let prevPortrait = frameContainers.portrait.querySelector(
             'iframe[data-active]'
           );
@@ -1549,6 +1587,9 @@
           if (themeLoadStatus[t.id] === 'loaded') {
             resumeWarmer();
           }
+
+          touchMountedTheme(t.id);
+          evictExcessMountedThemes();
 
           renderQr(t.url);
           updateCopyButtonState();
