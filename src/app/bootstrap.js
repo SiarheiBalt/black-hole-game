@@ -197,6 +197,12 @@ async function main() {
 
   fireGameReady();
 
+  try {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: 'playable-ready' }, '*');
+    }
+  } catch (_) { /* cross-origin or sandbox — safe to ignore */ }
+
   function endRound(won) {
     if (run.gameEnded) return;
     run.gameEnded = true;

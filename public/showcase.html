@@ -776,6 +776,40 @@
         z-index: 1;
       }
 
+      @keyframes shimmer-sweep {
+        0%   { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
+
+      .skeleton-loader {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        background: #1a1f2c;
+        overflow: hidden;
+      }
+
+      .skeleton-loader::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          105deg,
+          transparent 30%,
+          rgba(255, 255, 255, 0.04) 44%,
+          rgba(255, 255, 255, 0.08) 50%,
+          rgba(255, 255, 255, 0.04) 56%,
+          transparent 70%
+        );
+        animation: shimmer-sweep 2s ease-in-out infinite;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .skeleton-loader::after {
+          animation: none;
+        }
+      }
+
       .preview-frame--portrait {
         width: min(var(--phone-short-edge), 100%);
         max-width: min(380px, 100%);
@@ -985,14 +1019,18 @@
                 <div
                   class="preview-frame preview-frame--portrait"
                   id="frame-portrait"
-                ></div>
+                >
+                  <div class="skeleton-loader" aria-hidden="true"></div>
+                </div>
               </div>
               <div class="device-pair-unit">
                 <p class="preview-label">Landscape</p>
                 <div
                   class="preview-frame preview-frame--landscape"
                   id="frame-landscape"
-                ></div>
+                >
+                  <div class="skeleton-loader" aria-hidden="true"></div>
+                </div>
               </div>
           </div>
           <div class="preview-actions">
@@ -1173,14 +1211,14 @@
               id: 'default',
               head: '\u2699\uFE0F Default',
               meta:
-                'Default build · Theme: classic palette',
+                'Default build · Classic palette',
               /** После новой выкладки: HEAD по `url` и при желании bundleBytes для строки размера в списке. */
               url: 'https://files.alconost.com/IaRy1OOCRzZz75Qb8kyCi',
             },
             {
               id: 'space',
               head: '\uD83D\uDE80 Space',
-              meta: 'Global · Theme: cosmic props & starfield',
+              meta: 'Global · Cosmic props & starfield',
               url: 'https://files.alconost.com/1O0aM0OURGN3cM1J3_akq',
               hidden: true,
             },
@@ -1188,7 +1226,7 @@
               id: 'city',
               head: '\uD83C\uDFD9\uFE0F City',
               meta:
-                'Theme: urban skyline · Props: pizza, coffee, cones',
+                'Urban skyline · Pizza, coffee, cones',
               url: 'https://files.alconost.com/Hfp26Uh4hYgXhoxJwauEr',
               hidden: true,
             },
@@ -1196,35 +1234,35 @@
               id: 'global_fiesta',
               head: '\uD83C\uDF89 Global fiesta',
               meta:
-                'Markets: global English & LATAM · Theme: vibrant fiesta',
+                'Global English & LATAM · Vibrant fiesta',
               url: 'https://files.alconost.com/w-5bg3ef2tf2KdE1R0Gnx',
             },
             {
               id: 'jp_kawaii',
               head: '\uD83C\uDF38 JP kawaii',
               meta:
-                'Japanese market · Audience: female 18–34 · Theme: kawaii pastel',
+                'Japanese market · Female 18–34 · Kawaii pastel',
               url: 'https://files.alconost.com/js1fyzrIncI9jnDXjTR22',
             },
             {
               id: 'kr_sea_pop',
               head: '\uD83C\uDFB6 KR sea pop',
               meta:
-                'Korea & SEA markets · Audience: 16–30 · Theme: K-pop & boba',
+                'Korea & SEA · Ages 16–30 · K-pop & boba',
               url: 'https://files.alconost.com/BFuwUhLAxPRHyeXo9me1E',
             },
             {
               id: 'uk_pub',
               head: '\uD83C\uDF7B UK pub',
               meta:
-                'UK & Ireland · Audience: 18–30 · Theme: pub culture',
+                'UK & Ireland · Ages 18–30 · Pub culture',
               url: 'https://files.alconost.com/uNcjO9WHI-OXkQpU3OOhd',
             },
             {
               id: 'zh_urban',
               head: '\uD83C\uDFEF Zh urban',
               meta:
-                'China (zh-CN) · Audience: urban 18–35 · Theme: modern festive',
+                'China (zh-CN) · Urban 18–35 · Modern festive',
               url: 'https://files.alconost.com/-DAX1ZqKmK18rA0kyTHLK',
             },
           ],
@@ -1335,8 +1373,12 @@
             landscape: landscape,
             portraitLoaded: false,
             landscapeLoaded: false,
+            portraitGameReady: false,
+            landscapeGameReady: false,
             landscapeStarted: false,
             onLoadedCb: typeof onLoaded === 'function' ? onLoaded : null,
+            onPortraitReady: null,
+            onLandscapeReady: null,
             alive: true,
             landscapeStartTimer: null,
           };
@@ -1372,15 +1414,28 @@
             landscape.src = t.url;
           }
 
+          function markPortraitGameReady() {
+            if (record.portraitGameReady) return;
+            record.portraitGameReady = true;
+            if (typeof record.onPortraitReady === 'function') { record.onPortraitReady(); record.onPortraitReady = null; }
+          }
+          function markLandscapeGameReady() {
+            if (record.landscapeGameReady) return;
+            record.landscapeGameReady = true;
+            if (typeof record.onLandscapeReady === 'function') { record.onLandscapeReady(); record.onLandscapeReady = null; }
+          }
+
           portrait.addEventListener('load', function () {
             if (!record.alive) return;
             record.portraitLoaded = true;
             startLandscape();
             checkLoaded();
+            setTimeout(function () { if (record.alive) markPortraitGameReady(); }, 5000);
           });
           portrait.addEventListener('error', function () {
             if (!record.alive) return;
             record.portraitLoaded = true;
+            markPortraitGameReady();
             startLandscape();
             checkLoaded();
           });
@@ -1388,10 +1443,12 @@
             if (!record.alive) return;
             record.landscapeLoaded = true;
             checkLoaded();
+            setTimeout(function () { if (record.alive) markLandscapeGameReady(); }, 5000);
           });
           landscape.addEventListener('error', function () {
             if (!record.alive) return;
             record.landscapeLoaded = true;
+            markLandscapeGameReady();
             checkLoaded();
           });
 
@@ -1405,6 +1462,23 @@
 
           return record;
         }
+
+        window.addEventListener('message', function (e) {
+          if (!e.data || e.data.type !== 'playable-ready') return;
+          var src = e.source;
+          for (var id in themeMounts) {
+            var rec = themeMounts[id];
+            if (!rec || !rec.alive) continue;
+            if (rec.portrait && rec.portrait.contentWindow === src) {
+              rec.portraitGameReady = true;
+              if (typeof rec.onPortraitReady === 'function') { rec.onPortraitReady(); rec.onPortraitReady = null; }
+            }
+            if (rec.landscape && rec.landscape.contentWindow === src) {
+              rec.landscapeGameReady = true;
+              if (typeof rec.onLandscapeReady === 'function') { rec.onLandscapeReady(); rec.onLandscapeReady = null; }
+            }
+          }
+        });
 
         /**
          * Background warmer: walks every non-hidden theme in order and pulls the playable HTML
@@ -1577,13 +1651,36 @@
           if (prevLandscape) prevLandscape.removeAttribute('data-active');
 
           let mount = mountTheme(t, function () {
-            // Once this theme has finished booting, let the warmer continue in the background.
             if (activeThemeId === t.id) resumeWarmer();
           });
-          mount.portrait.setAttribute('data-active', '');
-          mount.landscape.setAttribute('data-active', '');
 
-          // If this theme was already mounted (warmed earlier), unblock the warmer immediately.
+          var showTime = Date.now();
+          var MIN_SHIMMER_MS = 600;
+
+          function revealFrame(frame) {
+            var elapsed = Date.now() - showTime;
+            var delay = Math.max(0, MIN_SHIMMER_MS - elapsed);
+            if (delay === 0) {
+              if (activeThemeId === t.id) frame.setAttribute('data-active', '');
+            } else {
+              setTimeout(function () {
+                if (activeThemeId === t.id) frame.setAttribute('data-active', '');
+              }, delay);
+            }
+          }
+
+          if (mount.portraitGameReady) {
+            revealFrame(mount.portrait);
+          } else {
+            mount.onPortraitReady = function () { revealFrame(mount.portrait); };
+          }
+
+          if (mount.landscapeGameReady) {
+            revealFrame(mount.landscape);
+          } else {
+            mount.onLandscapeReady = function () { revealFrame(mount.landscape); };
+          }
+
           if (themeLoadStatus[t.id] === 'loaded') {
             resumeWarmer();
           }
